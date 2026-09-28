@@ -1,4 +1,4 @@
-# Lift: inglés para hablar con soltura
+# Lift
 
 App web para aprender inglés desde el móvil: conversaciones guiadas, simulacro de entrevista de trabajo, taller de escritura, reto diario, juegos e inglés técnico de aviónica.
 
