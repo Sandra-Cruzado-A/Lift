@@ -281,6 +281,22 @@ label.row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)
 .why ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:.93rem;line-height:1.4}
 .why-inline{display:grid;gap:4px;margin-top:6px;font-size:.88rem}
 .fcard .face.back p{font-size:.92rem;line-height:1.4}
+
+/* pronunciación */
+.ipa{font-family:"Charis SIL","Doulos SIL","Gentium Plus","Noto Sans","Segoe UI",system-ui,sans-serif;color:var(--muted);font-size:.95rem;letter-spacing:.01em}
+.big-ipa{font-size:1.1rem;margin:-4px 0 6px}
+.fcard .face.front .ipa{display:block;margin:4px 0 10px;font-size:1.05rem}
+.pron{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.pron > b{display:block;font-size:.85rem;margin-bottom:6px}
+.pwords{line-height:2;margin:0 0 4px}
+.pw{padding:2px 6px;border-radius:8px;font-weight:600}
+.pw.ok{background:color-mix(in srgb,#1a9e6a 16%,transparent);color:inherit}
+.pw.bad{background:color-mix(in srgb,#e0344f 18%,transparent);color:inherit;text-decoration:underline wavy color-mix(in srgb,#e0344f 70%,transparent);text-underline-offset:4px}
+.pword{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.pword ul{margin:4px 0 0;padding-left:18px;display:grid;gap:3px;font-size:.92rem}
+.icon-btn.sm{width:34px;height:34px;font-size:.95rem}
+.msg.note .pron{background:transparent}
+.pron > .pword:first-child{border-top:0;padding-top:0;margin-top:0}
 </style>
 </head>
 <body>
@@ -801,6 +817,146 @@ const FACTS = [
   ["Bless you","Cuando alguien estornuda se dice «Bless you». Si quieres sonar más informal, también vale «Gesundheit», prestado del alemán."],
   ["Shakespeare","Muchas palabras aparecen por primera vez por escrito en obras de Shakespeare, como «lonely» o «swagger». No siempre las inventó él, pero ayudó a popularizarlas."]
 ];
+/* ================= OFERTA DE TRABAJO: Advanced Materials & Technologies Specialist =================
+   Para cambiar de oferta: edita JOB_OFFER y añade preguntas y palabras AL FINAL de cada lista. */
+const JOB_OFFER = {
+  title: "Advanced Materials & Technologies Specialist",
+  short: "Especialista en materiales y tecnologías avanzadas",
+  context: `Role: Advanced Materials & Technologies Specialist at an ambitious aerospace technology company developing high-altitude, long-endurance platforms (a new layer of Earth infrastructure with space-like capabilities).
+Responsibilities: identify, evaluate and qualify structural and functional materials, energy storage, photovoltaics and electric propulsion components; assess datasheets, test results and manufacturer data; work directly with manufacturers and suppliers to obtain verified data; coordinate procurement and testing of samples and evaluation lots with the workshop and electrical teams; build long-term supplier relationships; maintain a technically verified engineering catalogue; give critical technical input to design decisions. It is not simply a procurement role.
+They value: strong grounding in materials science, mechanical/aerospace engineering, composites, energy storage, photovoltaics, electric propulsion, UAVs or motorsport; interrogating technical data; telling engineering reality from marketing claims; dealing with suppliers; technical and organisational discipline.
+Location: full time on site in Teruel (Aragón, Spain), hands-on with technical and workshop teams, with supplier visits and some international travel.`
+};
+
+/* Preguntas de entrevista para esta oferta: q, nivel, consejo (es/en), frases útiles, respuesta modelo */
+const OFFER_Q = [
+  {q:"Why are you interested in this role?",l:2,
+   tip:"Conecta tres cosas: el trabajo práctico con datos y ensayos, el reto de las plataformas de gran altitud y tu motivación por convertir tecnologías prometedoras en soluciones probadas.",
+   tipE:"Connect three things: hands-on work with data and tests, the challenge of high-altitude platforms, and your drive to turn promising technologies into proven solutions.",
+   p:["What attracts me most is…","I enjoy getting into the technical detail.","I'd love to help turn … into …"],
+   m:"What attracts me most is the combination of hands-on engineering and technology evaluation. I enjoy digging into technical data and testing things myself, and I like the idea that my work would directly shape the materials and components your platforms are built with. High-altitude platforms are a genuinely new kind of infrastructure, and I'd love to help turn promising technologies into proven engineering capability."},
+  {q:"How would you evaluate a new material or component?",l:3,
+   tip:"Describe un proceso claro y ordenado: requisitos, revisión del datasheet, contraste con otras fuentes, muestras, ensayos propios, decisión y registro en el catálogo.",
+   tipE:"Describe a clear, ordered process: requirements, datasheet review, cross-checking, samples, in-house tests, decision and a catalogue entry.",
+   p:["First, I'd start from the requirements.","Then I'd compare the datasheet with…","Finally, I'd record the results in…"],
+   m:"First, I'd start from the requirements: what the part has to do, in what environment, and what margins we need. Then I'd review the datasheet and the test conditions behind each figure, and compare them with independent data. If it looks promising, I'd order samples, test them in-house under realistic conditions and compare the results with the manufacturer's claims. Finally, I'd record everything in the catalogue, so the team can make a quick, informed decision."},
+  {q:"How do you tell the difference between engineering reality and marketing claims?",l:3,
+   tip:"Demuestra que miras las condiciones de cada dato (temperatura, velocidad de descarga, tamaño de muestra), si es un valor típico o garantizado, y que contrastas o ensayas cuando importa.",
+   tipE:"Show that you check the conditions behind each figure (temperature, discharge rate, sample size), whether it's typical or guaranteed, and that you cross-check or test when it matters.",
+   p:["I always look at the conditions behind the numbers.","Is this a typical or a guaranteed value?","When it matters, I test it myself."],
+   m:"I always look at the conditions behind the numbers. For example, a battery might only reach its specific energy at a low discharge rate and room temperature, which isn't our case at high altitude. So I ask the supplier for the full test data, check whether the figures are typical or guaranteed, compare them with independent sources and, when it matters, test the samples myself."},
+  {q:"Tell me about a time when test results didn't match the supplier's data.",l:3,
+   tip:"Usa el método STAR: situación, tarea, acción y resultado. Explica cómo comprobaste primero tu propio ensayo y cómo lo resolviste con el proveedor. Cámbialo por un caso real tuyo.",
+   tipE:"Use the STAR method: situation, task, action and result. Explain how you checked your own test first and how you solved it with the supplier. Replace it with a real case of yours.",
+   p:["In a previous project, we were evaluating…","The results were about … lower.","It turned out that…"],
+   m:"In a previous project, we were evaluating a component whose datasheet showed very good performance. When we tested the samples, the results were about fifteen percent lower. I checked our test setup first, then shared the data with the supplier and asked for their test conditions. It turned out that they had tested at a different temperature. We agreed on new tests under our conditions and added the corrected values to our internal database."},
+  {q:"How would you build good relationships with specialist suppliers?",l:2,
+   tip:"Habla de claridad, fiabilidad y trato justo: explicar bien los requisitos, compartir resultados de ensayos, cumplir lo prometido y visitarles en persona.",
+   tipE:"Talk about clarity, reliability and fairness: explain your requirements well, share test results, keep your promises and visit them in person.",
+   p:["It's about being clear and reliable.","I'd share feedback from our tests.","Visiting suppliers in person helps a lot."],
+   m:"I think it's about being clear, reliable and fair. I'd explain our requirements and constraints honestly, share feedback from our tests and keep my commitments. Visiting suppliers in person also helps a lot, because you understand their processes and they understand what we really need."},
+  {q:"How would you organise a technical catalogue that the whole team can trust?",l:3,
+   tip:"La palabra clave es trazabilidad: cada valor con su fuente, sus condiciones de ensayo y si lo habéis verificado vosotros.",
+   tipE:"The key word is traceability: every value with its source, its test conditions and whether you've verified it yourselves.",
+   p:["I'd use the same structure for every entry.","The source of each value","Anyone should be able to see where a number comes from."],
+   m:"I'd use the same structure for every entry: key specifications, the source of each value, the test conditions and whether we have verified it ourselves. I'd also record the supplier, the lead time and the status, and review the catalogue regularly. The most important thing is traceability: anyone should be able to see where a number comes from."},
+  {q:"Which of our technology areas do you know best?",l:2,
+   tip:"Sé sincero: elige tu área más fuerte (materiales, composites, baterías, fotovoltaica o propulsión eléctrica), da un ejemplo y muestra ganas de aprender las demás. Adapta el ejemplo a tu experiencia.",
+   tipE:"Be honest: pick your strongest area (materials, composites, batteries, photovoltaics or electric propulsion), give an example and show you're keen to learn the others. Adapt the example to your experience.",
+   p:["My strongest area is…","I'm also familiar with…","I learn quickly when…"],
+   m:"My strongest area is composite materials: I've worked with carbon fibre parts and their testing. I'm also familiar with batteries and solar cells at system level, and I learn quickly when I have a clear goal. In this role, I'd start by understanding the key requirements of each subsystem and the main trade-offs between them."},
+  {q:"What challenges do materials and components face at high altitude?",l:4,
+   tip:"Menciona el entorno: frío extremo, ciclos térmicos día-noche, baja presión y radiación UV, y cómo afectan a composites, adhesivos, recubrimientos y baterías.",
+   tipE:"Mention the environment: extreme cold, day-night thermal cycling, low pressure and UV radiation, and how they affect composites, adhesives, coatings and batteries.",
+   p:["Materials have to cope with…","That can affect…","Qualification tests should reproduce…"],
+   m:"At high altitude, materials have to cope with very low temperatures, large thermal cycles between day and night, low pressure and strong UV radiation. That can affect composites, adhesives and coatings, and the cold also reduces battery performance. So qualification tests should reproduce those conditions as closely as possible."},
+  {q:"How would you decide which technologies to evaluate first?",l:3,
+   tip:"Prioriza por impacto y riesgo, y acuérdalo con los equipos de ingeniería.",
+   tipE:"Prioritise by impact and risk, and agree the priorities with the engineering teams.",
+   p:["I'd prioritise by impact and risk.","The components that limit performance the most","I'd review the priorities regularly."],
+   m:"I'd prioritise by impact and risk: which components limit the platform's performance the most, such as energy storage or solar cells, and which ones have the most uncertain data. I'd agree the priorities with the engineering teams and review them regularly as the design evolves."},
+  {q:"How would you work with the workshop and electrical teams?",l:2,
+   tip:"Muestra que te gusta el trabajo práctico, que implicas al taller desde el principio y que combinas datos con experiencia práctica.",
+   tipE:"Show that you like hands-on work, involve the workshop from the start and combine data with practical experience.",
+   p:["I'd work side by side with them.","I'd involve them early.","I'm comfortable getting my hands dirty."],
+   m:"I'd work side by side with them. They know the practical problems, so I'd involve them early when we plan tests, agree on what we want to measure and review the results together. I'm comfortable getting my hands dirty, and I think the best decisions come from combining data with practical experience."},
+  {q:"Are you comfortable working full time on site and travelling to visit suppliers?",l:1,
+   tip:"Respuesta corta y clara: sí, y por qué te gusta trabajar cerca del taller.",
+   tipE:"Keep it short and clear: yes, and why you like working close to the workshop.",
+   p:["Yes, absolutely.","I prefer working on site.","I'm happy to travel."],
+   m:"Yes, absolutely. I prefer working on site, close to the workshop and the technical teams, and I'm happy to travel, including abroad, to visit suppliers and partners."},
+  {q:"Tell me about a time you had to make a technical decision with incomplete information.",l:4,
+   tip:"Método STAR: qué sabías y qué no, cuál era el mayor riesgo, qué hiciste para reducirlo y el resultado. Usa un caso real tuyo.",
+   tipE:"STAR method: what you knew and didn't know, the biggest risk, what you did to reduce it and the result. Use a real case of yours.",
+   p:["We had to choose between…","I identified the biggest risk.","We chose the option with…"],
+   m:"In a previous project, we had to choose between two components before full test data was available. I listed what we knew and what we didn't, identified the biggest risk and ran a quick test to reduce it. We chose the option with the best margin and kept a backup plan. Later tests confirmed the decision."},
+  {q:"What would you do in your first three months?",l:3,
+   tip:"Estructura en tres pasos: conocer equipos y requisitos, revisar el catálogo y detectar huecos, y tener un plan de evaluación con las primeras muestras.",
+   tipE:"Use three steps: get to know the teams and requirements, review the catalogue and find the gaps, and have an evaluation plan with the first samples.",
+   p:["First, I'd get to know…","Then I'd review…","By the end of the third month, I'd like to…"],
+   m:"First, I'd get to know the teams, the platform and the key requirements. Then I'd review the current catalogue and identify the gaps and the components with the least verified data. By the end of the third month, I'd like to have a clear evaluation plan and the first samples in testing."},
+  {q:"Why should we choose you for this position?",l:2,
+   tip:"Resume en tres puntos lo que aportas: base técnica, rigor con los datos y trato con proveedores o equipos. Termina con tu motivación.",
+   tipE:"Sum up what you bring in three points: technical grounding, rigour with data, and working with suppliers or teams. Finish with your motivation.",
+   p:["I bring a combination of…","I'm rigorous with data.","I'm really motivated by…"],
+   m:"I bring a combination of solid technical grounding, rigour with data and practical, hands-on experience. I'm used to questioning figures until I understand them, and I enjoy working with both suppliers and engineering teams. Above all, I'm really motivated by the idea of helping to move a new technology from development to delivery."}
+];
+
+/* Vocabulario del puesto: [inglés, español, nivel, categoría] */
+const OFFER_SUBS_T = {role:["El puesto","The role"], mat:["Materiales y estructuras","Materials and structures"], energy:["Energía","Energy"], prop:["Propulsión","Propulsion"], soft:["Trabajo y proveedores","Work and suppliers"]};
+const OFFER_VOCAB = [
+  ["high-altitude platform","plataforma de gran altitud",2,"role"],["long-endurance","de larga autonomía",3,"role"],["stratosphere","estratosfera",2,"role"],
+  ["payload","carga útil",3,"role"],["to qualify (a material)","cualificar, homologar (un material)",3,"role"],["qualification","cualificación, homologación",3,"role"],
+  ["datasheet","hoja de datos, ficha técnica",2,"role"],["test results","resultados de ensayo",2,"role"],["sample","muestra",1,"role"],
+  ["evaluation lot","lote de evaluación",3,"role"],["test campaign","campaña de ensayos",3,"role"],["test rig","banco de pruebas",3,"role"],
+  ["acceptance criteria","criterios de aceptación",3,"role"],["specification","especificación",2,"role"],["tolerance","tolerancia",3,"role"],
+  ["failure mode","modo de fallo",4,"role"],["root cause","causa raíz",3,"role"],["engineering catalogue","catálogo de ingeniería",3,"role"],
+  ["traceability","trazabilidad",4,"role"],["in-house testing","ensayos propios, internos",3,"role"],["off-the-shelf (COTS)","comercial, disponible en el mercado",3,"role"],
+  ["trade-off","compromiso entre ventajas e inconvenientes",3,"role"],["marketing claims","afirmaciones de marketing",3,"role"],["to cross-check","contrastar con otra fuente",3,"role"],
+  ["workshop","taller",1,"role"],["hands-on","práctico, de trabajo directo",2,"role"],["on site","en las instalaciones, presencial",2,"role"],
+  ["composite","material compuesto",2,"mat"],["carbon fibre","fibra de carbono",2,"mat"],["prepreg","preimpregnado",4,"mat"],["resin","resina",2,"mat"],
+  ["cure cycle","ciclo de curado",4,"mat"],["lay-up","laminado, apilado de capas",4,"mat"],["areal weight","gramaje",4,"mat"],
+  ["tensile strength","resistencia a la tracción",3,"mat"],["stiffness","rigidez",3,"mat"],["fatigue","fatiga (de materiales)",3,"mat"],["creep","fluencia",4,"mat"],
+  ["brittle","frágil, quebradizo",3,"mat"],["lightweight","ligero",1,"mat"],["adhesive bonding","unión adhesiva",4,"mat"],["coating","recubrimiento",3,"mat"],
+  ["UV degradation","degradación por radiación UV",4,"mat"],["thermal cycling","ciclos térmicos",4,"mat"],["outgassing","desgasificación",5,"mat"],
+  ["energy storage","almacenamiento de energía",2,"energy"],["battery cell","celda de batería",2,"energy"],["specific energy (Wh/kg)","energía específica",4,"energy"],
+  ["energy density","densidad energética",3,"energy"],["cycle life","vida útil en ciclos",4,"energy"],["state of charge","estado de carga",4,"energy"],
+  ["capacity fade","pérdida de capacidad",4,"energy"],["discharge rate","velocidad de descarga",3,"energy"],["thermal runaway","embalamiento térmico",5,"energy"],
+  ["derating","reducción de prestaciones por seguridad",5,"energy"],["solar cell","célula solar",2,"energy"],["photovoltaic (PV)","fotovoltaico",3,"energy"],
+  ["cell efficiency","eficiencia de la célula",3,"energy"],["encapsulation","encapsulado",4,"energy"],["power budget","balance de potencia",4,"energy"],
+  ["electric propulsion","propulsión eléctrica",2,"prop"],["electric motor","motor eléctrico",1,"prop"],["motor controller (ESC)","variador, controlador del motor",3,"prop"],
+  ["torque","par motor",3,"prop"],["efficiency map","mapa de eficiencia",5,"prop"],["power-to-weight ratio","relación potencia-peso",4,"prop"],
+  ["supplier","proveedor",1,"soft"],["manufacturer","fabricante",2,"soft"],["procurement","compras, aprovisionamiento",3,"soft"],["lead time","plazo de entrega",3,"soft"],
+  ["quote","presupuesto, oferta de precio",2,"soft"],["minimum order quantity (MOQ)","cantidad mínima de pedido",4,"soft"],["to assess","evaluar",2,"soft"],
+  ["to verify","verificar, comprobar",2,"soft"],["reliable","fiable",2,"soft"],["robust","sólido, robusto",3,"soft"],["to take ownership","asumir la responsabilidad de algo",3,"soft"],
+  ["to build relationships","crear relaciones",2,"soft"],["to make informed decisions","tomar decisiones fundadas",3,"soft"],["due diligence","comprobación exhaustiva",5,"soft"],
+  ["to scale up","escalar, aumentar la producción",4,"soft"],["from development to delivery","del desarrollo a la entrega",4,"soft"]
+];
+
+/* Conversación guiada: llamada con un proveedor (se añade al final de la lista) */
+SCENARIOS.push({id:"supplier",icon:"🔋",title:"Llamada con un proveedor de baterías",l:3,role:"a sales engineer called Mark at a battery cell manufacturer, talking to an engineer who is evaluating your cells",you:"an engineer evaluating battery cells for a high-altitude platform",turns:[
+  {b:"Hello, this is Mark from VoltCell. Thanks for your interest in our new cells. How can I help?",t:"Preséntate y di que estás evaluando sus celdas para una plataforma de gran altitud.",tE:"Introduce yourself and say you're evaluating their cells for a high-altitude platform.",
+   k:[["evaluate","evaluating","assess","assessing","testing","test","looking at","interested in"],["cell","cells","battery","batteries"]],m:"Hi Mark. I'm an engineer at a company developing high-altitude platforms, and we're evaluating your new cells."},
+  {b:"Great. Our datasheet shows 350 watt-hours per kilo. Is that what you need?",t:"Pregunta en qué condiciones se midió ese dato (temperatura y velocidad de descarga).",tE:"Ask under what conditions that figure was measured (temperature and discharge rate).",
+   k:[["condition","conditions","temperature","discharge","rate","measured","tested"]],m:"It could be. Under what conditions was that measured? What temperature and discharge rate did you use?"},
+  {b:"That was at 25 degrees and a low discharge rate.",t:"Explica que tu plataforma trabaja a temperaturas muy bajas y pide datos a 20 grados bajo cero.",tE:"Explain that your platform works at very low temperatures and ask for data at minus twenty degrees.",
+   k:[["cold","low temperature","low temperatures","minus","below zero","freezing"]],m:"Our platform operates at very low temperatures. Could you send us test data at minus twenty degrees?"},
+  {b:"I'll check with our lab. Anything else?",t:"Pide diez muestras para hacer vuestros propios ensayos.",tE:"Ask for ten samples so you can run your own tests.",
+   k:[["sample","samples"]],m:"Yes, we'd like to order ten samples to run our own tests."},
+  {b:"No problem. The lead time is about four weeks.",t:"Da las gracias y di que le enviarás hoy los requisitos por correo.",tE:"Thank him and say you'll email him your requirements today.",
+   k:[["thank","thanks"],["email","e-mail","send","mail"]],m:"Thanks, Mark. I'll email you our requirements today."}]});
+
+/* Tarea de escritura: pedir datos y muestras (se añade al final de la lista) */
+WRITING.push({id:"supplierdata",l:3,icon:"📧",title:"Pide datos y muestras a un proveedor",titleE:"Ask a supplier for data and samples",
+  task:"Escribe a un fabricante de células solares: te interesa su producto, necesitas los datos de ensayo completos (con las condiciones de ensayo) y quieres pedir muestras para evaluarlas.",
+  taskE:"Write to a solar cell manufacturer: you're interested in their product, you need the full test data (including test conditions) and you'd like to order samples to evaluate them.",
+  min:60,
+  c:[["Te presentas y dices el motivo",["we are","i am","interested","evaluating","regarding","developing"],"You introduce yourself and give the reason"],
+     ["Pides los datos de ensayo",["test data","test results","datasheet","data"],"You ask for the test data"],
+     ["Mencionas las condiciones de ensayo",["condition","conditions","temperature"],"You mention the test conditions"],
+     ["Pides muestras",["sample","samples"],"You ask for samples"],
+     ["Cierras de forma educada",["regards","thank","look forward"],"You close politely"]],
+  m:"Dear Sir or Madam,\n\nI am an engineer at a company developing high-altitude, long-endurance platforms, and we are interested in your new solar cells. Before we can consider them, we need the full test data, including the test conditions for each value, especially temperature and irradiance. We would also like to order a small number of samples to evaluate them in our own laboratory. Could you let me know the price and lead time?\n\nThank you in advance. I look forward to hearing from you.\n\nKind regards"});
 /* Las palabras más frecuentes del inglés, en orden aproximado de frecuencia de uso. Formato: palabra|tipo|traducción. Añade las nuevas siempre al final. */
 const CORE_RAW = `the|det|el, la, los, las
 be|v|ser, estar
@@ -3071,6 +3227,21 @@ monthly|adj|mensual
 outstanding|adj|excepcional; pendiente
 permission|n|permiso
 rid|adj|get rid of = deshacerse de`;
+/* Pronunciación: datos derivados del CMU Pronouncing Dictionary.
+   Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
+   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+   following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of
+   conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+   THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY NOR ITS EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+   STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   Formato: palabra código (un carácter por fonema; los números marcan el acento). */
+const PRON_RAW = "a V0|abandon V0b@1ndV0n|ability V0bI1lV0ti2|able e1bV0l|about V0bW1t|above V0bV1v|abroad V0brO1d|absolute @1bsV0lu2t|absolutely @2bsV0lu1tli0|abuse V0bju1s|academic @2kV0dE1mI0k|academy V0k@1dV0mi0|accelerometer @0ksE2lR0a1mV0tR0|accept @0ksE1pt|acceptance @0ksE1ptV0ns|access @1ksE2s|accident @1ksV0dV0nt|accommodation V0ka2mV0de1SV0n|account V0kW1nt|accurate @1kjR0V0t|accuse V0kju1z|achieve V0Ci1v|achievement V0Ci1vmV0nt|acid @1sV0d|acquire V0kwY1R0|acquisition @2kwV0zI1SV0n|across V0krO1s|act @1kt|acting @1ktI0N|action @1kSV0n|active @1ktI0v|activity @0ktI1vV0ti0|actor @1ktR0|actual @1kCV0wV0l|actually @1kCu2V0li0|ad @1d|add @1d|added @1dV0d|addictive V0dI1ktI0v|addition V0dI1SV0n|additional V0dI1SV0nV0l|address @1drE2s|adhesive @0dhi1sI0v|adhesives @0dhi1sI0vz|administration @0dmI2nI0stre1SV0n|admire @0dmY1r|admit V0dmI1t|adopt V0da1pt|adult V0dV1lt|advance V0dv@1ns|advantage @0dv@1ntI0J|advantages @0dv@1ntI0JI0z|adventure @0dvE1nCR0|advertising @1dvR0tY2zI0N|advice @0dvY1s|aerospace E1ro0spe2s|aerotech E1ro0tE2k|affair V0fE1r|affect V0fE1kt|afford V0fO1rd|afraid V0fre1d|after @1ftR0|afternoon @2ftR0nu1n|again V0gE1n|against V0gE1nst|age e1J|agency e1JV0nsi0|agent e1JV0nt|ago V0go1|agree V0gri1|agreed V0gri1d|agreement V0gri1mV0nt|ahead V0hE1d|aid e1d|aileron e1lR0a2n|aim e1m|air E1r|aircraft E1rkr@2ft|airline E1rlY2n|airport E1rpO2rt|airspeed E1rspi2d|airworthiness E1rwR2Di0nV0s|aisle Y1l|album @1lbV0m|alcohol @1lkV0ha2l|alive V0lY1v|all O1l|allergic V0lR1JI0k|allow V0lW1|ally @1lY0|almost O1lmo2st|alone V0lo1n|along V0lO1N|already O0lrE1di0|alright O2lrY1t|also O1lso0|alternative O0ltR1nV0tI0v|although O2lDo1|altimeter @0ltI1mV0tR0|altitude @1ltV0tu2d|always O1lwe2z|am @1m|amazing V0me1zI0N|among V0mV1N|amount V0mW1nt|an @1n|analysis V0n@1lV0sV0s|ancient e1nCV0nt|and V0nd|angel e1nJV0l|angle @1NgV0l|angry @1Ngri0|animal @1nV0mV0l|ankle @1NkV0l|anniversary @2nV0vR1sR0i0|announce V0nW1ns|annoy V0ny1|annual @1nju0V0l|another V0nV1DR0|answer @1nsR0|antenna @0ntE1nV0|any E1ni0|anybody E1ni0bV0di0|anymore E2ni0mO1r|anyone E1ni0wV2n|anything E1ni0TI2N|anyway E1ni0we2|anywhere E1ni0wE2r|apart V0pa1rt|apartment V0pa1rtmV0nt|apologise V0pa1lV0JY2z|app @1p|apparently V0pE1rV0ntli0|appeal V0pi1l|appear V0pI1r|appearance V0pI1rV0ns|apple @1pV0l|application @2plV0ke1SV0n|apply V0plY1|appoint V0py1nt|appointment V0py1ntmV0nt|appreciate V0pri1Si0e2t|approach V0pro1C|appropriate V0pro1pri0V0t|approval V0pru1vV0l|approve V0pru1v|approximately V0pra1ksV0mV0tli0|april e1prV0l|are a1r|area E1ri0V0|areal E1ri0V0l|areas E1ri0V0z|argue a1rgju0|argument a1rgjV0mV0nt|arguments a1rgjV0mV0nts|arm a1rm|army a1rmi0|around R0W1nd|arrange R0e1nJ|arranged R0e1nJd|arrangement R0e1nJmV0nt|arrest R0E1st|arrive R0Y1v|arrived R0Y1vd|art a1rt|article a1rtV0kV0l|artist a1rtV0st|as @1z|aside V0sY1d|ask @1sk|asked @1skt|aspect @1spE2kt|assembly V0sE1mbli0|assess V0sE1s|assessment V0sE1smV0nt|asset @1sE2t|assist V0sI1st|assistance V0sI1stV0ns|assistant V0sI1stV0nt|associate V0so1si0V0t|association V0so2si0e1SV0n|assume V0su1m|at @1t|athlete @1Tli2t|atlas @1tlV0s|attach V0t@1C|attack V0t@1k|attempt V0tE1mpt|attend V0tE1nd|attention V0tE1nSV0n|attitude @1tV0tu2d|attorney V0tR1ni0|attract V0tr@1kt|attractive V0tr@1ktI0v|attracts V0tr@1kts|audience a1di0V0ns|audit O1dI0t|august a1gV0st|aunt @1nt|auntie @1nti0|author O1TR0|authority V0TO1rV0ti0|automatically O2tV0m@1tI0kli0|autopilot O1to0pY2lV0t|available V0ve1lV0bV0l|average @1vR0I0J|avionics e2vi0a1nI0ks|avoid V0vy1d|award V0wO1rd|aware V0wE1r|away V0we1|awesome a1sV0m|baby be1bi0|back b@1k|background b@1kgrW2nd|backup b@1kV2p|bad b@1d|bag b@1g|balance b@1lV0ns|ball bO1l|ballpark bO1lpa2rk|ban b@1n|band b@1nd|bank b@1Nk|bar ba1r|bargain ba1rgV0n|base be1s|baseball be1sbO1l|based be1st|basic be1sI0k|basically be1sI0kli0|basis be1sV0s|basketball b@1skV0tbO2l|bath b@1T|bathroom b@1Tru2m|batteries b@1tR0i0z|battery b@1tR0i0|battle b@1tV0l|bay be1|be bi1|beach bi1C|bear bE1r|beat bi1t|beaten bi1tV0n|beautiful bju1tV0fV0l|beauty bju1ti0|because bI0kO1z|become bI0kV1m|bed bE1d|bedroom bE1dru2m|been bI1n|beer bI1r|before bI0fO1r|begin bI0gI1n|beginning bI0gI1nI0N|behavior bI0he1vjR0|behind bI0hY1nd|being bi1I0N|belief bI0li1f|believe bI0li1v|believed bI0li1vd|bell bE1l|belong bI0lO1N|below bI0lo1|belt bE1lt|bench bE1nC|benefit bE1nV0fI0t|benefits bE1nV0fI0ts|berry bE1ri0|besides bI0sY1dz|best bE1st|bet bE1t|better bE1tR0|between bI0twi1n|beyond bI0a1nd|bid bI1d|big bI1g|bigger bI1gR0|biggest bI1gV0st|bike bY1k|bill bI1l|billion bI1ljV0n|bird bR1d|birth bR1T|birthday bR1Tde2|bit bI1t|bite bY1t|black bl@1k|blame ble1m|bless blE1s|blind blY1nd|block bla1k|blog blO1g|blood blV1d|blow blo1|blue blu1|board bO1rd|boarding bO1rdI0N|boat bo1t|body ba1di0|bolster bo1lstR0|bomb ba1m|bond ba1nd|bonding ba1ndI0N|bone bo1n|bonus bo1nV0s|book bU1k|booked bU1kt|booking bU1kI0N|boot bu1t|border bO1rdR0|bored bO1rd|born bO1rn|borrow ba1ro2|boss ba1s|both bo1T|bother ba1DR0|bottle ba1tV0l|bottom ba1tV0m|bowl bo1l|box ba1ks|boy by1|boyfriend by1frE2nd|brain bre1n|brainer bre1nR0|branch br@1nC|brand br@1nd|bread brE1d|break bre1k|breakfast brE1kfV0st|breaking bre1kI0N|breath brE1T|bridge brI1J|brief bri1f|bright brY1t|brilliant brI1ljV0nt|bring brI1N|brittle brI1tV0l|broad brO1d|broke bro1k|broken bro1kV0n|brother brV1DR0|brothers brV1DR0z|brought brO1t|brown brW1n|brush brV1S|budget bV1JI0t|bug bV1g|build bI1ld|building bI1ldI0N|built bI1lt|bunch bV1nC|burn bR1n|bury bE1ri0|bus bV1s|business bI1znV0s|busy bI1zi0|but bV1t|button bV1tV0n|buy bY1|by bY1|bye bY1|c si1|cable ke1bV0l|cake ke1k|call kO1l|called kO1ld|calm ka1m|came ke1m|camera k@1mR0V0|camp k@1mp|campaign k@0mpe1n|campus k@1mpV0s|can k@1n|can't k@1nt|canceled k@1nsV0ld|cancelled k@1nsV0ld|cancer k@1nsR0|candidate k@1ndV0de0t|cannot k@1na0t|cap k@1p|capability ke2pV0bI1lV0ti0|capable ke1pV0bV0l|capacitor kV0p@1sV0tR0|capacity kV0p@1sV0ti0|capital k@1pV0tV0l|captain k@1ptV0n|capture k@1pCR0|car ka1r|carbon ka1rbV0n|card ka1rd|care kE1r|career kR0I1r|careful kE1rfV0l|carefully kE1rfV0li0|carpet ka1rpV0t|carried k@1ri0d|carry k@1ri0|case ke1s|cash k@1S|cast k@1st|cat k@1t|catalogue k@1tV0lO0g|catch k@1C|category k@1tV0gO2ri0|caught ka1t|cause ka1z|caveat ke1vi0@2t|celebrate sE1lV0bre2t|cell sE1l|cells sE1lz|cent sE1nt|center sE1ntR0|central sE1ntrV0l|centre sE1ntR0|century sE1nCR0i0|ceremony sE1rV0mo2ni0|certain sR1tV0n|certainly sR1tV0nli0|certification sR2tV0fV0ke1SV0n|chain Ce1n|chair CE1r|chairman CE1rmV0n|challenge C@1lV0nJ|challenges C@1lV0nJI0z|chamber Ce1mbR0|champion C@1mpi0V0n|championship C@1mpi0V0nSI2p|chance C@1ns|change Ce1nJ|channel C@1nV0l|chapter C@1ptR0|character kE1rI0ktR0|charge Ca1rJ|charity CE1rI0ti0|chart Ca1rt|chase Ce1s|chat C@1t|cheap Ci1p|cheaper Ci1pR0|cheat Ci1t|check CE1k|checked CE1kt|cheer CI1r|cheers CI1rz|cheese Ci1z|chemical kE1mV0kV0l|chest CE1st|chicken CI1kV0n|chief Ci1f|child CY1ld|childhood CY1ldhU2d|chip CI1p|choice Cy1s|choose Cu1z|choosing Cu1zI0N|chores CO1rz|chose Co1z|chosen Co1zV0n|christmas krI1smV0s|church CR1C|cinema sI1nV0mV0|circle sR1kV0l|circuit sR1kV0t|circumstance sR1kV0mst@2ns|citizen sI1tV0zV0n|city sI1ti0|civil sI1vV0l|claim kle1m|claims kle1mz|class kl@1s|classic kl@1sI0k|clean kli1n|clear klI1r|clearly klI1rli0|click klI1k|client klY1V0nt|climate klY1mV0t|climb klY1m|close klo1s|closed klo1zd|closely klo1sli0|closer klo1sR0|clothes klo1Dz|cloud klW1d|club klV1b|coach ko1C|coast ko1st|coat ko1t|coating ko1tI0N|coatings ko1tI0Nz|cockpit ka1kpI2t|code ko1d|coffee ka1fi0|coin ky1n|cold ko1ld|colleague ka1li0g|colleagues ka1li0gz|collect kV0lE1kt|collection kV0lE1kSV0n|college ka1lI0J|color kV1lR0|colour kV1lR0|com ka1m|combat ka1mb@0t|combination ka2mbV0ne1SV0n|combine ka1mbY0n|combining kV0mbY1nI0N|come kV1m|comedy ka1mV0di0|comes kV1mz|comfortable kV1mfR0tV0bV0l|comic ka1mI0k|command kV0m@1nd|commander kV0m@1ndR0|comment ka1mE0nt|commercial kV0mR1SV0l|commission kV0mI1SV0n|commit kV0mI1t|commitment kV0mI1tmV0nt|commitments kV0mI1tmV0nts|committee kV0mI1ti0|commodity kV0ma1dV0ti0|common ka1mV0n|communication kV0mju2nV0ke1SV0n|community kV0mju1nV0ti0|commuting kV0mju1tI0N|company kV1mpV0ni2|compare kV0mpE1r|compared kV0mpE1rd|comparison kV0mpE1rV0sV0n|compete kV0mpi1t|competition ka2mpV0tI1SV0n|competitive kV0mpE1tV0tI0v|complain kV0mple1n|complaint kV0mple1nt|complete kV0mpli1t|completely kV0mpli1tli0|complex ka1mplE0ks|component kV0mpo1nV0nt|components kV0mpo1nV0nts|composite kV0mpa1zV0t|composites kV0mpa1zV0ts|computer kV0mpju1tR0|computers kV0mpju1tR0z|concentrate ka1nsV0ntre2t|concept ka1nsE0pt|concern kV0nsR1n|concert ka1nsR0t|conclude kV0nklu1d|conclusion kV0nklu1ZV0n|condition kV0ndI1SV0n|conditions kV0ndI1SV0nz|conduct ka1ndV0kt|conference ka1nfR0V0ns|confidence ka1nfV0dV0ns|confirm kV0nfR1m|confirmation ka2nfR0me1SV0n|confirmed kV0nfR1md|conflict ka1nflI0kt|confuse kV0nfju1z|connect kV0nE1kt|connection kV0nE1kSV0n|connections kV0nE1kSV0nz|cons ka1nz|consequence ka1nsV0kwV0ns|consider kV0nsI1dR0|consist kV0nsI1st|constant ka1nstV0nt|constantly ka1nstV0ntli0|constipated ka1nstV0pe2tV0d|constitution ka2nstV0tu1SV0n|constraints kV0nstre1nts|construction kV0nstrV1kSV0n|consumer kV0nsu1mR0|contact ka1nt@2kt|contacted ka1nt@2ktI0d|contain kV0nte1n|content ka1ntE0nt|contest ka1ntE0st|context ka1ntE0kst|continue kV0ntI1nju0|contract ka1ntr@2kt|contribute kV0ntrI1bju0t|contribution ka2ntrV0bju1SV0n|control kV0ntro1l|controller kV0ntro1lR0|convention kV0nvE1nSV0n|conversation ka2nvR0se1SV0n|convert ka1nvR0t|convince kV0nvI1ns|cook kU1k|cooking kU1kI0N|cool ku1l|coordinate ko0O1rdV0nV0t|cop ka1p|cope ko1p|copy ka1pi0|core kO1r|corner kO1rnR0|corporate kO1rpR0V0t|corporation kO2rpR0e1SV0n|correct kR0E1kt|corrected kR0E1ktV0d|cost ka1st|costs ka1sts|cots ka1ts|could kU1d|council kW1nsV0l|count kW1nt|counter kW1ntR0|country kV1ntri0|couple kV1pV0l|course kO1rs|court kO1rt|cousin kV1zV0n|cover kV1vR0|coverage kV1vR0V0J|crack kr@1k|crash kr@1S|crazy kre1zi0|cream kri1m|create kri0e1t|creation kri0e1SV0n|creative kri0e1tI0v|credit krE1dV0t|creep kri1p|crew kru1|crime krY1m|criminal krI1mV0nV0l|crisis krY1sV0s|criteria krY0tI1ri0V0|critic krI1tI0k|critical krI1tI0kV0l|criticism krI1tI0sI2zV0m|croissant kwa2sa1nt|cross krO1s|crowd krW1d|crown krW1n|cry krY1|cultural kV1lCR0V0l|culture kV1lCR0|cumbersome kV1mbR0sV0m|cup kV1p|cure kjU1r|current kR1V0nt|currently kR1V0ntli0|custom kV1stV0m|customer kV1stV0mR0|cut kV1t|cute kju1t|cuts kV1ts|cv si2vi1|cycle sY1kV0l|cycles sY1kV0lz|cycling sY1kV0lI0N|d di1|dad d@1d|daily de1li0|damage d@1mV0J|damaged d@1mV0Jd|dance d@1ns|danger de1nJR0|dangerous de1nJR0V0s|dark da1rk|data de1tV0|database de1tV0be2s|datalink de1tV0lI2Nk|datasheet de1tV0Si2t|date de1t|dates de1ts|daughter dO1tR0|day de1|days de1z|dead dE1d|deadline dE1dlY2n|deadlines dE1dlY2nz|deal di1l|dealt dE1lt|dear dI1r|death dE1T|debate dV0be1t|debt dE1t|decade dE0ke1d|december dI0sE1mbR0|decide dI2sY1d|decision dI0sI1ZV0n|decisions dI0sI1ZV0nz|declare dI0klE1r|decline dI0klY1n|dedicate dE1dV0ke2t|deep di1p|defeat dI0fi1t|defend dI0fE1nd|defense dI0fE1ns|define dI0fY1n|definitely dE1fV0nV0tli0|definition dE2fV0nI1SV0n|degradation dE2grV0de1SV0n|degree dI0gri1|degrees dI0gri1z|delay dI0le1|delayed dI0le1d|delays dI0le1z|delegate dE1lV0ge2t|delete dI0li1t|delicious dI0lI1SV0s|deliver dI0lI1vR0|delivered dI0lI1vR0d|delivery dI0lI1vR0i0|demand dI0m@1nd|democracy dI0ma1krV0si0|demonstrate dE1mV0nstre2t|den dE1n|density dE1nsV0ti0|dentist dE1ntV0st|deny dI0nY1|department dI0pa1rtmV0nt|depend dI0pE1nd|depends dI0pE1ndz|depression dI0prE1SV0n|depth dE1pT|deputy dE1pjV0ti0|derating di0re1tI0N|describe dI0skrY1b|description dI0skrI1pSV0n|deserve dI0zR1v|design dI0zY1n|designer dI0zY1nR0|designs dI0zY1nz|desire dI0zY1R0|despite dI0spY1t|dessert dI0zR1t|destroy dI0stry1|detail dI0te1l|detailed dI0te1ld|details dI0te1lz|determine dV0tR1mV0n|develop dI0vE1lV0p|developer dI0vE1lV0pR0|developing dI0vE1lV0pI0N|development dI0vE1lV0pmV0nt|device dI0vY1s|diamond dY1mV0nd|did dI1d|didn't dI1dV0nt|die dY1|diet dY1V0t|difference dI1fR0V0ns|different dI1fR0V0nt|difficult dI1fV0kV0lt|difficulty dI1fV0kV0lti0|dig dI1g|digging dI1gI0N|digital dI1JV0tV0l|diligence dI1lV0JV0ns|dinner dI1nR0|direct dR0E1kt|direction dR0E1kSV0n|directly dR0E1ktli0|director dR0E1ktR0|dirty dR1ti0|disagreed dI0sV0gri1d|disappear dI2sV0pI1r|disappoint dI2sV0py1nt|discharge dI0sCa1rJ|discover dI0skV1vR0|discovery dI0skV1vR0i0|discuss dI0skV1s|discussing dI0skV1sI0N|discussion dI0skV1SV0n|disease dI0zi1z|disengaged dI0sI0nge1Jd|disorder dI0sO1rdR0|display dI0sple1|dispute dI0spju1t|distance dI1stV0ns|distribution dI2strV0bju1SV0n|district dI1strI0kt|divide dI0vY1d|division dI0vI1ZV0n|divorce dI0vO1rs|dizzy dI1zi0|do du1|doctor da1ktR0|document da1kjV0mE0nt|documents da1kjV0mV0nts|does dV1z|doesn't dV1zV0nt|dog dO1g|dollar da1lR0|domestic dV0mE1stI0k|don't do1nt|done dV1n|door dO1r|dot da1t|double dV1bV0l|doubt dW1t|down dW1n|download dW1nlo2d|dozen dV1zV0n|draft dr@1ft|drag dr@1g|dragon dr@1gV0n|drama dra1mV0|draw drO1|drawing drO1I0N|dream dri1m|dress drE1s|drink drI1Nk|drinks drI1Nks|drive drY1v|driver drY1vR0|drop dra1p|drug drV1g|drunk drV1Nk|dry drY1|due du1|dumb dV1m|during dU1rI0N|duty du1ti0|each i1C|ear i1r|earlier R1li0R0|early R1li0|earn R1n|earth R1T|easier i1zi0R0|easily i1zV0li0|east i1st|eastern i1stR0n|easy i1zi0|eat i1t|economic E2kV0na1mI0k|economy I0ka1nV0mi0|edge E1J|edinburgh E1dV0nbR0o0|edit E1dV0t|edition V0dI1SV0n|editor E1dV0tR0|education E2JV0ke1SV0n|educational E2JV0ke1SV0nV0l|effect I0fE1kt|effective I0fE1ktI0v|efficiency I0fI1SV0nsi0|efficient I0fI1SV0nt|effort E1fR0t|egg E1g|eggs E1gz|eight e1t|either i1DR0|elect I0lE1kt|election I0lE1kSV0n|electric I0lE1ktrI0k|electrical I0lE1ktrI0kV0l|electromagnetic I2lE2ktro0m@0gnE1tI0k|electronic I2lE2ktra1nI0k|electronics I2lE2ktra1nI0ks|element E1lV0mV0nt|elevator E1lV0ve2tR0|eleven I0lE1vV0n|else E1ls|email i0me1l|embarrassed I0mbE1rV0st|emerge I0mR1J|emergency I0mR1JV0nsi0|emma E1mV0|emotion I0mo1SV0n|emotional I0mo1SV0nV0l|empire E1mpY0R0|employ E0mply1|employee E0mply1i0|employer E0mply1R0|employment E0mply1mV0nt|empty E1mpti0|enable E0ne1bV0l|encapsulation I0nk@2psjV0le1SV0n|encounter I0nkW1ntR0|encourage E0nkR1I0J|end E1nd|ending E1ndI0N|endurance E1ndR0V0ns|enemy E1nV0mi0|energy E1nR0Ji0|engage E0nge1J|engine E1nJV0n|engineer E1nJV0nI1r|engineering E1nJV0nI1rI0N|engineers E1nJV0nI1rz|english I1NglI0S|enjoy E2nJy1|enjoyed E2nJy1d|enough I0nV1f|ensure E0nSU1r|entail E0nte1l|enter E1ntR0|enterprise E1ntR0prY2z|entertainment E2ntR0te1nmV0nt|entire I0ntY1R0|entirely I0ntY1R0li0|entry E1ntri0|environment I0nvY1rV0nmV0nt|environmental I0nvY2rV0nmE1ntV0l|episode E1pV0so2d|equal i1kwV0l|equipment I0kwI1pmV0nt|equivalent I0kwI1vV0lV0nt|era E1rV0|errands E1rV0ndz|error E1rR0|escape I0ske1p|especially V0spE1Sli0|essential E0sE1nSV0l|establish I0st@1blI0S|estate I0ste1t|estimate E1stV0mV0t|euros ju1ro2z|evaluate I0v@1lju0e2t|evaluating I0v@1lju0e2tI0N|evaluation I0v@2lju0e1SV0n|evans E1vV0nz|even i1vI0n|evening i1vnI0N|event I0vE1nt|eventually I0vE1nCV0wV0li0|ever E1vR0|every E1vR0i0|everybody E1vri0ba2di0|everyone E1vri0wV2n|everything E1vri0TI2N|everywhere E1vri0wE2r|evidence E1vV0dV0ns|evil i1vV0l|evolves I0va1lvz|exact I0gz@1kt|exactly I0gz@1ktli0|exam I0gz@1m|examine I0gz@1mI0n|example I0gz@1mpV0l|excellent E1ksV0lV0nt|except I0ksE1pt|exception I0ksE1pSV0n|exchange I0ksCe1nJ|excite I0ksY1t|exciting I0ksY1tI0N|exclusive I0ksklu1sI0v|excuse I0kskju1s|executive I0gzE1kjV0tI0v|exercise E1ksR0sY2z|exhausted I0gzO1stI0d|exist I0gzI1st|existence E0gzI1stV0ns|exit E1gzI0t|expand I0ksp@1nd|expansion I0ksp@1nSV0n|expect I0kspE1kt|expectation E2kspE0kte1SV0n|expectations E2kspE0kte1SV0nz|expecting I0kspE1ktI0N|expense I0kspE1ns|expensive I0kspE1nsI0v|experience I0kspI1ri0V0ns|experiment I0kspE1rV0mV0nt|expert E1kspR0t|explain I0ksple1n|explanation E2ksplV0ne1SV0n|explore I0ksplO1r|expose I0kspo1z|express I0ksprE1s|expression I0ksprE1SV0n|extend I0kstE1nd|extension I0kstE1nSV0n|external I0kstR1nV0l|extra E1kstrV0|extreme E0kstri1m|extremely E0kstri1mli0|eye Y1|fabric f@1brI0k|face fe1s|faced fe1st|facility fV0sI1lI0ti0|fact f@1kt|factor f@1ktR0|factory f@1ktR0i0|fade fe1d|fail fe1l|fails fe1lz|failure fe1ljR0|fair fE1r|fairly fE1rli0|faith fe1T|fake fe1k|fall fO1l|false fO1ls|familiar fV0mI1ljR0|family f@1mV0li0|famous fe1mV0s|fan f@1n|fantastic f@0nt@1stI0k|fantasy f@1ntV0si0|far fa1r|farm fa1rm|farmer fa1rmR0|fascinating f@1sV0ne2tI0N|fashion f@1SV0n|fast f@1st|faster f@1stR0|fat f@1t|father fa1DR0|fatigue fV0ti1g|fault fO1lt|faulty fO1lti0|favor fe1vR0|favorite fe1vR0I0t|favourite fe1vR0I0t|fear fI1r|feasible fi1zV0bV0l|feature fi1CR0|february fE1bjV0wE2ri0|fee fi1|feed fi1d|feedback fi1db@2k|feel fi1l|feeling fi1lI0N|fellow fE1lo0|female fi1me2l|festival fE1stV0vV0l|fever fi1vR0|few fju1|fibre fY1bR0|field fi1ld|fifteen fI0fti1n|fifth fI1fT|fifty fI1fti0|fight fY1t|fighter fY1tR0|figure fI1gjR0|figures fI1gjR0z|file fY1l|fill fI1l|film fI1lm|final fY1nV0l|finally fY1nV0li0|finance fV0n@1ns|financial fV0n@1nSV0l|find fY1nd|finding fY1ndI0N|fine fY1n|finger fI1NgR0|finish fI1nI0S|finished fI1nI0St|fire fY1R0|fireworks fY1rwR2ks|firm fR1m|first fR1st|fish fI1S|fit fI1t|fits fI1ts|fitting fI1tI0N|five fY1v|fix fI1ks|fixing fI1ksI0N|flag fl@1g|flash fl@1S|flat fl@1t|flatmates fl@1tme2ts|flats fl@1ts|flesh flE1S|flight flY1t|flights flY1ts|flood flV1d|floor flO1r|flour flW1R0|flow flo1|flower flW1R0|fly flY1|focus fo1kV0s|folk fo1k|follow fa1lo0|following fa1lo0I0N|food fu1d|fool fu1l|foot fU1t|football fU1tbO2l|for fO1r|force fO1rs|foreign fO1rV0n|forest fO1rV0st|forever fR0E1vR0|forget fR0gE1t|form fO1rm|format fO1rm@2t|former fO1rmR0|forty fO1rti0|forward fO1rwR0d|found fW1nd|foundation fW0nde1SV0n|founder fW1ndR0|four fO1r|fourth fO1rT|fox fa1ks|frame fre1m|free fri1|freedom fri1dV0m|freeze fri1z|french frE1nC|frequently fri1kwV0ntli0|fresh frE1S|friday frY1di0|friend frE1nd|friendly frE1ndli0|friends frE1ndz|from frV1m|front frV1nt|fruit fru1t|fuel fju1V0l|full fU1l|fully fU1li0|fun fV1n|function fV1NkSV0n|fund fV1nd|funding fV1ndI0N|funny fV1ni0|further fR1DR0|fuselage fju1sV0la2J|future fju1CR0|gain ge1n|gained ge1nd|gallery g@1lR0i0|game ge1m|gap g@1p|gaps g@1ps|garcia ga2rsi1V0|garden ga1rdV0n|gas g@1s|gate ge1t|gather g@1DR0|gear gI1r|gender JE1ndR0|gene Ji1n|general JE1nR0V0l|generally JE1nR0V0li0|generate JE1nR0e2t|generation JE2nR0e1SV0n|genuinely JE1njV0wV0nli0|get gE1t|gets gE1ts|getting gE1tI0N|ghost go1st|ghosted go1stI0d|giant JY1V0nt|gift gI1ft|girl gR1l|girlfriend gR1lfrE2nd|give gI1v|glad gl@1d|glass gl@1s|global glo1bV0l|gluten glu1tV0n|go go1|goal go1l|god ga1d|goes go1z|going go1I0N|gold go1ld|golden go1ldV0n|golf ga1lf|gonna ga1nV0|good gU1d|goodbye gU2dbY1|got ga1t|government gV1vR0mV0nt|governor gV1vR0nR0|grab gr@1b|grace gre1s|grade gre1d|graduate gr@1JV0wV0t|grand gr@1nd|grant gr@1nt|graphic gr@1fI0k|great gre1t|green gri1n|ground grW1nd|grounding grW1ndI0N|group gru1p|grow gro1|growth gro1T|grudge grV1J|guarantee gE2rV0nti1|guaranteed gE2rV0nti1d|guard ga1rd|guess gE1s|guest gE1st|guide gY1d|guilty gI1lti0|guitar gI0ta1r|gun gV1n|guy gY1|gym JI1m|gyroscope JY1rV0sko2p|habit h@1bV0t|had h@1d|hadn't h@1dV0nt|hair hE1r|half h@1f|hall hO1l|hamper h@1mpR0|hand h@1nd|handed h@1ndV0d|handle h@1ndV0l|hands h@1ndz|hang h@1N|happen h@1pV0n|happy h@1pi0|hard ha1rd|harder ha1rdR0|hardly ha1rdli0|hardware ha1rdwE2r|harness ha1rnV0s|has h@1z|hat h@1t|hate he1t|have h@1v|haven't h@1vV0nt|he hi1|he's hi1z|head hE1d|headache hE1de2k|headhunted hE1dhV2ntI0d|heading hE1dI0N|headphones hE1dfo2nz|health hE1lT|healthy hE1lTi0|hear hi1r|heard hR1d|hearing hi1rI0N|heart ha1rt|heat hi1t|heaven hE1vV0n|heavily hE1vV0li0|heavy hE1vi0|height hY1t|hello hV0lo1|help hE1lp|helping hE1lpI0N|helps hE1lps|her hR1|here hi1r|here's hI1rz|hero hI1ro0|herself hR0sE1lf|hey he1|hi hY1|hide hY1d|high hY1|highlands hY1lV0ndz|highlight hY1lY2t|highly hY1li0|highway hY1we2|hiking hY1kI0N|hill hI1l|him hI1m|himself hI0msE1lf|hip hI1p|hire hY1R0|his hI1z|historical hI0stO1rI0kV0l|history hI1stR0i0|hit hI1t|hold ho1ld|hole ho1l|holiday ha1lV0de2|holidays ha1lV0de2z|holy ho1li0|home ho1m|honest a1nV0st|honestly a1nV0stli0|honor a1nR0|hook hU1k|hope ho1p|hopefully ho1pfV0li0|horse hO1rs|hospital ha1spI2tV0l|host ho1st|hot ha1t|hotel ho0tE1l|hour W1R0|hours W1R0z|house hW1s|household hW1sho2ld|housing hW1zI0N|how hW1|how's hW1z|however hW2E1vR0|huge hju1J|human hju1mV0n|hundred hV1ndrV0d|hung hV1N|hunter hV1ntR0|hurt hR1t|hurts hR1ts|husband hV1zbV0nd|hut hV1t|hybrid hY1brV0d|i Y1|i'd Y1d|i'll Y1l|i'm Y1m|i've Y1v|ice Y1s|idea Y0di1V0|ideal Y0di1l|identified Y0dE1ntV0fY2d|identify Y0dE1ntV0fY2|identity Y0dE1ntI0ti2|idiot I1di2V0t|if I1f|ignore I2gnO1r|ill I1l|illegal I2li1gV0l|image I1mV0J|imagine I2m@1JV0n|immediate I2mi1di2V0t|immediately I2mi1di2V0tli0|immigrant I1mV0grV0nt|impact I2mp@1kt|implement I1mplV0mV0nt|importance I2mpO1rtV0ns|important I2mpO1rtV0nt|impossible I2mpa1sV0bV0l|improve I2mpru1v|improved I2mpru1vd|improvement I2mpru1vmV0nt|improves I2mpru1vz|in I0n|inch I1nC|incident I1nsV0dV0nt|include I2nklu1d|included I2nklu1dV0d|including I2nklu1dI0N|income I1nkV2m|incomplete I2nkV0mpli1t|inconvenience I2nkV0nvi1njV0ns|incorrect I2nkR0E1kt|increase I2nkri1s|incredible I2nkrE1dV0bV0l|indeed I2ndi1d|independence I2ndI0pE1ndV0ns|independent I2ndI0pE1ndV0nt|index I1ndE0ks|indicate I1ndV0ke2t|individual I2ndV0vI1JV0wV0l|industrial I2ndV1stri0V0l|industry I1ndV0stri0|inertial I2nR1SV0l|influence I1nflu0V0ns|inform I2nfO1rm|information I2nfR0me1SV0n|informed I2nfO1rmd|infrastructure I2nfrV0strV1kCR0|initial I2nI1SV0l|initiative I2nI1SV0tI0v|injure I1nJR0|injury I1nJR0i0|inner I1nR0|innovation I2nV0ve1SV0n|ins I1nz|inside I2nsY1d|inspire I2nspY1r|install I2nstO1l|instance I1nstV0ns|instead I2nstE1d|institute I1nstV0tu2t|institution I2nstI0tu1SV0n|instruction I2nstrV1kSV0n|instrument I1nstrV0mV0nt|insurance I2nSU1rV0ns|integration I2ntV0gre1SV0n|intelligence I2ntE1lV0JV0ns|intend I2ntE1nd|intention I2ntE1nCV0n|interaction I2ntR0@1kSV0n|interest I1ntrV0st|interested I1ntrV0stI0d|interesting I1ntrV0stI0N|interference I2ntR0fI1rV0ns|interior I2ntI1ri0R0|internal I2ntR1nV0l|international I2ntR0n@1SV0nV0l|internet I1ntR0nE2t|internship I1ntR0nSI2p|interview I1ntR0vju2|into I1ntu0|introduce I2ntrV0du1s|introduced I2ntrV0du1st|introduction I2ntrV0dV1kSV0n|invest I2nvE1st|investigate I2nvE1stV0ge2t|investigation I2nvE2stV0ge1SV0n|investment I2nvE1stmV0nt|invite I2nvY1t|inviting I2nvY1tI0N|involve I2nva1lv|involved I2nva1lvd|ireland Y1R0lV0nd|iron Y1R0n|irradiance I0re1di0V0ns|is I1z|island Y1lV0nd|isn't I1zV0nt|issue I1Su0|it I1t|it's I1ts|item Y1tV0m|its I1ts|itself I2tsE1lf|jail Je1l|jet JE1t|job Ja1b|join Jy1n|joint Jy1nt|joke Jo1k|journal JR1nV0l|journalist JR1nV0lV0st|journey JR1ni0|joy Jy1|judge JV1J|july Ju2lY1|jump JV1mp|june Ju1n|junior Ju1njR0|just JV1st|justice JV1stV0s|keep ki1p|kept kE1pt|key ki1|keys ki1z|kick kI1k|kicks kI1ks|kid kI1d|kill kI1l|kilo kI1lo2|kilos ki1lo2z|kind kY1nd|kinda kI1ndV0|king kI1N|kingdom kI1NdV0m|kiss kI1s|kit kI1t|kitchen kI1CV0n|knackered n@1kR0d|knee ni1|knew nu1|knife nY1f|knock na1k|know no1|knowledge na1lV0J|known no1n|knows no1z|lab l@1b|label le1bV0l|laboratory l@1brV0tO2ri0|labour le1bR0|lack l@1k|lady le1di0|lag l@1g|lake le1k|lamp l@1mp|land l@1nd|landing l@1ndI0N|landlord l@1ndlO2rd|landscapes l@1ndske2ps|lane le1n|language l@1NgwV0J|languages l@1NgwV0JV0z|large la1rJ|largely la1rJli0|last l@1st|lasts l@1sts|late le1t|lately le1tli0|later le1tR0|latte la1te2|latter l@1tR0|laugh l@1f|launch lO1nC|laura lO1rV0|law lO1|lawyer lO1jR0|lay le1|layer le1R0|layover le1o2vR0|lead lE1d|leader li1dR0|leadership li1dR0SI2p|leading li1dI0N|league li1g|leak li1k|learn lR1n|learned lR1nd|learning lR1nI0N|learnt lR1nt|least li1st|leave li1v|leaving li1vI0N|lecture lE1kCR0|left lE1ft|leftovers lE1fto2vR0z|leg lE1g|legal li1gV0l|legend lE1JV0nd|legislation lE2JV0sle1SV0n|lend lE1nd|length lE1NkT|less lE1s|lesson lE1sV0n|let lE1t|let's lE1ts|letter lE1tR0|level lE1vV0l|leverage lE1vR0I0J|library lY1brE0ri2|license lY1sV0ns|lie lY1|life lY1f|lift lI1ft|light lY1t|lights lY1ts|lightweight lY1twe1t|like lY1k|likely lY1kli0|likewise lY1kwY2z|limit lI1mV0t|line lY1n|link lI1Nk|lion lY1V0n|lip lI1p|list lI1st|listed lI1stV0d|listen lI1sV0n|listened lI1sV0nd|listening lI1sV0nI0N|literally lI1tR0V0li0|literature lI1tR0V0CR0|little lI1tV0l|live lY1v|lived lI1vd|living lI1vI0N|load lo1d|loan lo1n|local lo1kV0l|locate lo1ke2t|location lo0ke1SV0n|loch la1k|lock la1k|log lO1g|london lV1ndV0n|lonely lo1nli0|long lO1N|longer lO1NgR0|look lU1k|looking lU1kI0N|looks lU1ks|lose lu1z|loss lO1s|lost lO1st|lot la1t|loud lW1d|love lV1v|lovely lV1vli0|lover lV1vR0|loves lV1vz|low lo1|lower lo1R0|luck lV1k|lucky lV1ki0|luggage lV1gV0J|lunch lV1nC|m E1m|machine mV0Si1n|mad m@1d|madam m@1dV0m|made me1d|madrid mV0drI1d|magazine m@1gV0zi2n|magic m@1JI0k|mail me1l|main me1n|mainly me1nli0|maintain me0nte1n|maintenance me1ntV0nV0ns|major me1JR0|majority mV0JO1rV0ti0|make me1k|male me1l|man m@1n|manage m@1nV0J|managed m@1nV0Jd|management m@1nV0JmV0nt|manager m@1nV0JR0|manner m@1nR0|manufacturer m@2njV0f@1kCR0R0|manufacturer's m@2njV0f@1kCR0R0z|manufacturing m@2njV0f@1kCR0I0N|many mE1ni0|map m@1p|mar ma1r|march ma1rC|margin ma1rJV0n|margins ma1rJV0nz|marine mR0i1n|mark ma1rk|market ma1rkV0t|marketing ma1rkV0tI0N|marriage mE1rI0J|marry mE1ri0|mass m@1s|massive m@1sI0v|master m@1stR0|match m@1C|mate me1t|material mV0tI1ri0V0l|materials mV0tI1ri0V0lz|math m@1T|matter m@1tR0|matters m@1tR0z|maximum m@1ksV0mV0m|may me1|maybe me1bi0|mayor me1R0|me mi1|meal mi1l|meals mi1lz|mean mi1n|means mi1nz|measure mE1ZR0|measured mE1ZR0d|measurement mE1ZR0mV0nt|meat mi1t|medal mE1dV0l|media mi1di0V0|medical mE1dV0kV0l|medication mE2dV0ke1SV0n|medicine mE1dV0sV0n|medium mi1di0V0m|meet mi1t|meeting mi1tI0N|meetings mi1tI0Nz|member mE1mbR0|memory mE1mR0i0|men mE1n|mental mE1ntV0l|mention mE1nSV0n|mess mE1s|message mE1sV0J|met mE1t|metal mE1tV0l|method mE1TV0d|middle mI1dV0l|might mY1t|mile mY1l|military mI1lV0tE2ri0|milk mI1lk|million mI1ljV0n|mind mY1nd|minimise mI1nV0mY2z|minimum mI1nV0mV0m|mining mY1nI0N|minister mI1nV0stR0|ministry mI1nV0stri0|minor mY1nR0|minority mY0nO1rV0ti0|minus mY1nV0s|minute mI1nV0t|minutes mI1nV0ts|mirror mI1rR0|miss mI1s|missed mI1st|mission mI1SV0n|mistake mI0ste1k|mix mI1ks|mobile mo1bV0l|mode mo1d|model ma1dV0l|modern ma1dR0n|mom ma1m|moment mo1mV0nt|monday mV1ndi0|money mV1ni0|monitor ma1nV0tR0|monster ma1nstR0|month mV1nT|monthly mV1nTli0|months mV1nTs|moody mu1di0|moon mu1n|more mO1r|morning mO1rnI0N|morning's mO1rnI0Nz|most mo1st|mostly mo1stli0|mother mV1DR0|mother's mV1DR0z|motion mo1SV0n|motivated mo1tV0ve2tV0d|motor mo1tR0|motorway mo1tR0we2|mount mW1nt|mountain mW1ntV0n|mouse mW1s|mouth mW1T|move mu1v|moved mu1vd|movement mu1vmV0nt|movie mu1vi0|movies mu1vi0z|mr mI1stR0|ms mI1z|much mV1C|multimeter mV1lti0mi2tR0|multiple mV1ltV0pV0l|murder mR1dR0|muscle mV1sV0l|museum mju0zi1V0m|music mju1zI0k|musical mju1zI0kV0l|must mV1st|my mY1|myself mY2sE1lf|mystery mI1stR0i0|nail ne1l|name ne1m|narrow nE1ro0|narrowed nE1ro0d|nation ne1SV0n|national n@1SV0nV0l|native ne1tI0v|natural n@1CR0V0l|nature ne1CR0|navigation n@1vV0ge1SV0n|navy ne1vi0|near nI1r|nearby nI1rbY1|nearly nI1rli0|necessary nE1sV0sE2ri0|neck nE1k|need ni1d|negative nE1gV0tI0v|negotiate nV0go1Si0e2t|neighbor ne1bR0|neighbour ne1bR0|neighbourhood ne1bR0hU2d|neither ni1DR0|ness nE1s|net nE1t|network nE1twR2k|never nE1vR0|new nu1|news nu1z|newspaper nu1zpe2pR0|next nE1kst|nice nY1s|night nY1t|nights nY1ts|nine nY1n|no no1|nobody no1ba2di2|noise ny1z|none nV1n|noon nu1n|nor nO1r|normal nO1rmV0l|normally nO1rmV0li0|north nO1rT|northern nO1rDR0n|nose no1z|not na1t|note no1t|nothing nV1TI0N|notice no1tV0s|novel na1vV0l|november no0vE1mbR0|now nW1|nuclear nu1kli0R0|number nV1mbR0|numbers nV1mbR0z|numerous nu1mR0V0s|nurse nR1s|o'clock V0kla1k|object a1bJE0kt|objective V0bJE1ktI0v|observe V0bzR1v|obtain V0bte1n|obvious a1bvi0V0s|obviously a1bvi0V0sli0|occasion V0ke1ZV0n|occur V0kR1|ocean o1SV0n|october a0kto1bR0|odd a1d|of V1v|off O1f|offer O1fR0|offers O1fR0z|office O1fI0s|officer O1fV0sR0|official V0fI1SV0l|officially V0fI1SV0li0|offs O1fs|often O1fV0n|oh o1|oil y1l|ok o1ke1|old o1ld|on a1n|once wV1ns|one wV1n|ones wV1nz|online O1nlY2n|only o1nli0|onto a1ntu0|open o1pV0n|opens o1pV0nz|operate a1pR0e2t|operates a1pR0e2ts|operation a2pR0e1SV0n|operator a1pR0e2tR0|opinion V0pI1njV0n|opinions V0pI1njV0nz|opponent V0po1nV0nt|opportunities a2pR0tu1nV0ti0z|opportunity a2pR0tu1nV0ti0|oppose V0po1z|opposite a1pV0zV0t|opposition a2pV0zI1SV0n|option a1pSV0n|options a1pSV0nz|or O1r|orange O1rV0nJ|order O1rdR0|organisation O2rgV0nV0ze1SV0n|organise O1rgV0nY2z|organised O1rgV0nY2zd|organization O2rgV0nV0ze1SV0n|organize O1rgV0nY2z|organized O1rgV0nY2zd|origin O1rV0JV0n|original R0I1JV0nV0l|originally R0I1JV0nV0li0|oscilloscope O2sI1lV0sko2p|other V1DR0|otherwise V1DR0wY2z|ought O1t|our W1R0|ourselves W0R0sE1lvz|out W1t|outcome W1tkV2m|outdoor W1tdO2r|outgassing W1tg@2sI0N|outgoing W1tgo2I0N|outside W1tsY1d|outstanding W2tst@1ndI0N|oven V1vV0n|over o1vR0|overall o1vR0O2l|overcome o1vR0kV2m|overwhelmed o2vR0wE1lmd|own o1n|owner o1nR0|ownership o1nR0SI2p|pack p@1k|package p@1kV0J|page pe1J|pain pe1n|painkiller pe1nkI2lR0|paint pe1nt|pair pE1r|pan p@1n|panel p@1nV0l|paper pe1pR0|parent pE1rV0nt|parents pE1rV0nts|park pa1rk|part pa1rt|partial pa1rSV0l|participate pa0rtI1sV0pe2t|particular pR0tI1kjV0lR0|particularly pa2rtI1kjV0lR0li0|partner pa1rtnR0|partners pa1rtnR0z|partnership pa1rtnR0SI2p|parts pa1rts|party pa1rti0|pass p@1s|passenger p@1sV0nJR0|passport p@1spO2rt|password p@1swR2d|past p@1st|path p@1T|patient pe1SV0nt|pattern p@1tR0n|pay pe1|payload pe1lo2d|payment pe1mV0nt|peace pi1s|peak pi1k|pen pE1n|penalty pE1nV0lti0|people pi1pV0l|per pR1|percent pR0sE1nt|perfect pR0fE1kt|perfectly pR1fV0ktli0|perform pR0fO1rm|performance pR0fO1rmV0ns|perhaps pR0h@1ps|period pI1ri0V0d|permanent pR1mV0nV0nt|permission pR0mI1SV0n|permit pR0mI1t|person pR1sV0n|personal pR1sI0nV0l|personality pR2sV0n@1lI0ti0|personally pR1sV0nV0li0|personnel pR2sV0nE1l|perspective pR0spE1ktI0v|pet pE1t|phase fe1z|phone fo1n|photo fo1to2|photograph fo1tV0gr@2f|photovoltaic fo2tV0vo2lte1I0k|photovoltaics fo2tV0vo2lte1I0ks|physical fI1zI0kV0l|pick pI1k|picture pI1kCR0|piece pi1s|pilot pY1lV0t|pink pI1Nk|pitch pI1C|pizza pi1tsV0|place ple1s|plain ple1n|plan pl@1n|plane ple1n|planet pl@1nV0t|planning pl@1nI0N|plans pl@1nz|plant pl@1nt|plastic pl@1stI0k|plate ple1t|platform pl@1tfO2rm|platform's pl@1tfO2rmz|platforms pl@1tfO2rmz|play ple1|player ple1R0|please pli1z|pleasure plE1ZR0|plenty plE1nti0|plot pla1t|plus plV1s|pocket pa1kV0t|point py1nt|points py1nts|police pV0li1s|policy pa1lV0si0|political pV0lI1tV0kV0l|politician pa2lV0tI1SV0n|politics pa1lV0tI2ks|poll po1l|pool pu1l|poor pu1r|pop pa1p|popular pa1pjV0lR0|population pa2pjV0le1SV0n|port pO1rt|portion pO1rSV0n|position pV0zI1SV0n|positive pa1zV0tI0v|possibility pa2sV0bI1lV0ti2|possible pa1sV0bV0l|possibly pa1sV0bli0|post po1st|posted po1stI0d|postponed po0stpo1nd|potential pV0tE1nSV0l|pound pW1nd|power pW1R0|powerful pW1R0fV0l|practical pr@1ktV0kV0l|practice pr@1ktV0s|practise pr@1ktI0s|pray pre1|prefer prV0fR1|pregnant prE1gnV0nt|prepare pri0pE1r|prepreg pri1prE2g|prescription prV0skrI1pSV0n|presence prE1zV0ns|present prE1zV0nt|preserve prV0zR1v|president prE1zV0dE2nt|press prE1s|pressure prE1SR0|pretend pri0tE1nd|pretty prI1ti0|prevent prI0vE1nt|previous pri1vi0V0s|previously pri1vi0V0sli0|price prY1s|prices prY1sV0z|primary prY1mE2ri0|prime prY1m|prince prI1ns|princess prI1nsE0s|principal prI1nsV0pV0l|principle prI1nsV0pV0l|print prI1nt|printed prI1ntI0d|prior prY1R0|priorities prY0O1rV0ti0z|prioritise prY0O1rV0tY2z|prioritising prY0O1rV0tY2zI0N|priority prY0O1rV0ti0|prison prI1zV0n|prisoner prI1zV0nR0|private prY1vV0t|prize prY1z|probably pra1bV0bli2|probation pro0be1SV0n|problem pra1blV0m|problems pra1blV0mz|procedure prV0si1JR0|proceed prV0si1d|process pra1sE2s|processes pra1sE0sV0z|procurement pro0kjU1rmV0nt|produce prV0du1s|producer prV0du1sR0|product pra1dV0kt|production prV0dV1kSV0n|professional prV0fE1SV0nV0l|professionally prV0fE1SV0nV0li0|professor prV0fE1sR0|profile pro1fY2l|profit pra1fV0t|program pro1gr@2m|programme pro1gr@2m|progress pra1grE2s|project pra1JE0kt|projects pra1JE0kts|promise pra1mV0s|promising pra1mV0sI0N|promote prV0mo1t|promotion prV0mo1SV0n|proof pru1f|propeller prV0pE1lR0|proper pra1pR0|properly pra1pR0li0|property pra1pR0ti0|proposal prV0po1zV0l|propose prV0po1z|propulsion prV0pV1lSV0n|pros pro1z|protect prV0tE1kt|protection prV0tE1kSV0n|protein pro1ti2n|protest pro1tE2st|proud prW1d|prove pru1v|proven pru1vV0n|provide prV0vY1d|province pra1vV0ns|public pV1blI0k|publication pV2blI0ke1SV0n|publish pV1blI0S|pull pU1l|pump pV1mp|punch pV1nC|purchase pR1CV0s|pure pjU1r|purpose pR1pV0s|pursue pR0su1|push pU1S|pushes pU1SV0z|put pU1t|pyrenees pI1rV0i0z|qualification kwa2lV0fV0ke1SV0n|qualify kwa1lV0fY2|quality kwa1lV0ti0|quantity kwa1ntV0ti0|quarter kwO1rtR0|queen kwi1n|question kwE1sCV0n|questioning kwE1sCV0nI0N|questions kwE1sCV0nz|quick kwI1k|quickly kwI1kli0|quiet kwY1V0t|quit kwI1t|quite kwY1t|quote kwo1t|r a1r|race re1s|radiation re2di0e1SV0n|radio re1di0o2|rail re1l|railway re1lwe2|rain re1n|raining re1nI0N|rains re1nz|raise re1z|ran r@1n|random r@1ndV0m|rang r@1N|range re1nJ|rank r@1Nk|rare rE1r|rarely rE1rli0|rate re1t|rather r@1DR0|rating re1tI0N|ratio re1Si0o2|raw ra1|ray re1|re re1|reach ri1C|reaction ri0@1kSV0n|read rE1d|reader ri1dR0|reading ri1dI0N|ready rE1di0|real ri1l|realise ri1V0lY2z|realistic ri2V0lI1stI0k|reality ri2@1lV0ti2|realize ri1V0lY2z|really rI1li0|reason ri1zV0n|reasonable ri1zV0nV0bV0l|recall ri1kO2l|receipt rI0si1t|receive rV0si1v|recent ri1sV0nt|recently ri1sV0ntli0|recognize rE1kV0gnY2z|recommend rE2kV0mE1nd|recommendation rE2kV0mV0nde1SV0n|record rV0kO1rd|recover rI0kV1vR0|recovery rI0kV1vri0|recurring rI0kR1I0N|red rE1d|redesign ri2dI0zY1n|reduce rV0du1s|reduced rV0du1st|reduces rV0du1sV0z|redundancy rI0dV1ndV0nsi0|refer rV0fR1|reference rE1fR0V0ns|reflect rI0flE1kt|reform rV0fO1rm|refund rI0fV1nd|refuse rV0fju1z|regard rI0ga1rd|regarding rI0ga1rdI0N|regards rI0ga1rdz|region ri1JV0n|regional ri1JV0nV0l|register rE1JI0stR0|regular rE1gjV0lR0|regularly rE1gjV0lR0li0|regulation rE2gjV0le1SV0n|reject rI0JE1kt|relate rI0le1t|relation ri0le1SV0n|relationship ri0le1SV0nSI2p|relationships ri0le1SV0nSI2ps|relative rE1lV0tI0v|relatively rE1lV0tI0vli0|relax rI0l@1ks|release ri0li1s|relevant rE1lV0vV0nt|reliable rI0lY1V0bV0l|relief rI0li1f|religion rI0lI1JV0n|religious rI0lI1JV0s|rely rI0lY1|remain rI0me1n|remember rI0mE1mbR0|remind ri0mY1nd|remove ri0mu1v|rent rE1nt|rented rE1ntI0d|repair rI0pE1r|repeat rI0pi1t|replace ri2ple1s|replaceable ri2ple1sV0bV0l|replacement rI0ple1smV0nt|reply rI0plY1|report ri0pO1rt|reporter rI0pO1rtR0|represent rE2prI0zE1nt|representative rE2prV0zE1ntV0tI0v|reproduce ri2prV0du1s|republic ri0pV1blV0k|request rI0kwE1st|require ri2kwY1R0|requirement rI0kwY1rmV0nt|requirements rI0kwY1rmV0nts|reschedule ri0skE1Ju0l|rescue rE1skju0|research ri0sR1C|researcher ri1sR0CR0|reservation rE2zR0ve1SV0n|reserve rI0zR1v|resident rE1zI0dV0nt|resilient rI0zI1ljV0nt|resin rE1zV0n|resistance rI0zI1stV0ns|resistor rI0zI1stR0|resolution rE2zV0lu1SV0n|resource ri1sO0rs|respect rI0spE1kt|respond rI0spa1nd|response rI0spa1ns|responsibility ri0spa2nsV0bI1lV0ti0|responsible ri0spa1nsV0bV0l|rest rE1st|restaurant rE1stR0a2nt|restore rI0stO1r|result rI0zV1lt|results rI0zV1lts|retail ri1te2l|retain rI0te1n|retire rI0tY1r|retirement ri0tY1R0mV0nt|return rI0tR1n|reveal rI0vi1l|revenue rE1vV0nu2|review ri2vju1|revolution rE2vV0lu1SV0n|reward rI0wO1rd|rice rY1s|rich rI1C|rid rI1d|ride rY1d|rig rI1g|right rY1t|rigorous rI1gR0V0s|rigour rI1gR0|ring rI1N|rip rI1p|rise rY1z|risk rI1sk|river rI1vR0|road ro1d|robust ro0bV1st|rock ra1k|role ro1l|roll ro1l|roof ru1f|room ru1m|root ru1t|rose ro1z|round rW1nd|route ru1t|row ro1|royal ry1V0l|rudder rV1dR0|ruin ru1V0n|rule ru1l|run rV1n|runaway rV1nV0we2|running rV1nI0N|runway rV1nwe2|rural rU1rV0l|rush rV1S|s E1s|sad s@1d|safe se1f|safety se1fti0|said sE1d|saint se1nt|salary s@1lR0i0|sale se1l|sales se1lz|salt sO1lt|sam s@1m|same se1m|sample s@1mpV0l|samples s@1mpV0lz|sand s@1nd|sarah sE1rV0|satisfy s@1tV0sfY2|saturday s@1tR0di0|sauce sO1s|save se1v|say se1|scale ske1l|scare skE1r|scene si1n|schedule skE1JU0l|scheme ski1m|school sku1l|science sY1V0ns|scientific sY2V0ntI1fI0k|scientist sY1V0ntI0st|score skO1r|scotland ska1tlV0nd|scream skri1m|screen skri1n|sea si1|seal si1l|search sR1C|season si1zV0n|seat si1t|second sE1kV0nd|secondary sE1kV0ndE2ri0|secret si1krV0t|secretary sE1krV0tE2ri0|section sE1kSV0n|sector sE1ktR0|secure sI0kjU1r|security sI0kjU1rV0ti0|see si1|seed si1d|seeing si1I0N|seek si1k|seem si1m|seen si1n|select sV0lE1kt|selection sV0lE1kSV0n|sell sE1l|send sE1nd|sending sE1ndI0N|senior si1njR0|sense sE1ns|sensible sE1nsV0bV0l|sensor sE1nsR0|sensors sE1nsR0z|sent sE1nt|sentence sE1ntV0ns|separate sE1pR0e2t|september sE0ptE1mbR0|series sI1ri0z|serious sI1ri0V0s|seriously sI1ri0V0sli0|serve sR1v|served sR1vd|server sR1vR0|service sR1vV0s|session sE1SV0n|set sE1t|setting sE1tI0N|settle sE1tV0l|setup sE1tV2p|seven sE1vV0n|several sE1vrV0l|severe sV0vI1r|shadow S@1do2|shake Se1k|shall S@1l|shame Se1m|shape Se1p|share SE1r|shared SE1rd|she Si1|sheep Si1p|sheet Si1t|shelf SE1lf|shell SE1l|shielding Si1ldI0N|shift SI1ft|ship SI1p|shirt SR1t|shock Sa1k|shoe Su1|shoes Su1z|shoot Su1t|shop Sa1p|shopping Sa1pI0N|short SO1rt|shortcoming SO1rtkV2mI0N|shortlisted SO1rtlI2stI0d|shortly SO1rtli0|shot Sa1t|should SU1d|shoulder So1ldR0|show So1|showed So1d|shower SW1R0|shows So1z|shut SV1t|shy SY1|sick sI1k|side sY1d|sight sY1t|sightseeing sY1tsi1I0N|sign sY1n|signal sI1gnV0l|signals sI1gnV0lz|signed sY1nd|significant sV0gnI1fI0kV0nt|significantly sI0gnI1fI0kV0ntli0|silver sI1lvR0|similar sI1mV0lR0|simple sI1mpV0l|simply sI1mpli0|sin sI1n|since sI1ns|sing sI1N|singer sI1NR0|single sI1NgV0l|sink sI1Nk|sir sR1|sister sI1stR0|sit sI1t|site sY1t|sitting sI1tI0N|situation sI2Cu0e1SV0n|six sI1ks|size sY1z|skill skI1l|skills skI1lz|skin skI1n|sky skY1|sleep sli1p|slide slY1d|slightly slY1tli0|slip slI1p|slow slo1|slowly slo1li0|small smO1l|smaller smO1lR0|smart sma1rt|smell smE1l|smile smY1l|smoke smo1k|smoking smo1kI0N|sneezes sni1zI0z|snow sno1|so so1|social so1SV0l|society sV0sY1V0ti0|soft sa1ft|software sO1ftwE2r|solar so1lR0|solder sa1dR0|soldier so1lJR0|solid sa1lV0d|solution sV0lu1SV0n|solve sa1lv|solving sa1lvI0N|some sV1m|somebody sV1mba2di0|somehow sV1mhW2|someone sV1mwV2n|something sV1mTI0N|sometimes sV0mtY1mz|somewhat sV1mwV1t|somewhere sV1mwE2r|son sV1n|song sO1N|soon su1n|sooner su1nR0|sore sO1r|sorry sa1ri0|sort sO1rt|soul so1l|sound sW1nd|sounds sW1ndz|source sO1rs|sources sO1rsV0z|south sW1T|southern sV1DR0n|space spe1s|spain spe1n|spanish sp@1nI0S|speak spi1k|speaker spi1kR0|speaking spi1kI0N|special spE1SV0l|specialist spE1SV0lV0st|species spi1Si0z|specific spV0sI1fI0k|specifically spV0sI1fI0kli0|specification spE2sI0fI0ke1SV0n|specifications spE2sV0fV0ke1SV0nz|speech spi1C|speed spi1d|spell spE1l|spend spE1nd|spicy spY1si0|spin spI1n|spirit spI1rV0t|split splI1t|sponsor spa1nsR0|sport spO1rt|sports spO1rts|spot spa1t|sprain spre1n|spread sprE1d|spring sprI1N|squad skwa1d|square skwE1r|stadium ste1di0V0m|staff st@1f|stage ste1J|stall stO1l|stand st@1nd|standard st@1ndR0d|standards st@1ndR0dz|star sta1r|start sta1rt|started sta1rtI0d|starter sta1rtR0|starving sta1rvI0N|state ste1t|statement ste1tmV0nt|station ste1SV0n|statistic stV0tI1stI0k|status st@1tV0s|stay ste1|stayed ste1d|steal sti1l|steam sti1m|steel sti1l|step stE1p|steps stE1ps|stick stI1k|stiffness stI1fnV0s|still stI1l|stock sta1k|stone sto1n|stop sta1p|storage stO1rV0J|store stO1r|storm stO1rm|story stO1ri0|straight stre1t|strange stre1nJ|strategy str@1tV0Ji0|stratosphere str@1tV0sfI2r|stream stri1m|streamline stri1mlY2n|street stri1t|strength strE1NkT|strengths strE1NkTs|stress strE1s|stretch strE1C|strike strY1k|string strI1N|strip strI1p|strong strO1N|strongest strO1NgV0st|structure strV1kCR0|struggle strV1gV0l|stubborn stV1bR0n|student stu1dV0nt|studied stV1di0d|studio stu1di0o2|study stV1di0|stuff stV1f|stupid stu1pV0d|style stY1l|subject sV0bJE1kt|submit sV0bmI1t|submitted sV0bmI1tI0d|subsystem sV1bsI2stV0m|succeed sV0ksi1d|success sV0ksE1s|successful sV0ksE1sfV0l|such sV1C|suddenly sV1dV0nli0|suffer sV1fR0|sugar SU1gR0|suggest sV0JE1st|suggested sV0JE1stI0d|suggestion sV0JE1sCV0n|suicide su1V0sY2d|suit su1t|suitcase su1tke2s|sum sV1m|summer sV1mR0|sun sV1n|sunday sV1nde2|super su1pR0|supplier sV0plY1R0|supplier's sV0plY1R0z|suppliers sV0plY1R0z|supply sV0plY1|support sV0pO1rt|supporter sV0pO1rtR0|suppose sV0po1z|supreme sV0pri1m|sure SU1r|surely SU1rli0|surface sR1fV0s|surgery sR1JR0i0|surprise sR0prY1z|surround sR0W1nd|survey sR0ve1|survive sR0vY1v|sus sV1s|sushi su1Si0|suspect sV0spE1kt|swamped swO1mpt|swear swE1r|sweet swi1t|swim swI1m|switch swI1C|sympathetic sI2mpV0TE1tI0k|symptoms sI1mptV0mz|system sI1stV0m|systems sI1stV0mz|table te1bV0l|tablets t@1blV0ts|tag t@1g|tail te1l|take te1k|taken te1kV0n|takes te1ks|taking te1kI0N|tale te1l|talent t@1lV0nt|talk tO1k|talking tO1kI0N|tall tO1l|tank t@1Nk|tape te1p|target ta1rgV0t|task t@1sk|tasks t@1sks|taste te1st|tax t@1ks|taylor te1lR0|tea ti1|teach ti1C|teacher ti1CR0|team ti1m|teams ti1mz|teamwork ti1mwR2k|tear tE1r|tech tE1k|technical tE1knI0kV0l|technique tE0kni1k|technologies tE0kna1lV0Ji0z|technology tE0kna1lV0Ji0|teen ti1n|telemetry tV0lE1mV0tri0|television tE1lV0vI2ZV0n|tell tE1l|temperature tE1mprV0CR0|temperatures tE1mprV0CR0z|temple tE1mpV0l|ten tE1n|tend tE1nd|tennis tE1nV0s|tensile tE1nsV0l|term tR1m|terrible tE1rV0bV0l|territory tE1rI0tO2ri0|test tE1st|tested tE1stI0d|testing tE1stI0N|tests tE1sts|text tE1kst|th ti1e1C|than D@1n|thank T@1Nk|thanks T@1Nks|that D@1t|that's D@1ts|the DV0|theatre Ti1V0tR0|their DE1r|them DE1m|theme Ti1m|themselves DE0msE1lvz|then DE1n|theory TI1ri0|therapy TE1rV0pi0|there DE1r|there's DE1rz|therefore DE1rfO2r|thermal TR1mV0l|these Di1z|they De1|thin TI1n|thing TI1N|things TI1Nz|think TI1Nk|third TR1d|thirty TR1di2|this DI1s|thorough TR1o0|those Do1z|though Do1|thought TO1t|thousand TW1zV0nd|thread TrE1d|threat TrE1t|threaten TrE1tV0n|three Tri1|threw Tru1|thrilled TrI1ld|throat Tro1t|through Tru1|throughout Tru0W1t|throw Tro1|thrust TrV1st|thursday TR1zde2|thus DV1s|ticket tI1kV0t|tie tY1|tiger tY1gR0|tight tY1t|till tI1l|time tY1m|tin tI1n|tiny tY1ni0|tip tI1p|tired tY1R0d|title tY1tV0l|to tu1|today tV0de1|together tV0gE1DR0|toilet ty1lV0t|toilets ty1lV0ts|told to1ld|tolerance ta1lR0V0ns|tom ta1m|tomorrow tV0ma1ro2|ton tV1n|tone to1n|tonight tV0nY1t|too tu1|took tU1k|tool tu1l|top ta1p|topic ta1pI0k|torque tO1rk|total to1tV0l|totally to1tV0li0|touch tV1C|tough tV1f|tour tU1r|tournament tU1rnV0mV0nt|toward tV0wO1rd|towards tV0wO1rdz|tower tW1R0|town tW1n|toy ty1|traceability tre2sV0bI1lI0ti0|track tr@1k|trade tre1d|trading tre1dI0N|tradition trV0dI1SV0n|traditional trV0dI1SV0nV0l|traffic tr@1fI0k|trail tre1l|train tre1n|transaction tr@0nz@1kSV0n|transfer tr@0nsfR1|transferable tr@0nsfR1V0bV0l|transponder tr@0nspa1ndR0|transport tr@0nspO1rt|transportation tr@2nspR0te1SV0n|trap tr@1p|travel tr@1vV0l|travelling tr@1vV0lI0N|treat tri1t|treatment tri1tmV0nt|tree tri1|trend trE1nd|trial trY1V0l|trick trI1k|trip trI1p|troop tru1p|trouble trV1bV0l|troubleshoot trV1bV0lSu2t|troubleshooting trV1bV0lSu2tI0N|truck trV1k|true tru1|truly tru1li0|trust trV1st|trusting trV1stI0N|truth tru1T|try trY1|tube tu1b|tuesday tu1zdi0|tune tu1n|turn tR1n|turned tR1nd|twenty twE1nti0|twice twY1s|twin twI1n|two tu1|type tY1p|typical tI1pV0kV0l|typically tI1pI0kli0|ultimate V1ltV0mV0t|ultimately V1ltV0mV0tli0|unable V0ne1bV0l|uncertain V0nsR1tV0n|under V1ndR0|understand V2ndR0st@1nd|understanding V2ndR0st@1ndI0N|unfortunately V0nfO1rCV0nV0tli0|union ju1njV0n|unique ju0ni1k|unit ju1nV0t|universe ju1nV0vR2s|university ju2nV0vR1sV0ti0|unknown V0nno1n|unless V0nlE1s|unlike V0nlY1k|until V0ntI1l|up V1p|update V0pde1t|updated V0pde1tI0d|upgrade V0pgre1d|upon V0pa1n|upper V1pR0|upset V0psE1t|urban R1bV0n|urge R1J|us V1s|use ju1s|used ju1zd|useful ju1sfV0l|user ju1zR0|usual ju1ZV0wV0l|usually ju1ZV0wV0li0|uv ju1vi1|valencia vV0lE1nsi0V0|validation v@2lV0de1SV0n|valley v@1li0|valuable v@1ljV0bV0l|value v@1lju0|values v@1lju0z|van v@1n|variety vR0Y1V0ti0|various vE1ri0V0s|vary vE1ri0|ve vi1|vehicle vi1hI0kV0l|verified vE1rV0fY2d|verify vE1rV0fY2|version vR1ZV0n|versus vR1sV0s|very vE1ri0|vessel vE1sV0l|vest vE1st|veteran vE1tR0V0n|via vY1V0|victim vI1ktV0m|victory vI1ktR0i0|video vI1di0o0|view vju1|views vju1z|village vI1lV0J|violence vY1V0lV0ns|virus vY1rV0s|visa vi1zV0|vision vI1ZV0n|visit vI1zI0t|visiting vI1zI0tI0N|visitor vI1zI0tR0|voice vy1s|voltage vo1ltV0J|voltcell vo1ltsE2l|volume va1lju0m|volunteer va2lV0ntI1r|vote vo1t|voter vo1tR0|voucher vW1CR0|wage we1J|wait we1t|waiter we1tR0|waiting we1tI0N|wake we1k|waking we1kI0N|walk wO1k|wall wO1l|wanna wa1nV0|want wa1nt|war wO1r|warm wO1rm|warn wO1rn|warning wO1rnI0N|warrior wO1ri0R0|was wa1z|wash wa1S|washing wa1SI0N|waste we1st|watch wa1C|watched wa1Ct|water wO1tR0|watt wa1t|wave we1v|way we1|waypoint we1py2nt|we wi1|we'd wi1d|we'll wi1l|we're wi1r|we've wi1v|weak wi1k|weakness wi1knV0s|weaknesses wi1knV0sV0z|wealth wE1lT|weapon wE1pV0n|wear wE1r|weather wE1DR0|web wE1b|website wE1bsY2t|wedding wE1dI0N|wednesday wE1nzdi0|week wi1k|weekend wi1kE2nd|weekly wi1kli0|weeks wi1ks|weigh we1|weighing we1I0N|weighs we1z|weight we1t|weird wI1rd|welcome wE1lkV0m|well wE1l|went wE1nt|were wR1|west wE1st|western wE1stR0n|wet wE1t|what wV1t|what's wV1ts|whatever wV2tE1vR0|wheel wi1l|when wE1n|whenever wE0nE1vR0|where wE1r|where's wE1rz|whether wE1DR0|which wI1C|while wY1l|white wY1t|who hu1|whole ho1l|whom hu1m|whose hu1z|why wY1|wide wY1d|widely wY1dli0|wife wY1f|wifi wY1fY2|wild wY1ld|will wI1l|willing wI1lI0N|win wI1n|wind wY1nd|window wI1ndo0|wine wY1n|wing wI1N|winner wI1nR0|winter wI1ntR0|wire wY1R0|wiring wY1rI0N|wise wY1z|wish wI1S|with wI1D|within wI0DI1n|without wI0TW1t|witness wI1tnV0s|woke wo1k|wolf wU1lf|woman wU1mV0n|won't wo1nt|wonder wV1ndR0|wonderful wV1ndR0fV0l|wood wU1d|word wR1d|work wR1k|worked wR1kt|worker wR1kR0|working wR1kI0N|workload wR1klo2d|works wR1ks|workshop wR1kSa2p|world wR1ld|worldwide wR1ldwY1d|worried wR1i0d|worries wR1i0z|worry wR1i0|worse wR1s|worst wR1st|worth wR1T|would wU1d|wouldn't wU1dV0nt|wound wW1nd|wow wW1|write rY1t|writer rY1tR0|writing rY1tI0N|written rI1tV0n|wrong rO1N|yard ja1rd|yards ja1rdz|yaw jO1|yeah j@1|year jI1r|years jI1rz|yellow jE1lo0|yes jE1s|yesterday jE1stR0de2|yet jE1t|york jO1rk|you ju1|you'd ju1d|you'll ju1l|you're jU1r|young jV1N|your jO1r|yours jU1rz|yourself jR0sE1lf|youth ju1T|zaragoza za0ra0go1zV0|zero zI1ro0|zone zo1n";
 /* ---------- utilidades ---------- */
 const $ = (s, r=document) => r.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -3154,7 +3325,7 @@ const TOPICS = {
   interview:{name:"Entrevistas de trabajo",icon:"💼"}, vocab:{name:"Vocabulario",icon:"📖"}, verbs:{name:"Tiempos verbales",icon:"⏳"},
   phrasal:{name:"Phrasal verbs",icon:"🧩"}, expr:{name:"Expresiones y slang",icon:"😎",min:2}, ask:{name:"Formular preguntas",icon:"❓"},
   order:{name:"Orden de la frase",icon:"🔀"}, conn:{name:"Conectores",icon:"🔗"}, listen:{name:"Comprensión auditiva",icon:"🎧"},
-  tech:{name:"Inglés técnico (aviónica)",icon:"🛩️"}
+  tech:{name:"Inglés técnico (aviónica)",icon:"🛩️"}, pron:{name:"Pronunciación",icon:"🗣️"}
 };
 const STORE_KEY = "lift-english-v2";
 function defState(){
@@ -3181,6 +3352,9 @@ CORE.forEach((d,i)=>addItem("vocab","c",d[2],d,i));
 FALSE_FRIENDS.forEach((d,i)=>addItem("vocab","f",d[3],d,i));
 JOB_VOCAB.forEach((d,i)=>addItem("interview","v",d[2],d,i));
 INTERVIEW.forEach((d,i)=>{ if(!d.tech) addItem("interview","q",d.l,d,i); });
+OFFER_Q.forEach((d,i)=>addItem("interview","o",d.l,d,i));
+OFFER_VOCAB.forEach((d,i)=>addItem("interview","w",d[2],d,i));
+const offerOn = () => S.settings.offer !== "off";
 TECH.forEach((d,i)=>addItem("tech","t",d[2],d,i));
 PHRASAL.forEach((d,i)=>addItem("phrasal","p",d[2],d,i));
 EXPR.forEach((d,i)=>addItem("expr","e",d[2],d,i));
@@ -3271,7 +3445,8 @@ function makeEx(it, r, opt={}){
     case "tech": return exWord(it,r,TSUBS[d[3]]);
     case "interview":
       if(it.kind==="v") return exWord(it,r,tr("Vocabulario de entrevistas","Job interview vocabulary"));
-      return {it,type:"open",title:TT.interview[0],titleH:tt("interview"),big:d.q,say:d.q,tip:tr(d.tip,d.tipE),phrases:d.p,sol:d.m,full:d.m,ai:"interview"};
+      if(it.kind==="w") return exWord(it,r,tr("Tu oferta","Your job offer")+": "+tr(...OFFER_SUBS_T[d[3]]));
+      return {it,type:"open",title:TT.interview[0],titleH:tt("interview"),sub:it.kind==="o"?tr("Tu oferta","Your job offer"):undefined,big:d.q,say:d.q,tip:tr(d.tip,d.tipE),phrases:d.p,sol:d.m,full:d.m,ai:"interview"};
     case "phrasal":
       if(r()<0.6) return {it,type:"mcq",title:TT.phrMean[0],titleH:tt("phrMean"),big:d[0],say:d[0],opts:shuffle([d[1],...distract(it,3,1,r)],r),answer:d[1],sol:`${d[0]} = ${d[1]}`,example:d[3],full:d[3]};
       return {it,type:"mcq",title:TT.phrWhich[0],titleH:tt("phrWhich"),big:d[1],opts:shuffle([d[0],...distract(it,3,0,r)],r),answer:d[0],sol:`${d[0]} = ${d[1]}`,example:d[3],full:d[3]};
@@ -3301,6 +3476,7 @@ function makeEx(it, r, opt={}){
       return {it,type:"input",title:TT.translate[0],titleH:tt("translate"),big:d.es,accepted:d.a,x:d.x,xe:d.xe,ai:"translate",sol:d.a[0],full:d.a[0],ph:tr("Escribe en inglés","Write in English")};
     case "listen":
       return {it,type:"listen",title:TT.listen[0],titleH:tt("listen"),text:d.en,accepted:[d.en],meaning:d.es,sol:d.en,full:d.en};
+    case "pron": return makePronEx(it, r);
     case "conv":
       return {it,type:"reply",title:TT.reply[0],titleH:tt("reply"),sub:d.sc.title,bot:d.t.b,task:inEn()?d.t.tE:d.t.t,keys:d.t.k,sol:d.t.m,full:d.t.m,ai:"reply"};
   }
@@ -3316,15 +3492,16 @@ function phrasesUsed(text, phrases){
 }
 
 /* ---------- reto diario ---------- */
+const DAILY_V = 3;
 function buildDaily(){
   const key = todayKey();
-  if(S.daily && S.daily.date===key) return S.daily;
+  if(S.daily && S.daily.date===key && (S.daily.done || S.daily.v===DAILY_V)) return S.daily;
   const r = rng(hashStr(key+"|"+S.level)), L=S.level, used=new Set(), ids=[];
   const rot = ["ask","order","conn","listen"][Math.floor(r()*4)];
   const base = ["vocab:c","verbs","conv", (L>=2 && r()<0.5)?"expr":"phrasal","speak",rot, r()<0.25?"vocab:f":"vocab:v","write:t","conv",
-    (L>=2 && r()<0.5) ? "interview:q" : "write:c"];
+    (offerOn() ? r()<0.6 : (L>=2 && r()<0.5)) ? (offerOn() ? "interview:o" : "interview:q") : "write:c", micBlocked ? "pron:m" : ["pron:m","pron:w","pron:s"][Math.floor(r()*3)]];
   if(S.settings.tech==="daily" || (S.settings.tech==="some" && r()<0.5)) base.splice(5,0,"tech");
-  if(L>=2 && r()<0.35) base.splice(1,0,"interview:v");
+  if(offerOn()) base.splice(1,0,"interview:w"); else if(L>=2 && r()<0.35) base.splice(1,0,"interview:v");
   const due = shuffle(dueReview(), r).slice(0,2);
   due.forEach(id=>used.add(id));
   const w = weakest();
@@ -3332,7 +3509,7 @@ function buildDaily(){
   base.forEach(t => { const it=pickItems(t,L,1,r,used)[0]; if(it){ used.add(it.id); ids.push(it.id); } });
   if(due[0]) ids.splice(2,0,due[0]);
   if(due[1]) ids.splice(6,0,due[1]);
-  S.daily = {date:key, ids, review:due, done:false, score:null, fact:null};
+  S.daily = {date:key, v:DAILY_V, ids, review:due, done:false, score:null, fact:null};
   save();
   return S.daily;
 }
@@ -3680,6 +3857,7 @@ function vocabNotes(it){
   let w = clean(d[0]).toLowerCase(), pos = it.kind==="c" ? d[4] : null;
   if(/^to /.test(w)){ pos = "v"; w = w.slice(3).split(" ")[0]; }
   if(pos && POS_NAME[pos]) out.push({es:`Tipo de palabra: ${POS_NAME[pos][0]}.`, en:`Word type: ${POS_NAME[pos][1]}.`});
+  if(!w.includes(" ") && typeof pronNote==="function"){ const pn = pronNote(w); if(pn) out.push(pn); }
   if(pos==="v" && IRREG[w]){ const [pa,pp] = IRREG[w]; out.push({es:`Verbo irregular: ${w} – ${pa} – ${pp}.`, en:`Irregular verb: ${w} – ${pa} – ${pp}.`}); }
   else if(pos==="v" && L<=3 && !w.includes(" ")){ const ed = edForm(w); out.push(ed ? {es:`Verbo regular: pasado y participio con -ed (${w} → ${ed}).`, en:`Regular verb: past simple and past participle with -ed (${w} → ${ed}).`}
       : {es:"Verbo regular: pasado y participio con -ed.", en:"Regular verb: past simple and past participle with -ed."}); }
@@ -3709,6 +3887,223 @@ function whyNotes(ex, shown){
 function whyHTML(ex, shown){
   const notes = whyNotes(ex, shown); if(!notes.length) return "";
   return `<div class="why"><b>${fb("why")}</b><ul>${notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>`;
+}
+/* ================= PRONUNCIACIÓN ================= */
+const PH_CODE = {a:"AA","@":"AE",V:"AH",O:"AO",W:"AW",Y:"AY",E:"EH",R:"ER",e:"EY",I:"IH",i:"IY",o:"OW",y:"OY",U:"UH",u:"UW",
+  b:"B",C:"CH",d:"D",D:"DH",f:"F",g:"G",h:"HH",J:"JH",k:"K",l:"L",m:"M",n:"N",N:"NG",p:"P",r:"R",s:"S",S:"SH",t:"T",T:"TH",v:"V",w:"W",j:"Y",z:"Z",Z:"ZH"};
+const PRON = {};
+PRON_RAW.split("|").forEach(e => { const [w,c] = e.split(" "); const ph = [];
+  for(let i=0;i<c.length;i++){ const p = PH_CODE[c[i]]; if(/\d/.test(c[i+1]||"")){ ph.push({p, s:+c[i+1]}); i++; } else ph.push({p}); }
+  PRON[w] = ph; });
+const VOW = new Set(["AA","AE","AH","AO","AW","AY","EH","ER","EY","IH","IY","OW","OY","UH","UW"]);
+const ONSETS = new Set(["P R","P L","B R","B L","T R","D R","K R","K L","G R","G L","F R","F L","TH R","SH R","S P","S T","S K","S M","S N","S L","S W",
+  "T W","D W","K W","G W","TH W","S P R","S T R","S K R","S P L","S K W","P Y","B Y","F Y","K Y","M Y","V Y","HH Y","N Y","L Y","S K Y","S P Y"]);
+const BATH = new Set(["after","ask","asked","bath","class","classes","fast","glass","grass","last","pass","passed","past","answer","can't","dance","chance","plant","example",
+  "demand","castle","half","laugh","path","rather","afternoon","advance","master","branch","command","disaster","vast","task","tasks","basket","aunt","staff","graph","draft","craft","advantage","france","plaster"]);
+const isUK = () => S.settings.accent !== "en-US";
+function pronOf(w){ w = String(w||"").toLowerCase().replace(/[’]/g,"'").replace(/^[^a-z']+|[^a-z']+$/g,""); return PRON[w] ? {w, ph:PRON[w]} : null; }
+function ipaVowel(p, s, w, next, uk){
+  const st = s>0;
+  switch(p){
+    case "AA": return uk ? (/o|wa|qua/.test(w) ? "ɒ" : "ɑː") : "ɑ";
+    case "AE": return uk && st && BATH.has(w) ? "ɑː" : "æ";
+    case "AH": return st ? "ʌ" : "ə";
+    case "AO": return uk ? (/(aw|au|al|ough|augh|wa)/.test(w) || next==="R" ? "ɔː" : /o/.test(w) ? "ɒ" : "ɔː") : "ɔ";
+    case "AW": return "aʊ"; case "AY": return "aɪ"; case "EH": return uk ? "e" : "ɛ";
+    case "ER": return st ? (uk ? "ɜː" : "ɝ") : (uk ? "ə" : "ɚ");
+    case "EY": return "eɪ"; case "IH": return "ɪ"; case "IY": return s===0 ? "i" : (uk ? "iː" : "i");
+    case "OW": return uk ? "əʊ" : "oʊ"; case "OY": return "ɔɪ"; case "UH": return "ʊ"; case "UW": return uk ? "uː" : "u";
+  }
+}
+const CONS_IPA = {B:"b",CH:"tʃ",D:"d",DH:"ð",F:"f",G:"ɡ",HH:"h",JH:"dʒ",K:"k",L:"l",M:"m",N:"n",NG:"ŋ",P:"p",R:"r",S:"s",SH:"ʃ",T:"t",TH:"θ",V:"v",W:"w",Y:"j",Z:"z",ZH:"ʒ"};
+function ipa(word){
+  const P = pronOf(word); if(!P) return "";
+  const ph = P.ph, w = P.w, uk = isUK(), out = [];
+  const vowIdx = ph.map((x,i)=>VOW.has(x.p)?i:-1).filter(i=>i>=0), multi = vowIdx.length>1;
+  const markAt = {}, prim = vowIdx.filter(i=>ph[i].s===1), lastPrim = prim[prim.length-1];
+  vowIdx.forEach((vi,k) => { const s = ph[vi].s; if(!multi || !(s===1 || s===2)) return;
+    const prevV = k ? vowIdx[k-1] : -1; let start = 0;
+    if(prevV>=0){ const len = vi-prevV-1; let best = 0;
+      for(let q=len;q>=1;q--){ const cl = ph.slice(vi-q, vi).map(x=>x.p); if(q===1 ? cl[0]!=="NG" : ONSETS.has(cl.join(" "))){ best = q; break; } }
+      start = vi-best; }
+    markAt[start] = s===1 && vi===lastPrim ? "ˈ" : "ˌ"; });
+  for(let i=0;i<ph.length;i++){
+    if(markAt[i]) out.push(markAt[i]);
+    const {p, s} = ph[i], nx = ph[i+1] ? ph[i+1].p : null;
+    if(VOW.has(p)){
+      let v = ipaVowel(p, s, w, nx, uk);
+      if(uk && nx==="R" && !(ph[i+2] && VOW.has(ph[i+2].p))){ v = {AA:"ɑː",AO:"ɔː",EH:"eə",IH:"ɪə",IY:"ɪə",UH:"ʊə",UW:"ʊə",AY:"aɪə",AW:"aʊə",EY:"eə",OW:"ɔː"}[p] || v; i++; }
+      out.push(v);
+    } else if(p==="R" && uk && !(nx && VOW.has(nx))) { /* r muda en inglés británico */ }
+    else out.push(CONS_IPA[p]);
+  }
+  return "/" + out.join("") + "/";
+}
+/* ---------- consejos para hispanohablantes ---------- */
+const PTIP = {
+  kn:{pr:10,es:"La k de «kn» no se pronuncia (know, knee).",en:"The k in 'kn' is silent (know, knee)."},
+  wr:{pr:10,es:"La w de «wr» no se pronuncia (write, wrong).",en:"The w in 'wr' is silent (write, wrong)."},
+  mb:{pr:10,es:"La b no se pronuncia en «mb» final ni en «bt» (climb, doubt).",en:"The b is silent in final 'mb' and in 'bt' (climb, doubt)."},
+  l:{pr:10,es:"Aquí la l no se pronuncia (walk, half, could).",en:"The l is silent here (walk, half, could)."},
+  gh:{pr:10,es:"La «gh» no se pronuncia aquí (night, thought).",en:"The 'gh' is silent here (night, thought)."},
+  t:{pr:10,es:"Aquí la t no se pronuncia (listen, castle).",en:"The t is silent here (listen, castle)."},
+  h0:{pr:10,es:"Aquí la h es muda (hour, honest).",en:"The h is silent here (hour, honest)."},
+  th:{pr:9,es:"th /θ/: lengua entre los dientes y sopla, como la z de «zapato».",en:"th /θ/: put your tongue between your teeth and blow."},
+  dh:{pr:9,es:"th /ð/: lengua entre los dientes y con voz, como la d suave de «cada».",en:"th /ð/: tongue between your teeth, with voice (like a soft d)."},
+  v:{pr:8,es:"v /v/: dientes de arriba sobre el labio de abajo, con vibración; no es una b.",en:"v /v/: top teeth on your bottom lip, with voice; it's not a b."},
+  h:{pr:8,es:"h /h/: un soplo suave, mucho más flojo que la j española.",en:"h /h/: a soft breath, much lighter than the Spanish j."},
+  sc:{pr:8,es:"Empieza directamente por la s: no añadas una e delante (school, no «eschool»).",en:"Start directly with the s: don't add an 'e' before it (school, not 'eschool')."},
+  edt:{pr:8,es:"Aquí -ed suena /t/, sin vocal: una sílaba menos de lo que parece (worked).",en:"Here -ed sounds like /t/, with no extra vowel (worked)."},
+  edd:{pr:8,es:"Aquí -ed suena /d/, sin vocal (played, called).",en:"Here -ed sounds like /d/, with no extra vowel (played, called)."},
+  edid:{pr:6,es:"-ed suena /ɪd/ solo después de t o d (wanted, needed).",en:"-ed sounds like /ɪd/ only after t or d (wanted, needed)."},
+  uo:{pr:7,es:"Aunque se escriba con o, suena /ʌ/, parecido a una a corta (love, come, money).",en:"Although it's spelt with o, it sounds like /ʌ/, a short relaxed vowel (love, come)."},
+  er:{pr:7,es:"/ɜː/: no existe en español; labios relajados, como una e neutra y larga (work, bird).",en:"/ɜː/: lips relaxed, a long neutral vowel (work, bird)."},
+  sh:{pr:6,es:"sh /ʃ/: un sonido continuo, como al pedir silencio; no es ch.",en:"sh /ʃ/: a continuous sound, like asking for silence; it's not ch."},
+  jh:{pr:6,es:"/dʒ/ (job, age): como una ch con voz; no es la j española.",en:"/dʒ/ (job, age): like ch with voice."},
+  w:{pr:5,es:"w /w/: labios redondeados, como una u muy rápida, sin «g» delante (would).",en:"w /w/: round your lips like a quick u, with no g sound (would)."},
+  y:{pr:5,es:"y /j/: suave, como la i de «hielo» (yes, you).",en:"y /j/: soft, like a quick i sound (yes, you)."},
+  ng:{pr:5,es:"-ng /ŋ/: suena por la nariz; no pronuncies una g al final.",en:"-ng /ŋ/: it comes through your nose; don't add a g at the end."},
+  ae:{pr:5,es:"/æ/: boca muy abierta, entre la a y la e (cat, bad).",en:"/æ/: open your mouth wide, between a and e (cat, bad)."},
+  ih:{pr:4,es:"/ɪ/: i corta y relajada (sit), distinta de la i larga /iː/ (seat).",en:"/ɪ/: a short, relaxed i (sit), different from the long /iː/ (seat)."},
+  iy:{pr:4,es:"/iː/: i larga, con los labios estirados como al sonreír (see, seat).",en:"/iː/: a long i, lips spread as if smiling (see, seat)."},
+  ow:{pr:3,es:"Esta o se cierra en u: empieza neutra y termina en /ʊ/ (go, know).",en:"This o glides into u (go, know)."},
+  z:{pr:3,es:"Esta s suena /z/, con vibración, como un zumbido (is, was, easy).",en:"This s sounds like /z/, with voice, like buzzing (is, was, easy)."},
+  cl:{pr:3,es:"Pronuncia todas las consonantes del final (-st, -nd, -ts); en español solemos comernos alguna.",en:"Pronounce every final consonant (-st, -nd, -ts)."},
+  schwa:{pr:2,es:"Las sílabas sin acento se relajan en /ə/, un sonido débil y corto.",en:"Unstressed syllables relax into /ə/, a weak, short sound."}
+};
+function pronTips(word){
+  const P = pronOf(word); if(!P) return [];
+  const w = P.w, ph = P.ph, ps = ph.map(x=>x.p), t = new Set(), last = ps[ps.length-1];
+  if(/^kn/.test(w) && ps[0]==="N") t.add("kn");
+  if(/^wr/.test(w) && ps[0]==="R") t.add("wr");
+  if(/(mb$|mbs$|bt)/.test(w) && !ps.includes("B")) t.add("mb");
+  if(/(alk|alf|alm|ould)/.test(w) && !ps.includes("L")) t.add("l");
+  if(/gh/.test(w) && !ps.includes("G") && !ps.includes("F")) t.add("gh");
+  if(/(stle|sten|often)/.test(w) && !ps.includes("T")) t.add("t");
+  if(/^h/.test(w) && ps[0]!=="HH") t.add("h0");
+  if(ps.includes("TH")) t.add("th");
+  if(ps.includes("DH")) t.add("dh");
+  if(ps.includes("V")) t.add("v");
+  if(ps.includes("HH")) t.add("h");
+  if(ps[0]==="S" && ["P","T","K","M","N","L","W"].includes(ps[1]) && /^s/.test(w)) t.add("sc");
+  if(/[^e]ed$/.test(w) && w.length>3 && !NOT_ED.has(w)){ const pv = ps[ps.length-2];
+    if(last==="D" && (pv==="IH"||pv==="AH") && /[td]ed$/.test(w)) t.add("edid"); else if(last==="T") t.add("edt"); else if(last==="D") t.add("edd"); }
+  ph.forEach((x,i) => { if(x.p==="AH" && x.s===1 && /o/.test(w) && !/ou/.test(w)) t.add("uo"); if(x.p==="ER" && x.s===1) t.add("er"); if(x.p==="AE" && x.s===1) t.add("ae");
+    if(x.p==="IH" && x.s===1) t.add("ih"); if(x.p==="IY" && x.s===1) t.add("iy"); if(x.p==="OW" && x.s===1) t.add("ow"); });
+  if(ps.includes("SH")) t.add("sh");
+  if(ps.includes("JH")) t.add("jh");
+  if(ps[0]==="W" && /^w/.test(w)) t.add("w");
+  if(ps[0]==="Y" && /^[yu]/.test(w)) t.add("y");
+  if(last==="NG") t.add("ng");
+  if(last==="Z" && /s$/.test(w)) t.add("z");
+  let fc = 0; for(let i=ps.length-1;i>=0 && !VOW.has(ps[i]);i--) fc++; if(fc>=2) t.add("cl");
+  if(ph.filter(x=>VOW.has(x.p)).length>=3 && ph.some(x=>x.s===0 && (x.p==="AH"||x.p==="ER"))) t.add("schwa");
+  return [...t].sort((a,b)=>PTIP[b].pr-PTIP[a].pr);
+}
+const tipText = k => tr(PTIP[k].es, PTIP[k].en);
+function syllables(word){ const P = pronOf(word); return P ? P.ph.filter(x=>VOW.has(x.p)).length : 0; }
+function stressNote(word){ return syllables(word)>1 ? tr("El acento va en la sílaba que sigue a la marca ˈ.","The stress falls on the syllable after the ˈ mark.") : ""; }
+/* ---------- comparar lo que se dijo con la frase ---------- */
+const HOMO = [["to","too","two"],["for","four"],["your","you're","youre"],["there","their","theyre"],["its","it's"],["right","write"],["no","know"],["hear","here"],
+  ["by","buy","bye"],["won","one","1"],["ate","eight","8"],["see","sea"],["would","wood"],["new","knew"],["weather","whether"],["meet","meat"],["ok","okay"],["mr","mister"],
+  ["wait","weight"],["week","weak"],["whole","hole"],["hour","our"],["which","witch"],["flour","flower"],["piece","peace"],["mail","male"],["sale","sail"],["way","weigh"]];
+const HOMO_MAP = {}; HOMO.forEach(g => g.forEach(w => HOMO_MAP[w] = g[0]));
+function wEq(a,b){ if(a===b) return true; if(HOMO_MAP[a] && HOMO_MAP[a]===HOMO_MAP[b]) return true;
+  if(a.length>=6 && b.length>=6){ const d = lev(a.split(""), b.split("")); return d<=1; } return false; }
+function alignSpeech(target, heard){
+  const words = String(target).replace(/[—–]/g," ").split(/\s+/).filter(w=>/[a-z0-9]/i.test(w));
+  const tt = []; words.forEach((w,wi) => norm(w).split(" ").filter(Boolean).forEach(n => tt.push({n, wi})));
+  const hh = norm(heard).split(" ").filter(Boolean);
+  const m = tt.length, n = hh.length, L = Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--) for(let j=n-1;j>=0;j--) L[i][j] = wEq(tt[i].n, hh[j]) ? L[i+1][j+1]+1 : Math.max(L[i+1][j], L[i][j+1]);
+  const okT = new Array(m).fill(false), heardAs = new Array(m).fill(null); let i=0, j=0, pendT=[], pendH=[];
+  const flush = () => { if(pendT.length && pendH.length){ pendT.forEach((ti,k) => heardAs[ti] = pendH.slice(k, k+1).join(" ") || null); } pendT=[]; pendH=[]; };
+  while(i<m && j<n){ if(wEq(tt[i].n, hh[j])){ flush(); okT[i]=true; i++; j++; } else if(L[i+1][j] >= L[i][j+1]){ pendT.push(i); i++; } else { pendH.push(hh[j]); j++; } }
+  while(i<m){ pendT.push(i); i++; } while(j<n){ pendH.push(hh[j]); j++; } flush();
+  return words.map((w,wi) => { const idx = tt.map((x,k)=>x.wi===wi?k:-1).filter(k=>k>=0);
+    return {w, ok: idx.length ? idx.every(k=>okT[k]) : true, heard: idx.map(k=>heardAs[k]).filter(Boolean).join(" ") || null}; });
+}
+function bestAlign(target, alts){
+  let best = null, bs = -1;
+  (alts||[]).forEach(a => { const al = alignSpeech(target, a), s = al.filter(x=>x.ok).length; if(s>bs){ bs=s; best=al; } });
+  return best || alignSpeech(target, "");
+}
+const bare = w => String(w).toLowerCase().replace(/[’]/g,"'").replace(/^[^a-z']+|[^a-z']+$/g,"");
+function wordCardHTML(w, heard, noTips){
+  const b = bare(w), tips = noTips ? [] : pronTips(b).slice(0,2), ip = ipa(b), sn = stressNote(b);
+  return `<div class="pword"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><b>${esc(b)}</b>${ip?`<span class="ipa">${esc(ip)}</span>`:""}
+    <button class="icon-btn sm" data-act="say" data-t="${esc(b)}" aria-label="Escuchar">🔊</button><button class="icon-btn sm" data-act="sayslow" data-t="${esc(b)}" aria-label="Escuchar despacio">🐢</button></div>
+    ${heard?`<p class="small muted">${tr("Hemos entendido","We understood")} «${esc(heard)}»</p>`:""}
+    ${tips.length||(sn&&!noTips)?`<ul>${tips.map(k=>`<li>${esc(tipText(k))}</li>`).join("")}${sn&&ip&&!noTips?`<li class="muted">${esc(sn)}</li>`:""}</ul>`:""}</div>`;
+}
+function pronHTML(target, alts){
+  const al = bestAlign(target, alts), bad = al.filter(x=>!x.ok && pronOf(x.w)), okN = al.filter(x=>x.ok).length;
+  let h = `<div class="pron"><b>🗣️ ${tr("Pronunciación","Pronunciation")}</b><p class="pwords">${al.map(x=>`<span class="pw ${x.ok?"ok":"bad"}">${esc(x.w)}</span>`).join(" ")}</p>`;
+  if(!bad.length && okN===al.length){
+    h += `<p class="small">✓ ${tr("Te hemos entendido todas las palabras.","We understood every word.")}</p>`;
+    const hard = al.map(x=>bare(x.w)).filter(w=>pronOf(w)).map(w=>({w, t:pronTips(w)})).filter(x=>x.t.length && PTIP[x.t[0]].pr>=6).sort((a,b)=>PTIP[b.t[0]].pr-PTIP[a.t[0]].pr)[0];
+    if(hard) h += `<p class="small muted" style="margin-top:6px">${tr("Para afinar","To polish it")}:</p>` + wordCardHTML(hard.w, null);
+  } else {
+    h += `<p class="small">${al.length===1 ? tr("No te hemos entendido bien esta palabra:","We didn't quite catch this word:") : tr(`Te hemos entendido ${okN} de ${al.length} palabras. Revisa las marcadas en rojo:`,`We understood ${okN} of ${al.length} words. Check the ones in red:`)}</p>`;
+    h += bad.slice(0,3).map(x=>wordCardHTML(x.w, x.heard)).join("");
+  }
+  return h + `<p class="small muted" style="margin-top:8px">${tr("Se basa en lo que entiende el reconocimiento de voz de tu dispositivo, así que es orientativo.","It's based on what your device's speech recognition understood, so treat it as a guide.")}</p></div>`;
+}
+function keywordPronHTML(words){
+  const ws = uniq(words.map(bare).filter(w=>pronOf(w))).slice(0,2); if(!ws.length) return "";
+  return `<div class="pron"><b>🗣️ ${tr("Así se pronuncia","This is how you say it")}</b>${ws.map(w=>wordCardHTML(w,null)).join("")}</div>`;
+}
+function pronNote(word){
+  const b = bare(word); if(!pronOf(b)) return null;
+  const tips = pronTips(b), ip = ipa(b);
+  return {es:`Pronunciación: ${ip}${tips.length?". "+PTIP[tips[0]].es:""}`, en:`Pronunciation: ${ip}${tips.length?". "+PTIP[tips[0]].en:""}`};
+}
+/* ---------- pares mínimos ---------- */
+const MP_TIP = {
+  ii:["La /ɪ/ es corta y relajada; la /iː/ es larga, con los labios estirados como al sonreír.","/ɪ/ is short and relaxed; /iː/ is long, with your lips spread as if smiling."],
+  uu:["La /ʊ/ es corta y relajada; la /uː/ es larga, con los labios redondeados.","/ʊ/ is short and relaxed; /uː/ is long, with rounded lips."],
+  aeah:["/æ/: boca muy abierta, entre a y e. /ʌ/: una a corta y relajada, con la boca poco abierta.","/æ/: mouth wide open, between a and e. /ʌ/: a short, relaxed sound with your mouth only slightly open."],
+  aee:["/æ/ se abre casi como una a; /e/ es como la e española.","/æ/ is open, almost like a; /e/ is like a Spanish e."],
+  bv:["b: los dos labios se juntan. v: los dientes de arriba tocan el labio de abajo y el aire sigue saliendo.","b: both lips close. v: top teeth touch your bottom lip and the air keeps flowing."],
+  ths:["th /θ/: la lengua asoma entre los dientes, como la z de «zapato». s: la lengua queda detrás de los dientes.","th /θ/: your tongue comes out between your teeth. s: your tongue stays behind your teeth."],
+  tht:["th /θ/: lengua entre los dientes, sin cortar el aire. t: la lengua toca detrás de los dientes y corta el aire.","th /θ/: tongue between your teeth, air keeps flowing. t: tongue touches behind your teeth and stops the air."],
+  dhd:["th /ð/: lengua entre los dientes y con voz, como la d suave de «cada». d: la lengua toca detrás de los dientes.","th /ð/: tongue between your teeth, with voice. d: tongue touches behind your teeth."],
+  shch:["sh /ʃ/: sonido continuo, como al pedir silencio. ch /tʃ/: empieza con un pequeño golpe, como la ch española.","sh /ʃ/: a continuous sound, like 'shhh'. ch /tʃ/: it starts with a small stop, like t + sh."],
+  h:["La h inglesa se pronuncia: es un soplo suave. Sin ella, la palabra cambia.","The English h is pronounced: a soft breath. Without it, the word changes."],
+  yj:["y /j/: suave, como la i de «hielo». j /dʒ/: como una ch con voz.","y /j/: soft, like a quick i. j /dʒ/: like ch with voice."],
+  ero:["/ɜː/: labios relajados, como una e neutra y larga. /ɔː/: labios redondeados, una o larga.","/ɜː/: relaxed lips, a long neutral vowel. /ɔː/: rounded lips, a long o."],
+  ngn:["ng /ŋ/: suena por la nariz, con la parte de atrás de la lengua. n: la punta de la lengua toca detrás de los dientes.","ng /ŋ/: made at the back of your mouth, through your nose. n: the tip of your tongue touches behind your teeth."],
+  eae:["/e/ como la e española; /æ/ más abierta, casi a.","/e/ is like a Spanish e; /æ/ is more open, almost a."]
+};
+const MPAIRS = [
+  ["ship","sheep","ii",1],["live","leave","ii",1],["sit","seat","ii",1],["fill","feel","ii",2],["full","fool","uu",2],["pull","pool","uu",2],
+  ["cat","cut","aeah",1],["hat","hut","aeah",2],["bag","bug","aeah",2],["match","much","aeah",2],["cap","cup","aeah",1],
+  ["man","men","aee",1],["bad","bed","aee",1],["pan","pen","aee",2],["sad","said","aee",2],
+  ["ban","van","bv",1],["berry","very","bv",1],["best","vest","bv",2],["boat","vote","bv",2],
+  ["think","sink","ths",1],["thin","sin","ths",2],["mouth","mouse","ths",2],["three","tree","tht",1],["thank","tank","tht",2],["thin","tin","tht",2],
+  ["they","day","dhd",1],["then","den","dhd",2],
+  ["sheep","cheap","shch",2],["share","chair","shch",2],["wash","watch","shch",2],["shoes","choose","shch",3],
+  ["hat","at","h",1],["hear","ear","h",2],["heart","art","h",2],["hold","old","h",2],
+  ["yet","jet","yj",3],["walk","work","ero",2],["bored","bird","ero",3],["law","low","ero",3],["thing","thin","ngn",3],["sing","sin","ngn",3]
+];
+MPAIRS.forEach((d,i)=>addItem("pron","m",d[3],d,i));
+{ const seen = new Set();
+  CORE.forEach(d => { const w = d[0].toLowerCase(); if(seen.has(w) || w.length<3 || !pronOf(w)) return; const t = pronTips(w);
+    if(t.length && PTIP[t[0]].pr>=7){ seen.add(w); addItem("pron","w",d[2],[d[0],d[1]],w); } });
+  SCENARIOS.forEach(sc => sc.turns.forEach((t,k) => addItem("pron","s",sc.l,[t.m, sc.title],sc.id+k)));
+  SPEAK.forEach((d,i) => { if(d.t==="say") addItem("pron","s",d.l,[d.a[0], d.es],"say"+i); }); }
+function makePronEx(it, r){
+  const d = it.d;
+  if(it.kind==="m"){
+    const target = r()<0.5 ? d[0] : d[1], other = target===d[0] ? d[1] : d[0], tip = MP_TIP[d[2]];
+    return {it,type:"mcq",title:"Escucha: ¿qué palabra oyes?",titleH:titleHTML("Escucha: ¿qué palabra oyes?","Listen: which word do you hear?"),audio:true,text:target,
+      opts:shuffle([d[0],d[1]],r),answer:target,sol:`${target} ${ipa(target)}`,full:target,x:tip[0],xe:tip[1],
+      extraFB:`<div class="pron">${[d[0],d[1]].map(w=>wordCardHTML(w,null,true)).join("")}</div>`, sub:`${d[0]} / ${d[1]}`};
+  }
+  const text = d[0], word = it.kind==="w";
+  if(micBlocked) return {it,type:"listen",title:TT.listen[0],titleH:tt("listen"),text,accepted:[text],meaning:d[1],sol:text,full:text};
+  return {it,type:"speak",mode:"rep",title:"Escucha y repite",titleH:titleHTML("Escucha y repite","Listen and repeat"),big:text,text,
+    ipa: word ? ipa(text) : "", meaning: word ? d[1] : null, sub: word ? null : d[1], accepted:[text], sol:text, full:text, pron:true};
 }
 /* ================= VISTAS ================= */
 let view = S.started ? "home" : "onboard";
@@ -3849,6 +4244,7 @@ function renderSession(){
   if(ex.sentence) body += `<div class="sentence">${ex.sentence}</div>`;
   switch(ex.type){
     case "mcq":
+      if(ex.audio) body += `<div class="row" style="gap:10px;margin:6px 0 14px;flex-wrap:wrap"><button class="btn" data-act="play">🔊 ${tr("Escuchar","Listen")}</button><button class="btn ghost" data-act="playslow">${tr("Más despacio","Slower")}</button></div>`;
       if(ex.big) body += `<div class="big">${esc(ex.big)}${ex.say?spk(ex.say):""}</div>`;
       if(ex.quote) body += `<p class="sub"><i>${esc(ex.quote)}</i> ${spk(ex.quote)}</p>`;
       body += `<div class="opts">` + ex.opts.map((o,i)=>{ let c="";
@@ -3867,7 +4263,8 @@ function renderSession(){
       body += `<div class="row" style="gap:10px;margin-bottom:14px;flex-wrap:wrap"><button class="btn" data-act="play">🔊 Escuchar</button><button class="btn ghost" data-act="playslow">Más despacio</button></div>` + inputHTML(false,"Escribe la frase en inglés",st);
       break;
     case "speak":
-      body += ex.mode==="say" ? `<div class="big">«${esc(ex.big)}»</div>` : `<div class="big">${esc(ex.big)}${spk(ex.big)}</div>${ex.hint?`<p class="sub">${fb("hint")}: ${esc(ex.hint)}</p>`:""}`;
+      if(ex.mode==="rep") body += `<div class="big" lang="en">${esc(ex.big)}</div>${ex.ipa?`<p class="ipa big-ipa">${esc(ex.ipa)}</p>`:""}${ex.meaning?`<p class="sub">«${esc(ex.meaning)}»</p>`:""}<div class="row" style="gap:10px;margin:4px 0 12px;flex-wrap:wrap"><button class="btn sm" data-act="play">🔊 ${tr("Escuchar","Listen")}</button><button class="btn sm ghost" data-act="playslow">🐢 ${tr("Más despacio","Slower")}</button></div>`;
+      else body += ex.mode==="say" ? `<div class="big">«${esc(ex.big)}»</div>` : `<div class="big">${esc(ex.big)}${spk(ex.big)}</div>${ex.hint?`<p class="sub">${fb("hint")}: ${esc(ex.hint)}</p>`:""}`;
       body += micBlock(st,false); break;
     case "reply":
       body += `<div class="chat mini"><div class="msg bot"><span>${esc(ex.bot)}</span>${spk(ex.bot)}</div></div><div class="goal">🎯 ${esc(ex.task)}</div>` + micBlock(st,false);
@@ -3910,6 +4307,7 @@ function gradeEx(ex, st){
       const cands = st.typing ? [st.answer] : (st.heard||[]);
       if(ex.mode==="ans") return {ok: cands.some(c=>hasKeyword(c, ex.keywords))};
       if(st.typing) return grade(st.answer, ex.accepted, false);
+      if(ex.mode==="rep"){ const al = bestAlign(ex.text, cands), sc = al.filter(x=>x.ok).length/Math.max(1,al.length); return {ok: sc>=0.8, typo: sc>=0.8 && sc<1, best: ex.text, score: sc}; }
       let bs=0, best=ex.accepted[0];
       for(const c of cands) for(const a of ex.accepted){ const s=sim(c,a); if(s>bs){ bs=s; best=a; } }
       return {ok: bs>=0.8, typo: bs>=0.8 && bs<1, best, score: bs};
@@ -3938,7 +4336,12 @@ function fbHTML(ex, st){
     if(ex.meaning) h += `<p class="small">${fb("means")}: «${esc(ex.meaning)}»</p>`;
     if(ex.example) h += `<p><i>${esc(ex.example)}</i></p>`;
     if(r.score!=null) h += `<p class="small">${fb("match")}: ${Math.round(r.score*100)} %</p>`;
-    h += whyHTML(ex, ["input","speak"].includes(ex.type) && ex.mode!=="ans" && ex.it.topic!=="verbs" ? sol : null);
+    if(ex.type!=="speak" || ex.mode!=="rep") h += whyHTML(ex, ["input","speak"].includes(ex.type) && ex.mode!=="ans" && ex.it.topic!=="verbs" ? sol : null);
+    if(ex.extraFB) h += ex.extraFB;
+    if(ex.type==="speak" && !st.typing && st.heard){
+      if(ex.mode==="ans"){ if(!ok) h += keywordPronHTML(norm(ex.keywords[0]).split(" ")); }
+      else h += pronHTML(ex.mode==="rep" ? ex.text : sol, st.heard);
+    }
   }
   if(st.aiMsg) h += `<div class="ai-out">${st.aiMsg}</div>`;
   const wantsAI = ex.ai && AI && !st.aiDone && userText(ex,st) && (ok===false || ok===null || ex.type==="compose");
@@ -3953,7 +4356,7 @@ function aiPromptFor(ex, student){
 Task: ${ex.task}${ex.from?`\nMessage the student is replying to: "${ex.from}"`:""}
 Student text: """${student}"""
 Return JSON only, no markdown: {"score": integer 1-10, "comment": "1-2 sentences in ${expLang()} about content and tone", "errors": ["up to 5 items like 'wrong → right (short note in ${expLang()})'"], "corrected": "the student's text corrected and made natural, keeping their ideas"}`;
-  if(ex.ai==="interview") return `You are an experienced HR interviewer and English coach. The candidate is a Spanish-speaking engineer (CEFR level ${L}) practising job interviews in English.
+  if(ex.ai==="interview") return `You are an experienced HR interviewer and English coach. The candidate is a Spanish-speaking engineer (CEFR level ${L}) practising job interviews in English.${ex.it.kind==="o" || offerOn() ? `\nThe candidate is preparing for this specific job, so judge relevance to it:\n${JOB_OFFER.context}` : ""}
 Question: "${ex.big}"
 Candidate's answer (it may come from speech recognition, so ignore punctuation): "${student}"
 Evaluate both the English and the content (structure, relevance, concrete examples, confidence).
@@ -4105,7 +4508,7 @@ function renderTalk(){
   const L = S.level;
   let h = `<div class="wrap">${topBar()}<h1>Conversar</h1><p class="muted" style="margin:6px 0 16px">Practica situaciones reales hablando o escribiendo. Tú respondes y la app te corrige al momento.</p>`;
   h += `<div class="panel daily"><p class="muted small">Simulacro</p><h2 style="margin-top:4px">Entrevista de trabajo</h2>
-    <p class="muted" style="margin:6px 0 14px">Cinco preguntas típicas, con consejos, frases útiles y ${AI?"valoración de Claude en cada respuesta":"respuestas modelo para compararte"}.</p>
+    <p class="muted" style="margin:6px 0 14px">${offerOn()?`Preparada para tu oferta: <b>${esc(JOB_OFFER.title)}</b>. `:""}Cinco preguntas, con consejos, frases útiles y ${AI?"valoración de Claude en cada respuesta":"respuestas modelo para compararte"}.</p>
     <button class="btn full" data-act="ivintro">Preparar entrevista</button></div>`;
   h += `<h2 class="sec" style="margin-bottom:10px">Situaciones guiadas</h2><div class="panel list">` + SCENARIOS.map(sc=>{
     const tag = sc.l<=L ? "" : sc.l===L+1 ? "Reto" : "Más adelante";
@@ -4128,6 +4531,12 @@ function newChat(sc, mode){
 }
 function startScenario(id, mode="guided"){ const sc = SCENARIOS.find(s=>s.id===id); if(sc) newChat(sc, mode); }
 function startFree(i){ const t = FREE_TOPICS[i]; newChat({title:t.title, icon:t.icon, role:t.role, you:t.you, l:S.level, open:t.open}, "free"); }
+/* pronunciación en la conversación: cuando repites la frase de ejemplo o te acercas mucho a ella */
+function chatPron(turn){
+  if(!chat.voice || !chat.last) return "";
+  const close = chat.last.some(c => sim(c, turn.m) >= 0.6);
+  return (chat.peek || close) ? pronHTML(turn.m, chat.last) : "";
+}
 function noteWhy(text){
   const {rules, irr} = sentenceNotes(text, ""), pick = n => inEn() ? n.en : n.es;
   const notes = [...rules.slice(0, S.level<=2?2:1), ...irr.slice(0,1)].map(pick);
@@ -4175,27 +4584,28 @@ function chatMic(){
   const ok = Mic.start({ long:false,
     onResult: alts => { chat.heard = alts; },
     onError: code => { chat.micErr = MIC_ERR[code] || MIC_ERR.start; if(micBlocked) chat.typing = true; },
-    onEnd: () => { chat.listening = false; if(view!=="chat") return; if(chat.heard && chat.heard[0]) chatSubmit(chat.heard); else render(); } });
+    onEnd: () => { chat.listening = false; if(view!=="chat") return; if(chat.heard && chat.heard[0]) chatSubmit(chat.heard, true); else render(); } });
   chat.listening = ok; if(ok) chat.micErr = null; else chat.typing = true;
   render();
 }
-function chatSubmit(cands){
+function chatSubmit(cands, voice=false){
   cands = cands.map(s=>String(s||"").trim()).filter(Boolean); if(!cands.length) return;
+  chat.voice = voice;
   chat.draft = ""; chat.micErr = null;
   chat.log.push({who:"me", text:cands[0]}); chat.last = cands;
   if(chat.mode==="free") return freeTurn();
   const turn = chat.sc.turns[chat.i];
   if(cands.some(c => turn.k.every(g=>hasKeyword(c,g)))) return guidedOk(cands[0]);
   chat.tries++;
-  if(chat.tries>=2){ chat.log.push({who:"note", ok:false, html:`${fb("oneWay")}: <b>${esc(turn.m)}</b> ${spk(turn.m)}${noteWhy(turn.m)}`}); record("conv",false); nextTurn(); }
-  else chat.log.push({who:"note", ok:false, html:`${esc(fb("almost"))}${AI?` <button class="link" data-act="chatai">¿Mi frase vale? Preguntar a Claude</button>`:""}`});
+  if(chat.tries>=2){ chat.log.push({who:"note", ok:false, html:`${fb("oneWay")}: <b>${esc(turn.m)}</b> ${spk(turn.m)}${noteWhy(turn.m)}${chatPron(turn)}`}); record("conv",false); nextTurn(); }
+  else chat.log.push({who:"note", ok:false, html:`${esc(fb("almost"))}${chatPron(turn)}${AI?` <button class="link" data-act="chatai">¿Mi frase vale? Preguntar a Claude</button>`:""}`});
   render(); scrollChat();
 }
 function guidedOk(text){
   const turn = chat.sc.turns[chat.i], first = chat.tries===0 && !chat.peek;
   if(first) chat.score++;
   record("conv", first); addXP(first?20:8);
-  chat.log.push({who:"note", ok:true, html:`✓ ${fb("good")}${sim(text,turn.m)<0.9?` ${fb("other")}: <b>${esc(turn.m)}</b> ${spk(turn.m)}`:""}${noteWhy(turn.m)}`});
+  chat.log.push({who:"note", ok:true, html:`✓ ${fb("good")}${sim(text,turn.m)<0.9?` ${fb("other")}: <b>${esc(turn.m)}</b> ${spk(turn.m)}`:""}${noteWhy(turn.m)}${chatPron(turn)}`});
   nextTurn(); render(); scrollChat();
 }
 function nextTurn(){
@@ -4257,11 +4667,12 @@ Return JSON only, no markdown: {"score": integer 1-10, "summary": "two sentences
 
 /* ---------- entrevista ---------- */
 function renderIvIntro(){
-  const o = iv || {tech:false, useAI:true};
+  const o = iv || {tech:false, useAI:true, offer:true};
   return `<div class="wrap"><div class="top"><button class="icon-btn" data-act="tab" data-v="talk" aria-label="Volver">←</button><b>Entrevista de trabajo</b><span></span></div>
     <div class="panel"><h2>Cómo funciona</h2><p class="muted" style="margin-top:6px">La entrevistadora te hará cinco preguntas en inglés. Puedes responder hablando o escribiendo. Antes de cada respuesta tienes un consejo y frases útiles.</p>
     <ul class="checks" style="margin-top:12px"><li>○ Responde en menos de un minuto por pregunta.</li><li>○ Da ejemplos concretos, no solo adjetivos.</li><li>○ Para preguntas sobre experiencias, usa situación, tarea, acción y resultado.</li></ul></div>
     <div class="panel sec stack">
+      <label class="row between"><span>Centrarme en mi oferta: ${esc(JOB_OFFER.title)}</span><input type="checkbox" data-iv="offer" ${o.offer!==false?"checked":""}></label>
       <label class="row between"><span>Incluir una pregunta técnica de aviónica y electrónica</span><input type="checkbox" data-iv="tech" ${o.tech?"checked":""}></label>
       ${AI?`<label class="row between"><span>Que Claude valore cada respuesta</span><input type="checkbox" data-iv="useAI" ${o.useAI!==false?"checked":""}></label>`:""}
     </div>
@@ -4271,8 +4682,9 @@ function startInterview(){
   const L = S.level, o = iv || {tech:false, useAI:true};
   const pool = INTERVIEW.filter(q=>q.l<=Math.min(5,L+1) && q!==INTERVIEW[0] && q!==INTERVIEW[3]);
   const gen = pool.filter(q=>!q.tech), tech = INTERVIEW.filter(q=>q.tech && q.l<=Math.max(4,L+1));
-  const mid = shuffle(gen).slice(0, o.tech?2:3); if(o.tech) mid.push(shuffle(tech)[0]);
-  iv = {tech:o.tech, useAI:o.useAI!==false && !!AI, qs:[INTERVIEW[0], ...mid, INTERVIEW[3]], i:0, answer:"", listening:false, micErr:null, phase:"q", fb:null, busy:false, results:[], xp0:S.xp};
+  const offer = o.offer!==false, oq = OFFER_Q.filter(q=>q.l<=Math.max(3,L+1));
+  const mid = offer ? shuffle(oq).slice(0, o.tech?2:3) : shuffle(gen).slice(0, o.tech?2:3); if(o.tech) mid.push(shuffle(tech)[0]);
+  iv = {tech:o.tech, offer, useAI:o.useAI!==false && !!AI, qs:[INTERVIEW[0], ...mid, INTERVIEW[3]], i:0, answer:"", listening:false, micErr:null, phase:"q", fb:null, busy:false, results:[], xp0:S.xp};
   view = "interview"; render(); scrollTo(0,0); speak(iv.qs[0].q);
 }
 function renderInterview(){
@@ -4286,7 +4698,7 @@ function renderInterview(){
       <div class="bar-actions"><div class="row" style="gap:10px"><button class="btn ghost" style="flex:1" data-act="tab" data-v="talk">Volver</button><button class="btn" style="flex:1" data-act="ivstart">Otra entrevista</button></div></div></div>`;
     return h;
   }
-  h += `<div class="q-tag"><span>💼 Pregunta ${iv.i+1} de ${n}</span>${q.tech?'<span class="chip">Técnica</span>':""}</div>
+  h += `<div class="q-tag"><span>💼 Pregunta ${iv.i+1} de ${n}</span>${q.tech?'<span class="chip">Técnica</span>':OFFER_Q.includes(q)?'<span class="chip">Tu oferta</span>':""}</div>
     <div class="chat mini"><div class="msg bot"><span><small class="who">${fb("interviewer")}</small>${esc(q.q)}</span>${spk(q.q)}</div></div>
     <details class="tip"><summary>${fb("tip")}</summary><p>${esc(tr(q.tip,q.tipE))}</p></details>
     <p class="small muted" style="margin:10px 0 6px">${fb("phrases")}</p><div class="chips">${q.p.map(p=>`<button class="chip chip-btn" data-act="say" data-t="${esc(p)}">${esc(p)}</button>`).join("")}</div>
@@ -4316,7 +4728,7 @@ async function ivSubmit(){
   if(!(iv.useAI && AI)){ render(); return; }
   iv.busy = true; render();
   const q = iv.qs[iv.i];
-  const prompt = `You are an experienced HR interviewer and English coach. The candidate is a Spanish-speaking engineer (CEFR level ${lvlCode()}) practising job interviews in English.
+  const prompt = `You are an experienced HR interviewer and English coach. The candidate is a Spanish-speaking engineer (CEFR level ${lvlCode()}) practising job interviews in English.${iv.offer ? `\nThe candidate is preparing for this specific job, so judge relevance to it and make the improved answer fit it:\n${JOB_OFFER.context}` : ""}
 Question: "${q.q}"
 Candidate's answer (it may come from speech recognition, so ignore punctuation): "${iv.answer}"
 Evaluate both the English and the content (structure, relevance, concrete examples, confidence).
@@ -4326,7 +4738,7 @@ Return JSON only, no markdown: {"score": integer 1-10, "good": "what went well, 
   iv.busy = false; if(view==="interview") render();
 }
 function ivNext(ok){
-  const q = iv.qs[iv.i], f = iv.fb, id = "interview:q"+INTERVIEW.indexOf(q);
+  const q = iv.qs[iv.i], f = iv.fb, id = OFFER_Q.includes(q) ? "interview:o"+OFFER_Q.indexOf(q) : "interview:q"+INTERVIEW.indexOf(q);
   iv.results.push({q:q.q, ok, score: f && f.ai ? +f.score : null});
   record("interview", ok); addXP(ok?25:8);
   if(ITEM[id]){ S.seen[id] = todayKey(); if(!ok) S.review[id] = addDays(todayKey(),1); else delete S.review[id]; }
@@ -4391,6 +4803,7 @@ const GAMES = [
   {id:"timed",icon:"⏱️",bg:"#FFF1BF",t:"Contrarreloj",d:"60 segundos para acertar todo lo que puedas."},
   {id:"quiz",icon:"🎯",bg:"#D8F3E6",t:"Test por temas",d:"Palabras esenciales, viajes, salud, trabajo, entrevistas, aviónica…"},
   {id:"speak",icon:"🎙️",bg:"#E0F5D6",t:"Habla",d:"Traduce y responde en voz alta."},
+  {id:"pron",icon:"🗣️",bg:"#FFE9F0",t:"Pronunciación",d:"Sonidos que se confunden, palabras difíciles y frases para repetir, con correcciones."},
   {id:"conv",icon:"💬",bg:"#FFE0D1",t:"Respuesta rápida",d:"Responde a frases de conversaciones reales."},
   {id:"order",icon:"🔀",bg:"#EAE2FF",t:"Constructor de frases",d:"Ordena las palabras."},
   {id:"ask",icon:"❓",bg:"#FFDDE4",t:"¿Cuál es la pregunta?",d:"Tienes la respuesta: formula la pregunta."},
@@ -4409,14 +4822,14 @@ function openGame(id){
   if(id==="quiz"){ deckMode="quiz"; view="deck"; return render(); }
   if(id==="memory"){ newMemory(); view="memory"; return render(); }
   if(id==="timed"){ tm = {started:false, over:false, score:0, total:0}; view="timed"; return render(); }
-  const n = {order:6, ask:6, listen:6, verbs:8, speak:5, conv:6, expr:8}[id];
+  const n = {order:6, ask:6, listen:6, verbs:8, speak:5, conv:6, expr:8, pron:8}[id];
   startPractice(id, n, {kind:"game", exOpt: id==="ask" && S.level>=2 ? {mcq:false} : {}});
 }
 
 /* ---------- mazos ---------- */
 function deckList(){
   const bands = [...new Set(CORE.map(d=>d[3]))];
-  const list = bands.map(b=>({k:"c:"+b, n:BAND_NAME(b), icon:"⭐"}));
+  const list = [{k:"offer", n:"Tu oferta: "+JOB_OFFER.title, icon:"🎯"}, ...bands.map(b=>({k:"c:"+b, n:BAND_NAME(b), icon:"⭐"}))];
   Object.keys(VSUBS).forEach(s=>list.push({k:"v:"+s, n:VSUBS[s], icon:"📖"}));
   list.push({k:"job",n:"Entrevistas y empleo",icon:"💼"},{k:"phrasal",n:"Phrasal verbs",icon:"🧩"},{k:"expr",n:"Expresiones y slang",icon:"😎",min:2},{k:"ff",n:"False friends",icon:"⚠️"});
   if(S.settings.tech!=="never") Object.keys(TSUBS).forEach(s=>list.push({k:"t:"+s, n:"Técnico: "+TSUBS[s].toLowerCase(), icon:"🛩️"}));
@@ -4429,6 +4842,7 @@ function deckItems(k){
   else if(a==="v") items = POOL.vocab.filter(x=>x.kind==="v" && x.d[3]===b);
   else if(a==="ff") items = POOL.vocab.filter(x=>x.kind==="f");
   else if(a==="job") items = POOL.interview.filter(x=>x.kind==="v");
+  else if(a==="offer") items = POOL.interview.filter(x=>x.kind==="w");
   else if(a==="t") items = POOL.tech.filter(x=>x.d[3]===b);
   else items = POOL[a];
   return items.filter(x=>x.lvl<=max);
@@ -4459,7 +4873,8 @@ function cardFaces(it){
   const notes = vocabNotes(it).map(n => inEn() ? n.en : n.es).join(" ");
   if(it.topic==="vocab" && it.kind==="c") return {front:d[0], back:d[1], extra:notes, say:clean(d[0]), label:BAND_NAME(d[3])};
   if(it.topic==="vocab") return {front:d[0], back:d[1], extra:notes, say:clean(d[0]), label:VSUBS[d[3]]};
-  return {front:d[0], back:d[1], extra:"", say:clean(d[0]), label:"Entrevistas"};
+  if(it.topic==="interview" && it.kind==="w") return {front:d[0], back:d[1], extra:notes, say:clean(d[0]), label:"Tu oferta · "+tr(...OFFER_SUBS_T[d[3]])};
+  return {front:d[0], back:d[1], extra:notes, say:clean(d[0]), label:"Entrevistas"};
 }
 function renderFlash(){
   const back = `<div class="top"><button class="icon-btn" data-act="deckback" aria-label="Volver">←</button><b>${esc(fl.name)}</b><span class="small muted">${Math.min(fl.i+1,fl.cards.length)}/${fl.cards.length}</span></div>`;
@@ -4467,7 +4882,7 @@ function renderFlash(){
     <div class="row" style="flex-wrap:wrap;gap:10px"><button class="btn" data-act="deckagain">Otra ronda</button><button class="btn ghost" data-act="deckback">Elegir otro mazo</button></div></div></div>`;
   const it = fl.cards[fl.i], f = cardFaces(it);
   return `<div class="wrap">${back}<div class="card-wrap"><div class="fcard ${fl.flip?"flip":""}" data-act="flip" role="button" tabindex="0" aria-label="Girar tarjeta">
-      <div class="face front"><span class="small muted">${LEVELS[it.lvl-1].code}, ${esc(f.label)}</span><div class="word" lang="en">${esc(f.front)}</div><span class="small muted">Toca para ver el significado</span></div>
+      <div class="face front"><span class="small muted">${LEVELS[it.lvl-1].code}, ${esc(f.label)}</span><div class="word" lang="en">${esc(f.front)}</div>${ipa(clean(f.front))?`<span class="ipa">${esc(ipa(clean(f.front)))}</span>`:""}<span class="small muted">Toca para ver el significado</span></div>
       <div class="face back"><div class="word">${esc(f.back)}</div>${f.extra?`<p class="muted">${esc(f.extra)}</p>`:""}</div></div></div>
     <div class="row" style="gap:10px;flex-wrap:wrap">${spk(f.say)}${f.ex?`<button class="btn sm ghost" data-act="say" data-t="${esc(f.ex)}">Escuchar ejemplo</button>`:""}</div>
     <div class="row sec" style="gap:10px">${fl.flip
@@ -4566,6 +4981,7 @@ function renderProgress(){
   const se = S.settings, opt = (v,l,cur) => `<option value="${v}" ${cur===v?"selected":""}>${l}</option>`;
   h += `<div class="panel sec"><h2>Ajustes</h2><div class="stack" style="margin-top:12px">
     <label class="row between"><span>Inglés técnico de aviónica en los retos</span><select data-set="tech">${opt("never","Nunca",se.tech)}${opt("some","Algunos días",se.tech)}${opt("daily","Todos los días",se.tech)}</select></label>
+    <label class="row between"><span>Preparar mi oferta de trabajo en los retos diarios</span><select data-set="offer">${opt("on","Sí",se.offer||"on")}${opt("off","No",se.offer||"on")}</select></label>
     <label class="row between"><span>Idioma de instrucciones y explicaciones</span><select data-set="lang">${opt("auto","Según mi nivel",se.lang||"auto")}${opt("es","Siempre en español",se.lang||"auto")}${opt("en","Siempre en inglés",se.lang||"auto")}</select></label>
     <label class="row between"><span>Acento de la voz</span><select data-set="accent">${opt("en-GB","Británico",se.accent)}${opt("en-US","Americano",se.accent)}</select></label>
     <label class="row between"><span>Tema</span><select data-set="theme">${opt("auto","Automático",se.theme)}${opt("light","Claro",se.theme)}${opt("dark","Oscuro",se.theme)}</select></label>
@@ -4590,6 +5006,7 @@ function go(v){ stopTimer(); Mic.abort(); try{ speechSynthesis.cancel(); }catch(
 const ACT = {
   tab: b => go(b.dataset.v),
   say: b => speak(b.dataset.t),
+  sayslow: b => speak(b.dataset.t, 0.6),
   fromZero: () => { S.started = true; S.level = 1; save(); go("home"); },
   placement: () => startPlacement(),
   daily: () => startDaily(),
@@ -4662,9 +5079,9 @@ app.addEventListener("input", e => {
 });
 app.addEventListener("change", e => {
   const t = e.target;
-  if(t.dataset.iv){ iv = iv || {tech:false, useAI:true}; iv[t.dataset.iv] = t.checked; return; }
+  if(t.dataset.iv){ iv = iv || {tech:false, useAI:true, offer:true}; iv[t.dataset.iv] = t.checked; return; }
   const k = t.dataset.set; if(!k || k==="rate") return;
-  S.settings[k] = t.value; if(k==="tech") S.daily = S.daily && S.daily.done ? S.daily : null; save(); render();
+  S.settings[k] = t.value; if(k==="tech"||k==="offer") S.daily = S.daily && S.daily.done ? S.daily : null; save(); render();
 });
 app.addEventListener("keydown", e => {
   const t = e.target;
