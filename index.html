@@ -297,6 +297,22 @@ label.row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)
 .icon-btn.sm{width:34px;height:34px;font-size:.95rem}
 .msg.note .pron{background:transparent}
 .pron > .pword:first-child{border-top:0;padding-top:0;margin-top:0}
+
+/* confirmar lo dicho antes de enviar */
+.heard-card{padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);margin-top:8px}
+.heard-card textarea{margin-top:6px;font-size:1.05rem}
+.time-inp{width:auto;min-width:120px;padding:8px 10px;font-size:1.05rem}
+
+/* resumen: tus respuestas */
+.ans-your.bad{color:var(--bad);font-weight:600}
+.ans-your.ok{color:var(--ok);font-weight:600}
+.ans-mark{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:.8rem;font-weight:800;margin-right:8px;vertical-align:middle}
+.ans-mark.ok{background:var(--ok-bg);color:var(--ok)}
+.ans-mark.bad{background:var(--bad-bg);color:var(--bad)}
+.ans-mark.skip{background:var(--line);color:var(--muted)}
+.all-answers summary{cursor:pointer;list-style:none}
+.all-answers summary::after{content:" ▾";color:var(--muted)}
+.all-answers[open] summary::after{content:" ▴"}
 </style>
 </head>
 <body>
@@ -3385,6 +3401,19 @@ function pickItems(spec, L, n, r, used=new Set(), exact=false){
 function record(topic, ok){
   const s = S.stats[topic] || (S.stats[topic]={c:0,t:0,r:[]});
   s.t++; if(ok) s.c++; s.r.push(ok?1:0); if(s.r.length>20) s.r.shift();
+  S.rec = S.rec || []; S.rec.push([S.level, ok?1:0]); if(S.rec.length>40) S.rec.shift();
+}
+/* ¿El nivel actual es demasiado alto? Mira los últimos ejercicios hechos en este nivel */
+function levelStruggle(){
+  if(S.level<=1) return null;
+  const r = (S.rec||[]).filter(x=>x[0]===S.level); if(r.length<30) return null;
+  const a = r.reduce((t,x)=>t+x[1],0)/r.length; return a<0.55 ? a : null;
+}
+function levelDown(){
+  if(S.level<=1) return;
+  const to = S.level-1, lo = LEVELS[to-1], hi = LEVELS[to];
+  S.level = to; S.xp = Math.min(S.xp, Math.round(lo.xp + (hi.xp-lo.xp)/2));
+  S.rec = []; S.lvlSnooze = null; if(S.daily && !S.daily.done) S.daily = null; save();
 }
 function acc(topic){ const s=S.stats[topic]; if(!s||!s.r.length) return null; return s.r.reduce((a,b)=>a+b,0)/s.r.length; }
 function topicOpen(k){ return !(TOPICS[k].min && S.level<TOPICS[k].min) && !(k==="tech" && S.settings.tech==="never"); }
@@ -3396,7 +3425,35 @@ function weakest(){
 function curStreak(){ if(!S.lastDaily) return 0; return dayDiff(S.lastDaily,todayKey())<=1 ? S.streak : 0; }
 function addXP(n){ S.xp = Math.max(0, S.xp+Math.round(n)); }
 function checkrideReady(){ return S.level<5 && S.xp>=LEVELS[S.level].xp; }
-function dueReview(){ const k=todayKey(); return Object.keys(S.review).filter(id => ITEM[id] && S.review[id]<=k); }
+/* ---------- repaso de fallos, repartido entre los próximos retos ----------
+   Cada fallo se guarda con el número de reto a partir del cual puede volver (due) y una caja:
+   caja 1 = recién fallado (vuelve en uno de los próximos retos);
+   caja 2 = acertado una vez (vuelve unos retos después para confirmarlo y, si se acierta, sale).
+   En cada reto entran como mucho REVIEW_CAP repasos, y los más antiguos primero. */
+const REVIEW_CAP = 3;
+const revDue = v => (v && typeof v==="object") ? v.due : 0;
+function reviewSlot(from){
+  const count = {}; Object.values(S.review).forEach(v => { const d = revDue(v); count[d] = (count[d]||0)+1; });
+  let d = from; while((count[d]||0) >= REVIEW_CAP) d++; return d;
+}
+function reviewMiss(id){ if(!ITEM[id]) return; delete S.review[id]; S.review[id] = {box:1, due: reviewSlot((S.dn||0)+1)}; }
+function reviewHit(id){
+  const v = S.review[id]; if(v==null) return;
+  delete S.review[id];
+  if(typeof v==="object" && v.box===1) S.review[id] = {box:2, due: reviewSlot((S.dn||0)+3)};
+}
+function dueReview(){ const n = S.dn||0; return Object.keys(S.review).filter(id => ITEM[id] && revDue(S.review[id])<=n).sort((a,b)=>revDue(S.review[a])-revDue(S.review[b])); }
+function pendingReview(){ return Object.keys(S.review).filter(id => ITEM[id]).length; }
+/* convierte los repasos antiguos (con fecha) al sistema por retos, repartiéndolos */
+function migrateReview(){
+  if(S.dn==null) S.dn = Object.keys(S.days||{}).length;
+  const old = Object.entries(S.review).filter(([,v]) => typeof v!=="object" || v===null);
+  if(!old.length) return;
+  old.sort((a,b) => String(a[1]).localeCompare(String(b[1])));
+  old.forEach(([id]) => delete S.review[id]);
+  old.forEach(([id]) => { if(ITEM[id]) S.review[id] = {box:1, due: reviewSlot(S.dn)}; });
+  save();
+}
 function levelPct(xp){
   const cur=LEVELS[S.level-1], next=LEVELS[S.level], top = next ? next.xp : TOP_XP;
   return Math.max(0, Math.min(1, (xp-cur.xp)/(top-cur.xp)));
@@ -3502,13 +3559,12 @@ function buildDaily(){
     (offerOn() ? r()<0.6 : (L>=2 && r()<0.5)) ? (offerOn() ? "interview:o" : "interview:q") : "write:c", micBlocked ? "pron:m" : ["pron:m","pron:w","pron:s"][Math.floor(r()*3)]];
   if(S.settings.tech==="daily" || (S.settings.tech==="some" && r()<0.5)) base.splice(5,0,"tech");
   if(offerOn()) base.splice(1,0,"interview:w"); else if(L>=2 && r()<0.35) base.splice(1,0,"interview:v");
-  const due = shuffle(dueReview(), r).slice(0,2);
+  const due = dueReview().slice(0, REVIEW_CAP);
   due.forEach(id=>used.add(id));
   const w = weakest();
   if(w && !due.length) base.splice(3,0,w);
   base.forEach(t => { const it=pickItems(t,L,1,r,used)[0]; if(it){ used.add(it.id); ids.push(it.id); } });
-  if(due[0]) ids.splice(2,0,due[0]);
-  if(due[1]) ids.splice(6,0,due[1]);
+  [2,7,12].forEach((pos,k) => { if(due[k]) ids.splice(Math.min(pos, ids.length), 0, due[k]); });
   S.daily = {date:key, v:DAILY_V, ids, review:due, done:false, score:null, fact:null};
   save();
   return S.daily;
@@ -3629,6 +3685,7 @@ const FB = {
   good:["¡Bien!","Good!"], forExample:["Por ejemplo","For example"], nowYou:["Ahora dilo tú.","Now you say it."]
 };
 const fb = k => tr(FB[k][0], FB[k][1]);
+function titleText(ex){ for(const k in TT) if(TT[k][0]===ex.title) return inEn() ? TT[k][1] : TT[k][0]; return ex.title; }
 const tt = k => titleHTML(TT[k][0], TT[k][1]);
 
 /* ---------- verbos irregulares: base → [pasado, participio] ---------- */
@@ -4171,6 +4228,11 @@ function renderHome(){
   const d = buildDaily(), cur = LEVELS[S.level-1], next = LEVELS[S.level];
   const dateStr = cap(new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}));
   let h = `<div class="wrap">${topBar()}${progressCard()}`;
+  const struggle = levelStruggle();
+  if(struggle!=null && !(S.lvlSnooze && S.lvlSnooze>todayKey())){ const prev = LEVELS[S.level-2];
+    h += `<div class="panel sec" style="border:2px solid var(--line)"><h2>¿Este nivel te cuesta demasiado?</h2>
+      <p class="muted" style="margin:6px 0 14px">En tus últimos ejercicios de ${cur.code} has acertado el ${Math.round(struggle*100)} %. Si quieres, puedes bajar a ${prev.code} para afianzar la base y volver a subir con el examen cuando estés preparado.</p>
+      <div class="row" style="gap:10px"><button class="btn ghost" style="flex:1" data-act="lvlkeep">Seguir en ${cur.code}</button><button class="btn" style="flex:1" data-act="lvldown">Bajar a ${prev.code}</button></div></div>`; }
   if(checkrideReady()) h += `<div class="panel sec" style="border:2px solid var(--sun)"><h2>Examen de nivel ${next.code}</h2>
     <p class="muted" style="margin:6px 0 14px">Tienes experiencia suficiente. Acierta 7 de 10 preguntas de nivel ${cur.code} para pasar a ${next.name}.</p>
     <button class="btn full" data-act="checkride">Hacer el examen</button></div>`;
@@ -4188,12 +4250,14 @@ function renderHome(){
   }
   const r = rng(hashStr("home"+todayKey()));
   const scs = SCENARIOS.filter(s=>s.l<=S.level && s.l>=S.level-1), sc = scs[Math.floor(r()*scs.length)] || SCENARIOS[0];
+  if(typeof pushHomeCard==="function") h += pushHomeCard();
   h += `<div class="panel sec talk-card"><p class="muted small">Conversación sugerida</p>
     <div class="row" style="margin:8px 0 12px"><span class="gi" style="background:#FFE3D6" aria-hidden="true">${sc.icon}</span><div><h3>${esc(sc.title)}</h3><p class="small muted">${sc.turns.length} intervenciones, nivel ${LEVELS[sc.l-1].code}</p></div></div>
     <div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="scen" data-id="${sc.id}">Empezar a hablar</button><button class="btn sm ghost" data-act="tab" data-v="talk">Ver más conversaciones</button></div></div>`;
   const w = weakest(), due = dueReview();
   if(w) h += `<div class="panel sec"><h3>Refuerza: ${TOPICS[w].name.toLowerCase()}</h3><p class="muted" style="margin:4px 0 12px">Es tu tema más flojo ahora mismo: ${Math.round(acc(w)*100)} % de aciertos recientes.</p><button class="btn sm" data-act="practice" data-topic="${w}">Practicar</button></div>`;
-  if(due.length) h += `<div class="panel sec"><h3>Repaso de fallos</h3><p class="muted" style="margin:4px 0 12px">Tienes ${due.length} ${due.length===1?"ejercicio":"ejercicios"} pendientes de repasar.</p><button class="btn sm" data-act="review">Repasar ahora</button></div>`;
+  const extra = due.filter(id => !(d && d.ids.includes(id)));
+  if(extra.length) h += `<div class="panel sec"><h3>Repaso de fallos</h3><p class="muted" style="margin:4px 0 12px">Tus fallos van entrando en los retos poco a poco. Si quieres adelantarte, ahora mismo puedes repasar ${extra.length} ${extra.length===1?"ejercicio":"ejercicios"}.</p><button class="btn sm" data-act="review">Repasar ahora</button></div>`;
   const pool = S.level>=2 ? POOL.expr.filter(it=>it.lvl<=S.level+1) : POOL.phrasal.filter(it=>it.lvl<=2), it = pool[Math.floor(r()*pool.length)];
   h += `<div class="panel sec"><p class="muted small">${it.topic==="expr"?"Expresión":"Phrasal verb"} del día</p>
     <div class="row between" style="margin-top:6px;align-items:flex-start"><div><div class="wod-word">${esc(it.d[0])}</div><div>${esc(it.d[1])}</div><p class="small muted" style="margin-top:6px"><i>${esc(it.d[3])}</i></p></div>${spk(it.d[3])}</div></div>`;
@@ -4405,20 +4469,35 @@ function doContinue(skip, selfOk){
   if(!skip && sess.kind!=="placement"){
     record(ex.it.topic, ok);
     S.seen[ex.it.id] = today;
-    if(!ok) S.review[ex.it.id] = addDays(today,1); else delete S.review[ex.it.id];
+    if(!ok) reviewMiss(ex.it.id); else reviewHit(ex.it.id);
     addXP((ok ? (XP_OK[ex.type]||15)*(st.result.typo?0.75:1) : (XP_OK[ex.type]?8:1)) * sess.mul);
   }
-  sess.res.push({ex, ok, skip:!!skip});
+  sess.res.push({ex, ok, skip:!!skip, your: yourAnswer(ex, st, skip)});
   if(sess.i < sess.exs.length-1){ sess.i++; resetEx(); save(); render(); scrollTo(0,0); }
   else finishSession();
+}
+/* lo que contestó el alumno, para enseñarlo en el resumen */
+function yourAnswer(ex, st, skip){
+  if(skip) return null;
+  if(ex.type==="order") return (st.built||[]).map(i=>ex.words[i]).join(" ");
+  if((ex.type==="speak" || ex.type==="reply") && !st.typing && st.heard && st.heard.length)
+    return st.heard.reduce((b,a) => sim(a, ex.sol||"") > sim(b, ex.sol||"") ? a : b, st.heard[0]);
+  return st.answer==null ? "" : String(st.answer);
+}
+function questionText(ex){
+  const body = ex.big || ex.bot || ex.task || ex.es || (ex.sentence||"").split(GAP).join(" ___ ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+  const t = titleText(ex);
+  return body ? `${t} «${body}»` : t;
 }
 function finishSession(){
   Mic.abort();
   const s = sess, graded = s.res.filter(x=>!x.skip), correct = graded.filter(x=>x.ok).length, total = graded.length, key = todayKey();
   const m = {kind:s.kind, xp0:s.xp0, correct, total, fact:null, title:"Sesión terminada", sub:"",
-    misses: s.res.filter(x=>!x.ok && !x.skip).map(x=>({q: x.ex.big || x.ex.bot || x.ex.task || x.ex.es || (x.ex.sentence||"").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim(), a: x.ex.sol}))};
+    answers: s.res.map(x=>({q: questionText(x.ex), your: x.your, a: x.ex.sol, ok: x.ok, skip: x.skip, say: x.ex.full, model: LONG_TYPES.includes(x.ex.type) || x.ex.type==="reply"}))};
+  m.misses = m.answers.filter(x=>!x.ok && !x.skip);
   if(s.kind==="daily"){
     if(S.lastDaily!==key){ S.streak = (S.lastDaily && dayDiff(S.lastDaily,key)===1) ? S.streak+1 : 1; S.lastDaily = key; }
+    if(S.daily && !S.daily.done) S.dn = (S.dn||0)+1;
     S.best = Math.max(S.best, S.streak); S.days[key] = 1;
     addXP(40 + (correct===total ? 20 : 0));
     const r = rng(hashStr("fact"+key));
@@ -4428,6 +4507,7 @@ function finishSession(){
       m.fact = FACTS[idx]; if(S.daily) S.daily.fact = idx;
     }
     if(S.daily){ S.daily.done = true; S.daily.score = [correct,total]; }
+    if(typeof pushDone==="function") pushDone();
     m.title = "Reto de hoy completado"; m.sub = correct===total ? "Pleno: +20 XP de bonificación." : "Mañana tendrás un reto nuevo.";
   } else if(s.kind==="checkride"){
     const need = Math.ceil(total*0.7);
@@ -4444,13 +4524,22 @@ function finishSession(){
   } else { m.title = "Práctica terminada"; m.sub = "Tus resultados ya cuentan en Progreso."; }
   save(); summ = m; sess = null; view = "summary"; pendingAnim = [m.xp0, S.xp]; render(); scrollTo(0,0);
 }
+function cut(t, n=420){ t = String(t||""); return t.length>n ? t.slice(0,n).trim()+"…" : t; }
+function answerRow(x, withMark){
+  const mark = withMark ? `<span class="ans-mark ${x.skip?"skip":x.ok?"ok":"bad"}">${x.skip?"–":x.ok?"✓":"✗"}</span>` : "";
+  const yours = x.skip ? `<span class="small muted">Sin responder (lo saltaste)</span>`
+    : `<span class="small">Tu respuesta:</span> <span class="ans-your ${x.ok?"ok":"bad"}">${x.your && x.your.trim() ? esc(cut(x.your)) : "<i>(vacía)</i>"}</span>`;
+  const right = x.ok && !x.model ? "" : `<br><span class="small">${x.model ? "Respuesta modelo" : "Correcta"}:</span> <b style="white-space:pre-line">${esc(cut(x.a, 600))}</b> ${x.say && !x.model ? spk(x.say) : ""}`;
+  return `<div>${mark}<span class="small muted">${esc(x.q)}</span><br>${yours}${right}</div>`;
+}
 function renderSummary(){
   const m = summ, st = curStreak();
   let h = `<div class="wrap summary"><h1 style="margin-top:8px">${esc(m.title)}</h1><p class="muted" style="margin:6px 0 16px">${esc(m.sub)}</p>${progressCard(m.xp0)}`;
   h += `<div class="panel sec kpis"><div class="kpi"><b>${m.correct}/${m.total}</b><span>aciertos</span></div><div class="kpi"><b>+${fmt(Math.max(0,S.xp-m.xp0))}</b><span>XP ganados</span></div><div class="kpi"><b>${st}</b><span>días de racha</span></div></div>`;
   if(checkrideReady() && m.kind!=="checkride") h += `<div class="panel sec" style="border:2px solid var(--sun)"><h3>Examen de nivel disponible</h3><p class="muted" style="margin:4px 0 12px">Ya puedes intentar subir a ${LEVELS[S.level].code}.</p><button class="btn sm" data-act="checkride">Hacer el examen</button></div>`;
   if(m.fact) h += `<div class="fact sec"><p class="small" style="font-weight:700">Curiosidad del inglés</p><h3>${esc(m.fact[0])}</h3><p>${esc(m.fact[1])}</p></div>`;
-  if(m.misses.length) h += `<div class="panel sec"><h3 style="margin-bottom:10px">Para repasar</h3><div class="miss-list">${m.misses.map(x=>`<div><span class="small muted">${esc(x.q)}</span><br><b style="white-space:pre-line">${esc(x.a)}</b></div>`).join("")}</div><p class="note">Volverán a aparecer en tus próximos retos.</p></div>`;
+  if(m.misses.length) h += `<div class="panel sec"><h3 style="margin-bottom:10px">Para repasar</h3><div class="miss-list">${m.misses.map(x=>answerRow(x,false)).join("")}</div><p class="note">Irán volviendo poco a poco en tus próximos retos (como mucho 3 en cada uno) y, cuando los aciertes, una vez más para confirmarlo.</p></div>`;
+  if(m.answers && m.answers.length && m.kind!=="placement") h += `<details class="panel sec all-answers"${m.misses.length?"":" open"}><summary><b>Todas tus respuestas (${m.answers.length})</b></summary><div class="miss-list" style="margin-top:10px">${m.answers.map(x=>answerRow(x,true)).join("")}</div></details>`;
   return h + `<div class="sec"><button class="btn full" data-act="home">Continuar</button></div></div>`;
 }
 
@@ -4468,7 +4557,7 @@ function startPractice(spec, n=8, opts={}){
   if(t==="conv") n = Math.min(n,6);
   startSession(Object.assign({kind:"practice", mul:0.5, items:pickItems(spec,S.level,n,r)}, opts));
 }
-function startReview(){ const ids = dueReview().slice(0,10); startSession({kind:"review", mul:0.5, items:ids.map(id=>ITEM[id]), review:ids}); }
+function startReview(){ const d = S.daily && S.daily.date===todayKey() && !S.daily.done ? S.daily.ids : []; const ids = dueReview().filter(id=>!d.includes(id)).slice(0,10); startSession({kind:"review", mul:0.5, items:ids.map(id=>ITEM[id]), review:ids}); }
 function startCheckride(){
   const L = S.level, r = rng(Date.now()), used = new Set();
   const specs = ["vocab","verbs","conn","order","ask","conv", L>=2?"expr":"phrasal","write:t","vocab","verbs"];
@@ -4525,7 +4614,7 @@ function renderTalk(){
 /* ---------- chat ---------- */
 function newChat(sc, mode){
   Mic.abort();
-  chat = {mode, sc, i:0, log:[], tries:0, peek:false, score:0, done:false, busy:false, typing:micBlocked, listening:false, heard:null, draft:"", micErr:null, userTurns:0, final:null, xp0:S.xp, last:null};
+  chat = {mode, sc, i:0, log:[], tries:0, peek:false, score:0, done:false, busy:false, typing:micBlocked, listening:false, heard:null, pending:null, draft:"", micErr:null, userTurns:0, final:null, xp0:S.xp, last:null};
   const first = sc.open || sc.turns[0].b;
   chat.log.push({who:"bot", text:first}); view = "chat"; render(); scrollChat(); speak(first);
 }
@@ -4567,7 +4656,11 @@ function renderChat(){
     if(c.typing){
       bar += `<div class="composer"><textarea id="chatin" class="inp" rows="2" placeholder="Escribe en inglés" autocapitalize="sentences" autocomplete="off" spellcheck="false">${esc(c.draft)}</textarea><button class="btn" data-act="chatsend" aria-label="Enviar">Enviar</button></div>`;
     } else {
-      bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening?"Te escucho. Toca para enviar":"Toca y habla"}</button>`;
+      if(c.pending && !c.listening) bar += `<div class="heard-card"><p class="small muted">${tr("Esto es lo que hemos entendido. Revísalo, corrígelo si hace falta y pulsa Enviar.","This is what we understood. Check it, correct it if needed and tap Send.")}</p>
+        <textarea id="chatheard" class="inp" rows="2" autocapitalize="sentences" autocomplete="off" spellcheck="false" lang="en">${esc(c.pending.text)}</textarea>
+        <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm ghost" data-act="chatretry">🎙️ Volver a decirlo</button><button class="btn sm ghost" data-act="chatmore">➕ Seguir hablando</button></div>
+        <button class="btn full" style="margin-top:10px" data-act="chatconfirm">Enviar</button></div>`;
+      else bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening?"Te escucho. Toca cuando termines":"Toca y habla"}</button>`;
     }
     if(c.micErr) bar += `<p class="note">${esc(c.micErr)}</p>`;
     bar += `<div class="row" style="gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px">`;
@@ -4578,19 +4671,33 @@ function renderChat(){
   }
   return h + `<div class="bar-actions">${bar}</div></div>`;
 }
-function chatMic(){
+function chatMic(append){
   if(Mic.on){ Mic.stop(); return; }
   chat.heard = null;
+  const prev = append && chat.pending ? chat.pending : null;
   const ok = Mic.start({ long:false,
     onResult: alts => { chat.heard = alts; },
     onError: code => { chat.micErr = MIC_ERR[code] || MIC_ERR.start; if(micBlocked) chat.typing = true; },
-    onEnd: () => { chat.listening = false; if(view!=="chat") return; if(chat.heard && chat.heard[0]) chatSubmit(chat.heard, true); else render(); } });
+    onEnd: () => { chat.listening = false; if(view!=="chat") return;
+      if(chat.heard && chat.heard[0]){
+        /* no se envía solo: se muestra lo que hemos entendido para que el alumno lo revise y lo envíe */
+        if(prev){ const base = prev.text.trim(); chat.pending = {alts: chat.heard.map(h=>base+" "+h), text: base+" "+chat.heard[0], orig: base+" "+chat.heard[0], edited: prev.text.trim()!==prev.orig.trim()}; }
+        else chat.pending = {alts: chat.heard, text: chat.heard[0], orig: chat.heard[0], edited:false};
+      } else if(prev) chat.pending = prev;
+      render(); scrollChat(); } });
   chat.listening = ok; if(ok) chat.micErr = null; else chat.typing = true;
   render();
 }
+function chatConfirm(){
+  const t = $("#chatheard"), p = chat.pending; if(!p) return;
+  const text = (t ? t.value : p.text).trim(); if(!text) return;
+  chat.pending = null;
+  const same = !p.edited && text.replace(/\s+/g," ")===p.orig.trim().replace(/\s+/g," ");
+  chatSubmit(same ? p.alts : [text], same);
+}
 function chatSubmit(cands, voice=false){
   cands = cands.map(s=>String(s||"").trim()).filter(Boolean); if(!cands.length) return;
-  chat.voice = voice;
+  chat.voice = voice; chat.pending = null;
   chat.draft = ""; chat.micErr = null;
   chat.log.push({who:"me", text:cands[0]}); chat.last = cands;
   if(chat.mode==="free") return freeTurn();
@@ -4741,7 +4848,7 @@ function ivNext(ok){
   const q = iv.qs[iv.i], f = iv.fb, id = OFFER_Q.includes(q) ? "interview:o"+OFFER_Q.indexOf(q) : "interview:q"+INTERVIEW.indexOf(q);
   iv.results.push({q:q.q, ok, score: f && f.ai ? +f.score : null});
   record("interview", ok); addXP(ok?25:8);
-  if(ITEM[id]){ S.seen[id] = todayKey(); if(!ok) S.review[id] = addDays(todayKey(),1); else delete S.review[id]; }
+  if(ITEM[id]){ S.seen[id] = todayKey(); if(!ok) reviewMiss(id); else reviewHit(id); }
   save();
   iv.i++; iv.answer = ""; iv.fb = null; iv.phase = iv.i<iv.qs.length ? "q" : "done"; iv.micErr = null;
   render(); scrollTo(0,0);
@@ -4928,12 +5035,12 @@ function memTap(i){
 
 /* ---------- contrarreloj ---------- */
 function tmNext(){
-  const pool = [...POOL.vocab, ...POOL.phrasal, ...POOL.interview.filter(x=>x.kind==="v"), ...(S.settings.tech!=="never"?POOL.tech:[])].filter(it=>it.lvl<=S.level);
+  const pool = [...POOL.vocab, ...POOL.phrasal, ...POOL.interview.filter(x=>x.kind==="v" || (x.kind==="w" && offerOn())), ...(S.settings.tech!=="never"?POOL.tech:[])].filter(it=>it.lvl<=S.level);
   tm.q = makeEx(pool[Math.floor(Math.random()*pool.length)], Math.random);
 }
 function stopTimer(){ if(tmTimer){ clearInterval(tmTimer); tmTimer = null; } }
 function startTimed(){
-  tm = {started:true, over:false, score:0, total:0, end:Date.now()+60000}; tmNext(); render();
+  tm = {started:true, over:false, score:0, total:0, misses:[], all:[], end:Date.now()+60000}; tmNext(); render();
   stopTimer(); tmTimer = setInterval(()=>{
     const left = Math.max(0, Math.ceil((tm.end-Date.now())/1000)), el = $("#timer");
     if(el) el.textContent = left+" s";
@@ -4944,16 +5051,21 @@ function renderTimed(){
   let h = `<div class="wrap"><div class="top"><button class="icon-btn" data-act="tab" data-v="games" aria-label="Volver">←</button><b>Contrarreloj</b><span></span></div>`;
   if(!tm.started) return h + `<div class="panel"><h2>60 segundos</h2><p class="muted" style="margin:6px 0 14px">Vocabulario, phrasal verbs y términos de entrevista de tu nivel. Cada acierto vale 4 XP y los fallos no restan.</p><button class="btn full" data-act="tmstart">Empezar</button></div></div>`;
   if(tm.over) return h + `<div class="panel"><h2>¡Tiempo!</h2><div class="kpis sec"><div class="kpi"><b>${tm.score}</b><span>aciertos</span></div><div class="kpi"><b>${tm.total}</b><span>respondidas</span></div><div class="kpi"><b>+${fmt(4*tm.score)}</b><span>XP</span></div></div>
+    ${tm.misses.length ? `<div class="sec"><h3 style="margin-bottom:10px">Tus errores (${tm.misses.length})</h3><div class="miss-list">${tm.misses.map(m=>answerRow({q:m.q, your:m.your, a:m.sol, ok:false, say:m.say},false)).join("")}</div><p class="note">Estas palabras irán volviendo poco a poco en tus próximos retos.</p></div>`
+      : tm.total ? `<p class="sec">✓ Sin errores. ¡Muy bien!</p>` : ""}
+    ${tm.all.length ? `<details class="sec all-answers"${tm.misses.length?"":" open"}><summary><b>Todas tus respuestas (${tm.all.length})</b></summary><div class="miss-list" style="margin-top:10px">${tm.all.map(x=>answerRow(x,true)).join("")}</div></details>` : ""}
     <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="tmstart">Otra vez</button><button class="btn ghost" data-act="tab" data-v="games">Volver a juegos</button></div></div></div>`;
   const q = tm.q, left = Math.max(0, Math.ceil((tm.end-Date.now())/1000));
   return h + `<div class="row between" style="margin-bottom:12px"><span class="timer" id="timer">${left} s</span><b>${tm.score} aciertos</b></div>
-    <div class="panel" id="tmpanel"><div class="q-title">${esc(q.title)}</div><div class="big">${esc(q.big)}</div>
+    <div class="panel" id="tmpanel"><div class="q-title">${q.titleH || esc(q.title)}</div><div class="big">${esc(q.big)}</div>
     <div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-act="tmpick" data-i="${i}">${esc(o)}</button>`).join("")}</div></div></div>`;
 }
 function tmPick(i){
   if(tm.over) return;
   const ok = tm.q.opts[i]===tm.q.answer; tm.total++; if(ok) tm.score++;
   record(tm.q.it.topic, ok);
+  tm.all.push({q:`${titleText(tm.q)} «${tm.q.big}»`, your:tm.q.opts[i], a:tm.q.sol, ok, say:tm.q.full});
+  if(!ok){ tm.misses.push({q:`${titleText(tm.q)} «${tm.q.big}»`, your:tm.q.opts[i], sol:tm.q.sol, say:tm.q.full}); reviewMiss(tm.q.it.id); save(); }
   if(!ok) toast(tm.q.sol);
   tmNext(); render();
   const p = $("#tmpanel"); if(p) p.classList.add(ok?"flash-ok":"flash-bad");
@@ -4968,6 +5080,8 @@ function renderProgress(){
   const w = weakest();
   const tot = Object.values(S.stats).reduce((a,s)=>a+s.t,0), ok = Object.values(S.stats).reduce((a,s)=>a+s.c,0);
   let h = `<div class="wrap">${topBar()}<h1 style="margin-bottom:14px">Progreso</h1>${progressCard()}`;
+  h += `<div class="panel sec"><h2>Cambiar de nivel</h2><p class="muted small" style="margin:6px 0 12px">Si el nivel te resulta demasiado difícil, baja uno para afianzar la base. Para subir, haz el examen de nivel cuando tengas los puntos, o repite la prueba inicial.</p>
+    <div class="row" style="gap:10px;flex-wrap:wrap">${S.level>1?`<button class="btn sm ghost" data-act="lvldown">Bajar a ${LEVELS[S.level-2].code}</button>`:""}<button class="btn sm ghost" data-act="placement">Repetir la prueba de nivel</button></div></div>`;
   h += `<div class="panel sec"><h2>Racha</h2><div class="kpis" style="margin-top:12px"><div class="kpi"><b>${st}</b><span>días seguidos</span></div><div class="kpi"><b>${S.best}</b><span>mejor racha</span></div><div class="kpi"><b>${daysN}</b><span>días de reto</span></div></div>
     <div class="lights" aria-label="Últimos 14 días">${lights}</div><p class="note">Cada punto encendido es un reto diario completado en las últimas dos semanas.</p></div>`;
   h += `<div class="panel sec"><div class="row between"><h2>Por tema</h2><span class="small muted">${tot?Math.round(ok/tot*100)+" % global":""}</span></div>
@@ -4979,6 +5093,7 @@ function renderProgress(){
   h += `<div class="panel sec"><h2>Curiosidades</h2><p class="muted small" style="margin-top:6px">Has descubierto ${S.facts.length} de ${FACTS.length}. Aparecen al terminar algunos retos diarios.</p>
     ${S.facts.length?`<details style="margin-top:8px"><summary>Ver colección</summary><div class="facts-list">${S.facts.slice().reverse().map(i=>`<div><b>${esc(FACTS[i][0])}</b><p class="small" style="margin-top:4px">${esc(FACTS[i][1])}</p></div>`).join("")}</div></details>`:""}</div>`;
   const se = S.settings, opt = (v,l,cur) => `<option value="${v}" ${cur===v?"selected":""}>${l}</option>`;
+  if(typeof pushPanelHTML==="function") h += pushPanelHTML();
   h += `<div class="panel sec"><h2>Ajustes</h2><div class="stack" style="margin-top:12px">
     <label class="row between"><span>Inglés técnico de aviónica en los retos</span><select data-set="tech">${opt("never","Nunca",se.tech)}${opt("some","Algunos días",se.tech)}${opt("daily","Todos los días",se.tech)}</select></label>
     <label class="row between"><span>Preparar mi oferta de trabajo en los retos diarios</span><select data-set="offer">${opt("on","Sí",se.offer||"on")}${opt("off","No",se.offer||"on")}</select></label>
@@ -5047,8 +5162,14 @@ const ACT = {
   scenfree: b => startScenario(b.dataset.id, "free"),
   free: b => startFree(+b.dataset.i),
   chatquit: () => { if(chat && !chat.done && chat.log.length>2 && !confirm("¿Salir de la conversación?")) return; go("talk"); },
+  lvldown: () => { const prev = LEVELS[S.level-2]; if(!prev) return;
+    if(confirm(`¿Bajar a ${prev.code} («${prev.name}»)? Tus puntos se ajustarán a la mitad de ${prev.code} y podrás volver a subir haciendo el examen de nivel.`)){ levelDown(); toast(`Ahora estás en ${prev.code}. Los retos se adaptan desde ya.`); render(); scrollTo(0,0); } },
+  lvlkeep: () => { S.lvlSnooze = addDays(todayKey(),7); save(); render(); },
   chatmic: () => chatMic(),
-  chattoggle: () => { Mic.abort(); chat.listening=false; chat.typing=!chat.typing; render(); if(chat.typing){ const t=$("#chatin"); if(t) t.focus(); } },
+  chatconfirm: () => chatConfirm(),
+  chatretry: () => { chat.pending = null; chatMic(); },
+  chatmore: () => { const t=$("#chatheard"); if(t && chat.pending) chat.pending.text = t.value; chatMic(true); },
+  chattoggle: () => { Mic.abort(); chat.listening=false; chat.typing=!chat.typing; if(chat.pending){ const t=$("#chatheard"); chat.draft = t ? t.value : chat.pending.text; chat.pending=null; } render(); if(chat.typing){ const t=$("#chatin"); if(t) t.focus(); } },
   chatsend: () => { const t=$("#chatin"); if(t) chat.draft=t.value; if(chat.draft.trim()) chatSubmit([chat.draft]); },
   chatpeek: () => { const t=chat.sc.turns[chat.i]; chat.peek=true; chat.log.push({who:"note", ok:true, html:`💡 ${fb("forExample")}: <b>${esc(t.m)}</b> ${spk(t.m)}<br><span class="small">${fb("nowYou")}</span>`}); render(); scrollChat(); speak(t.m); },
   chatai: () => chatAIcheck(),
@@ -5073,6 +5194,7 @@ app.addEventListener("input", e => {
   const t = e.target, wc = $("#wc");
   if(t.id==="ans" && sess){ sess.st.answer = t.value; const btn=$('[data-act="check"]'); if(btn) btn.disabled = !canCheck(cur(), sess.st); if(wc) wc.textContent = wordCount(t.value)+" palabras"; }
   if(t.id==="chatin" && chat) chat.draft = t.value;
+  if(t.id==="chatheard" && chat && chat.pending) chat.pending.text = t.value;
   if(t.id==="ivans" && iv){ iv.answer = t.value; const btn=$('[data-act="ivsubmit"]'); if(btn) btn.disabled = !t.value.trim(); if(wc) wc.textContent = wordCount(t.value)+" palabras"; }
   if(t.id==="wrin" && wr){ wr.text = t.value; const btn=$('[data-act="wrcheck"]'); if(btn) btn.disabled = !t.value.trim(); if(wc) wc.textContent = wordCount(t.value)+" palabras"; }
   if(t.dataset.set==="rate"){ S.settings.rate = +t.value; save(); }
@@ -5088,9 +5210,11 @@ app.addEventListener("keydown", e => {
   if(e.key==="Enter" && !e.shiftKey){
     if(t.id==="ans" && sess && !LONG_TYPES.includes(cur().type)){ e.preventDefault(); const btn=$('[data-act="check"]'); if(btn && !btn.disabled) btn.click(); }
     if(t.id==="chatin"){ e.preventDefault(); ACT.chatsend(); }
+    if(t.id==="chatheard"){ e.preventDefault(); ACT.chatconfirm(); }
   }
   if(t.classList.contains("fcard") && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); ACT.flip(); }
 });
+migrateReview();
 render();
 /* ================= VERSIÓN INSTALABLE ================= */
 var installEvt = null;
@@ -5114,6 +5238,135 @@ ACT.hideInstall = () => { S.hideInstall = true; save(); render(); };
 if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
   window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(()=>{}); });
 }
+
+/* ================= AVISOS DEL RETO DIARIO =================
+   La dirección del servicio se lee de avisos.json, en la misma carpeta que esta app:
+   {"url": "https://lift-avisos.TU-SUBDOMINIO.workers.dev"} */
+var PUSH = {url:null, checked:false, loading:null, busy:false};
+function pushSupported(){ return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+function pushState(){ if(!S.push) S.push = {on:false, times:["10:00","22:00"], id:null}; return S.push; }
+function pushId(){ var p = pushState(); if(!p.id){ p.id = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,14)); save(); } return p.id; }
+function tzName(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Madrid"; }catch(e){ return "Europe/Madrid"; } }
+function pushConfig(){
+  if(PUSH.checked) return Promise.resolve(PUSH.url);
+  if(typeof fetch!=="function"){ PUSH.checked = true; return Promise.resolve(null); }
+  if(!PUSH.loading) PUSH.loading = fetch("./avisos.json", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if(j && /^(https:\/\/|http:\/\/localhost)/.test(j.url||"")) PUSH.url = String(j.url).trim().replace(/\/+$/,"");
+    }).catch(function(){}).then(function(){ PUSH.checked = true; if(view==="progress"||view==="home") render(); return PUSH.url; });
+  return PUSH.loading;
+}
+function pushPost(path, body){
+  return fetch(PUSH.url+path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+}
+function b64ToU8(b){ var pad = "=".repeat((4-b.length%4)%4), s = atob((b+pad).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(s, function(c){ return c.charCodeAt(0); }); }
+function u8ToB64(buf){ var s = "", a = new Uint8Array(buf); for(var i=0;i<a.length;i++) s += String.fromCharCode(a[i]); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+async function pushSubscribe(){
+  var p = pushState();
+  if(!(await pushConfig())) throw new Error("noconfig");
+  var reg = await navigator.serviceWorker.ready;
+  var key = (await (await fetch(PUSH.url+"/vapid")).json()).key;
+  var sub = await reg.pushManager.getSubscription();
+  if(sub && sub.options && sub.options.applicationServerKey && u8ToB64(sub.options.applicationServerKey)!==key){ await sub.unsubscribe(); sub = null; }
+  if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToU8(key)});
+  await pushPost("/subscribe", {id:pushId(), sub:sub.toJSON(), times:p.times, tz:tzName()});
+  p.on = true; p.synced = todayKey(); save(); pushWriteState();
+}
+function pushWriteState(){
+  try{ caches.open("lift-state").then(function(c){ return c.put("./state.json", new Response(JSON.stringify({lastDaily:S.lastDaily||null, streak:curStreak()}), {headers:{"Content-Type":"application/json"}})); }).catch(function(){}); }catch(e){}
+}
+function pushDone(){
+  setTimeout(function(){
+    pushWriteState();
+    var p = pushState(); if(!p.on) return;
+    pushConfig().then(function(url){ if(!url) return; return pushPost("/done", {id:pushId(), date:todayKey()}).then(function(){ p.doneSent = todayKey(); save(); }); }).catch(function(){});
+  }, 0);
+}
+async function pushSync(){
+  pushWriteState();
+  var p = pushState(); if(!p.on || !pushSupported()) return;
+  try{
+    if(Notification.permission!=="granted"){ p.on = false; p.lost = true; save(); return; }
+    var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if(!sub){ p.on = false; p.lost = true; save(); return; }
+    if(!(await pushConfig())) return;
+    if(p.synced!==todayKey()){ await pushPost("/subscribe", {id:pushId(), sub:sub.toJSON(), times:p.times, tz:tzName()}); p.synced = todayKey(); save(); }
+    if(S.daily && S.daily.done && S.daily.date===todayKey() && p.doneSent!==todayKey()) pushDone();
+  }catch(e){}
+}
+function pushErrMsg(e){
+  var m = String(e && e.message || e);
+  if(m==="denied") return "No has dado permiso para los avisos. Puedes activarlo en los ajustes del móvil: Notificaciones → Lift (o Chrome).";
+  if(m==="noconfig") return "Los avisos aún no están configurados en esta versión de la app.";
+  return "No se han podido activar los avisos. Comprueba que tienes conexión y vuelve a intentarlo.";
+}
+function timesText(t){ return t.length===1 ? "a las "+t[0] : "a las "+t.slice(0,-1).join(", ")+" y a las "+t[t.length-1]; }
+function pushPanelHTML(){
+  if(!PUSH) return "";
+  var p = pushState(), h = '<div class="panel sec"><h2>Avisos del reto diario</h2>';
+  if(!pushSupported()){
+    h += isIOS() && !isInstalled() ? '<p class="muted small" style="margin-top:6px">Para recibir avisos en el iPhone, primero añade Lift a la pantalla de inicio (botón Compartir de Safari → «Añadir a pantalla de inicio») y ábrela desde su icono.</p>'
+      : '<p class="muted small" style="margin-top:6px">Este navegador no permite avisos. Prueba con Chrome en Android o con la app instalada.</p>';
+    return h + '</div>';
+  }
+  if(!PUSH.checked){ pushConfig(); return h + '<p class="muted small" style="margin-top:6px">Comprobando…</p></div>'; }
+  if(!PUSH.url) return h + '<p class="muted small" style="margin-top:6px">Los avisos aún no están configurados en esta versión de la app.</p></div>';
+  h += '<p class="muted small" style="margin:6px 0 12px">' + (p.on ? "Activados: te avisaremos "+timesText(p.times)+" (hora de tu móvil) si aún no has hecho el reto." : "Te avisamos a las horas que elijas si aún no has hecho el reto de ese día.") + '</p>';
+  if(p.lost && !p.on) h += '<p class="note">Los avisos se desactivaron porque el móvil retiró el permiso. Vuelve a activarlos si quieres seguir recibiéndolos.</p>';
+  if(Notification.permission==="denied") h += '<p class="note">Las notificaciones están bloqueadas para Lift. Actívalas en los ajustes del móvil (Notificaciones → Lift o Chrome) y vuelve aquí.</p>';
+  h += '<div class="stack">' + p.times.map(function(t,i){ return '<div class="row between" style="gap:10px"><label class="row" style="gap:10px;flex:1"><span>⏰ Aviso '+(i+1)+'</span><input type="time" class="inp time-inp" step="300" value="'+t+'" data-ptime="'+i+'"></label>'+(p.times.length>1?'<button class="icon-btn sm" data-act="pushdel" data-i="'+i+'" aria-label="Quitar este aviso">✕</button>':'')+'</div>'; }).join("") + '</div>';
+  if(p.times.length<4) h += '<button class="link" style="margin-top:8px" data-act="pushadd">＋ Añadir otra hora</button>';
+  h += '<div class="row" style="gap:10px;margin-top:12px;flex-wrap:wrap">' + (p.on
+      ? '<button class="btn sm ghost" data-act="pushtest" '+(PUSH.busy?"disabled":"")+'>Enviar un aviso de prueba</button><button class="btn sm ghost" data-act="pushoff" '+(PUSH.busy?"disabled":"")+'>Desactivar avisos</button>'
+      : '<button class="btn sm" data-act="pushon" '+(PUSH.busy?"disabled":"")+'>'+(PUSH.busy?"Activando…":"Activar avisos")+'</button>') + '</div>';
+  return h + '</div>';
+}
+function pushHomeCard(){
+  if(!PUSH) return "";
+  var p = pushState();
+  if(p.on || p.hideHint || !pushSupported() || !PUSH.url || Notification.permission==="denied" || !S.started) return "";
+  return '<div class="panel sec"><h3>🔔 Recordatorios del reto</h3><p class="muted" style="margin:4px 0 12px">Te avisamos '+timesText(p.times)+' si aún no has hecho el reto. Puedes cambiar las horas en Progreso.</p>'
+    + '<div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="pushon">Activar avisos</button><button class="btn sm ghost" data-act="pushhide">Ahora no</button></div></div>';
+}
+var pushSaveTimer = null;
+function pushTimesChanged(){
+  var p = pushState(); p.times = uniq(p.times.filter(Boolean)).sort(); save();
+  if(!p.on) { render(); return; }
+  clearTimeout(pushSaveTimer);
+  pushSaveTimer = setTimeout(function(){ pushSubscribe().then(function(){ toast("Horas guardadas: "+p.times.join(" y ")+"."); render(); }).catch(function(e){ toast(pushErrMsg(e)); }); }, 600);
+}
+ACT.pushon = async function(){
+  if(!pushSupported()) return;
+  var perm;
+  try{ perm = await Notification.requestPermission(); }catch(e){ perm = Notification.permission; }
+  if(perm!=="granted"){ toast(pushErrMsg("denied")); render(); return; }
+  PUSH.busy = true; render();
+  try{ await pushSubscribe(); var p = pushState(); p.lost = false; save(); toast("Avisos activados "+timesText(p.times)+"."); }
+  catch(e){ toast(pushErrMsg(e)); }
+  PUSH.busy = false; render();
+};
+ACT.pushoff = async function(){
+  var p = pushState(); PUSH.busy = true; render();
+  try{ var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(e){}
+  try{ if(await pushConfig()) await pushPost("/unsubscribe", {id:pushId()}); }catch(e){}
+  p.on = false; save(); PUSH.busy = false; toast("Avisos desactivados."); render();
+};
+ACT.pushtest = async function(){
+  PUSH.busy = true; render();
+  try{ var r = await pushPost("/test", {id:pushId()}); toast(r.ok ? "Aviso enviado. Debería llegarte en unos segundos." : "El servicio no ha podido enviar el aviso (código "+r.status+")."); }
+  catch(e){ toast("No se ha podido contactar con el servicio de avisos."); }
+  PUSH.busy = false; render();
+};
+ACT.pushadd = function(){ var p = pushState(); if(p.times.length>=4) return; var used = p.times; var cand = ["14:00","18:00","08:00","20:00"].find(function(t){ return used.indexOf(t)<0; }) || "12:00"; p.times.push(cand); pushTimesChanged(); };
+ACT.pushdel = function(b){ var p = pushState(); if(p.times.length<=1) return; p.times.splice(+b.dataset.i,1); pushTimesChanged(); };
+ACT.pushhide = function(){ pushState().hideHint = true; save(); render(); };
+app.addEventListener("change", function(e){
+  var t = e.target; if(t.dataset.ptime==null) return;
+  var v = String(t.value||""); if(!/^\d{2}:\d{2}$/.test(v)) return;
+  var m = Math.round(+v.slice(3)/5)*5; if(m===60) m = 55; v = v.slice(0,3)+String(m).padStart(2,"0");
+  pushState().times[+t.dataset.ptime] = v; pushTimesChanged();
+});
+window.addEventListener("load", function(){ try{ pushConfig(); pushSync(); }catch(e){} });
 </script>
 </body>
 </html>

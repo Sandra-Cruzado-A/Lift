@@ -1,5 +1,5 @@
 /* Lift: funcionamiento sin conexión. Cambia VERSION cada vez que subas cambios. */
-const VERSION = "lift-3.2.0";
+const VERSION = "lift-3.6.0";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {
@@ -22,6 +22,7 @@ self.addEventListener("fetch", e => {
   }
   // Iconos y tipografía: copia guardada al instante y se refresca en segundo plano.
   const same = url.origin === self.location.origin;
+  if (same && url.pathname.endsWith("/avisos.json")) return; // la configuración de avisos siempre se lee de la red
   const font = url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
   if (!same && !font) return;
   e.respondWith(caches.match(req).then(hit => {
@@ -30,5 +31,28 @@ self.addEventListener("fetch", e => {
       return res;
     }).catch(() => hit);
     return hit || net;
+  }));
+});
+
+/* ---------- Avisos del reto diario ---------- */
+self.addEventListener("push", e => {
+  e.waitUntil((async () => {
+    let st = {};
+    try { const c = await caches.open("lift-state"); const r = await c.match("./state.json"); if (r) st = await r.json(); } catch (err) {}
+    const now = new Date();
+    const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    const streak = st.streak || 0;
+    let title, body;
+    if (st.lastDaily === today) { title = "Reto de hoy completado ✓"; body = "¡Bien hecho! Mañana tendrás un reto nuevo."; }
+    else if (now.getHours() < 15) { title = "Tu reto de hoy te espera"; body = streak > 0 ? `Unos 15 minutos de inglés y sumas el día ${streak + 1} de tu racha 🔥` : "Unos 15 minutos de inglés para empezar bien el día 💬"; }
+    else { title = "Aún estás a tiempo"; body = streak > 0 ? `Haz el reto de hoy para no perder tu racha de ${streak} ${streak === 1 ? "día" : "días"} 🔥` : "Haz el reto de hoy antes de dormir: solo unos 15 minutos 💬"; }
+    await self.registration.showNotification(title, { body, icon: "./icon-192.png", tag: "lift-daily", renotify: true, data: { url: "./" } });
+  })());
+});
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ("focus" in c) return c.focus(); }
+    return self.clients.openWindow("./");
   }));
 });
