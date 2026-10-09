@@ -1,5 +1,5 @@
 /* Lift: funcionamiento sin conexión. Cambia VERSION cada vez que subas cambios. */
-const VERSION = "lift-3.6.0";
+const VERSION = "lift-3.8.0";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {

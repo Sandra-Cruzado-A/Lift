@@ -313,6 +313,11 @@ label.row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)
 .all-answers summary{cursor:pointer;list-style:none}
 .all-answers summary::after{content:" ▾";color:var(--muted)}
 .all-answers[open] summary::after{content:" ▴"}
+
+/* canciones de la radio (LyricsTraining) */
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+a.btn.full{display:flex}
+.radio-link{font-size:.92rem;text-decoration:none}
 </style>
 </head>
 <body>
@@ -3486,8 +3491,13 @@ function distract(it, n, field, r){
 const uniq = a => [...new Set(a)];
 const GAP = '<span class="gap"></span>';
 function fillVerb(d){ return d.s.replace(/___\s*\([^)]*\)/, d.o[0]).replace("___", d.o[0]); }
-function exWord(it, r, sub){
-  const en=it.d[0], es=it.d[1];
+function exWord(it, r, sub, opt={}){
+  const en=it.d[0], es=it.d[1], x = opt.mcq ? 1 : r();
+  /* formatos alternativos: escribir la palabra o reconocerla de oído */
+  if(S.level>=2 && x<0.18){ const w = clean(en); return {it,type:"input",single:true,title:"Escríbelo en inglés",titleH:titleHTML("Escríbelo en inglés","Write it in English"),big:es,sub,
+      accepted:uniq([w, w.replace(/^to /,""), "to "+w.replace(/^to /,"")]),sol:`${en} = ${es}`,full:w,ph:tr("La palabra en inglés","The English word")}; }
+  if(x<0.32) return {it,type:"mcq",title:"Escucha: ¿qué significa?",titleH:titleHTML("Escucha: ¿qué significa?","Listen: what does it mean?"),audio:true,text:clean(en),sub,
+      opts:shuffle([es,...distract(it,3,1,r)],r),answer:es,sol:`${en} = ${es}`,full:clean(en)};
   if(r()<0.5) return {it,type:"mcq",title:TT.meaning[0],titleH:tt("meaning"),big:en,say:clean(en),sub,opts:shuffle([es,...distract(it,3,1,r)],r),answer:es,sol:`${en} = ${es}`,full:clean(en)};
   return {it,type:"mcq",title:TT.sayEn[0],titleH:tt("sayEn"),big:es,sub,opts:shuffle([en,...distract(it,3,0,r)],r),answer:en,sol:`${en} = ${es}`,full:clean(en)};
 }
@@ -3497,12 +3507,12 @@ function makeEx(it, r, opt={}){
     case "vocab":
       if(it.kind==="f") return {it,type:"mcq",title:TT.ff[0],titleH:tt("ff"),big:d[0],say:clean(d[0]),sub:"False friends",
         opts:shuffle(uniq([d[1],d[2],...distract(it,2,1,r)]),r),answer:d[1],sol:`${d[0]} = ${d[1]}`,full:clean(d[0]),x:`No lo confundas con «${d[2]}».`,xe:`Don't confuse it with the Spanish word «${d[2]}».`};
-      if(it.kind==="c") return exWord(it,r,BAND_NAME(d[3]));
-      return exWord(it,r,VSUBS[d[3]]);
-    case "tech": return exWord(it,r,TSUBS[d[3]]);
+      if(it.kind==="c") return exWord(it,r,BAND_NAME(d[3]),opt);
+      return exWord(it,r,VSUBS[d[3]],opt);
+    case "tech": return exWord(it,r,TSUBS[d[3]],opt);
     case "interview":
-      if(it.kind==="v") return exWord(it,r,tr("Vocabulario de entrevistas","Job interview vocabulary"));
-      if(it.kind==="w") return exWord(it,r,tr("Tu oferta","Your job offer")+": "+tr(...OFFER_SUBS_T[d[3]]));
+      if(it.kind==="v") return exWord(it,r,tr("Vocabulario de entrevistas","Job interview vocabulary"),opt);
+      if(it.kind==="w") return exWord(it,r,tr("Tu oferta","Your job offer")+": "+tr(...OFFER_SUBS_T[d[3]]),opt);
       return {it,type:"open",title:TT.interview[0],titleH:tt("interview"),sub:it.kind==="o"?tr("Tu oferta","Your job offer"):undefined,big:d.q,say:d.q,tip:tr(d.tip,d.tipE),phrases:d.p,sol:d.m,full:d.m,ai:"interview"};
     case "phrasal":
       if(r()<0.6) return {it,type:"mcq",title:TT.phrMean[0],titleH:tt("phrMean"),big:d[0],say:d[0],opts:shuffle([d[1],...distract(it,3,1,r)],r),answer:d[1],sol:`${d[0]} = ${d[1]}`,example:d[3],full:d[3]};
@@ -3530,11 +3540,19 @@ function makeEx(it, r, opt={}){
       return {it,type:"speak",mode:"ans",title:TT.ansAloud[0],titleH:tt("ansAloud"),big:d.q,keywords:d.k,hint:tr(d.hint,d.hintE),sol:d.k[0],full:d.k[0],ai:"answer"};
     case "write":
       if(it.kind==="c") return {it,type:"compose",title:d.title,titleH:titleHTML(d.title,d.titleE),task:tr(d.task,d.taskE),from:d.from,checks:d.c.map(c=>[tr(c[0],c[2]),c[1]]),min:d.min,sol:d.m,full:d.m,ai:"compose"};
+      { const ws = d.a[0].replace(/[?.!,]/g,"").split(" ");
+        if(ws.length<=12 && r()<0.25){ const words = ws.map((w,i)=> i===0 && w!=="I" ? w.toLowerCase() : w); let sh = words;
+          for(let k=0;k<6 && sh.join(" ")===words.join(" ");k++) sh = shuffle(words,r);
+          return {it,type:"order",title:"Ordena las palabras para traducir la frase",titleH:titleHTML("Ordena las palabras para traducir la frase","Put the words in order to translate the sentence"),
+            es:d.es,words:sh,answer:words.join(" "),x:d.x,xe:d.xe,sol:d.a[0],full:d.a[0]}; } }
       return {it,type:"input",title:TT.translate[0],titleH:tt("translate"),big:d.es,accepted:d.a,x:d.x,xe:d.xe,ai:"translate",sol:d.a[0],full:d.a[0],ph:tr("Escribe en inglés","Write in English")};
     case "listen":
       return {it,type:"listen",title:TT.listen[0],titleH:tt("listen"),text:d.en,accepted:[d.en],meaning:d.es,sol:d.en,full:d.en};
     case "pron": return makePronEx(it, r);
     case "conv":
+      if(r()<0.25){ const others = shuffle(POOL.conv.filter(x => x.d.sc!==d.sc && Math.abs(x.lvl-it.lvl)<=1), r).slice(0,2).map(x=>x.d.t.m);
+        if(others.length===2) return {it,type:"mcq",title:"¿Qué responderías?",titleH:titleHTML("¿Qué responderías?","What would you reply?"),sub:d.sc.title,
+          sentence:`<i>${esc(d.t.b)}</i>`,pre:"🎯 "+(inEn()?d.t.tE:d.t.t),opts:shuffle([d.t.m,...others],r),answer:d.t.m,sol:d.t.m,full:d.t.m}; }
       return {it,type:"reply",title:TT.reply[0],titleH:tt("reply"),sub:d.sc.title,bot:d.t.b,task:inEn()?d.t.tE:d.t.t,keys:d.t.k,sol:d.t.m,full:d.t.m,ai:"reply"};
   }
 }
@@ -3549,23 +3567,66 @@ function phrasesUsed(text, phrases){
 }
 
 /* ---------- reto diario ---------- */
-const DAILY_V = 3;
+const DAILY_V = 4;
+/* Tipos de reto: cada día toca uno distinto para que no sea siempre igual */
+const DAILY_PLANS = {
+  mix:{name:"Reto variado", icon:"🎲", d:"Un poco de todo"},
+  talk:{name:"Día de conversación", icon:"💬", d:"Más conversaciones y frases para decir en voz alta"},
+  grammar:{name:"Día de gramática", icon:"🧩", d:"Tiempos verbales, preguntas, orden de las palabras y traducción"},
+  voice:{name:"Día de escuchar y hablar", icon:"🎧", d:"Dictados, pronunciación y respuestas en voz alta"},
+  words:{name:"Día de vocabulario", icon:"📖", d:"Palabras, expresiones y phrasal verbs en formatos distintos"},
+  work:{name:"Día de trabajo", icon:"💼", d:"Entrevista, vocabulario del puesto y correos"}
+};
+function planSlots(p, L, r){
+  const pick = a => a[Math.floor(r()*a.length)];
+  const idiom = () => (L>=2 && r()<0.5) ? "expr" : "phrasal";
+  const job = () => offerOn() ? pick(["interview:o","interview:o","interview:q"]) : (L>=2 ? "interview:q" : "write:c");
+  switch(p){
+    case "talk": return ["vocab:c","conv","speak","conv",idiom(),"ask","conv","pron","listen","speak"];
+    case "grammar": return ["vocab:c","verbs","order", L>=2?"conn":"ask","verbs","write:t","ask","conv","verbs","write:t"];
+    case "voice": return ["vocab:c","listen","speak","pron","conv","listen","pron","speak","vocab:v","order"];
+    case "words": return ["vocab:c","vocab:c","phrasal","vocab:v",idiom(),"vocab:c","conv","write:t","speak", r()<0.4?"vocab:f":"vocab:c"];
+    case "work": return [offerOn()?"interview:w":"vocab:v","vocab:c",job(),"conv",offerOn()?"interview:w":"vocab:c","write:c","verbs","speak",job(),"listen"];
+    default: return ["vocab:c","verbs","conv",idiom(),"speak",pick(["ask","order","conn","listen"]), r()<0.25?"vocab:f":"vocab:v","write:t","conv",job(),"pron"];
+  }
+}
+/* ordena sin dejar dos ejercicios del mismo tema seguidos; empieza con algo sencillo */
+function spreadOrder(ids, r){
+  const rest = shuffle(ids.slice(1), r), out = [ids[0]];
+  while(rest.length){
+    const last = ITEM[out[out.length-1]].topic;
+    let k = rest.findIndex(id => ITEM[id].topic!==last); if(k<0) k = 0;
+    out.push(rest.splice(k,1)[0]);
+  }
+  return out;
+}
 function buildDaily(){
   const key = todayKey();
   if(S.daily && S.daily.date===key && (S.daily.done || S.daily.v===DAILY_V)) return S.daily;
   const r = rng(hashStr(key+"|"+S.level)), L=S.level, used=new Set(), ids=[];
-  const rot = ["ask","order","conn","listen"][Math.floor(r()*4)];
-  const base = ["vocab:c","verbs","conv", (L>=2 && r()<0.5)?"expr":"phrasal","speak",rot, r()<0.25?"vocab:f":"vocab:v","write:t","conv",
-    (offerOn() ? r()<0.6 : (L>=2 && r()<0.5)) ? (offerOn() ? "interview:o" : "interview:q") : "write:c", micBlocked ? "pron:m" : ["pron:m","pron:w","pron:s"][Math.floor(r()*3)]];
+  /* tipo de reto de hoy: distinto al de ayer */
+  const plans = Object.keys(DAILY_PLANS).filter(p => p!=="work" || offerOn() || L>=2);
+  const prev = S.planLog && S.planLog.date!==key ? S.planLog.p : (S.planLog && S.planLog.prev);
+  const avail = plans.filter(p => p!==prev), wt = p => ({mix:1.5, work:0.8}[p] || 1);
+  let roll = r()*avail.reduce((t,p)=>t+wt(p),0), plan = avail[avail.length-1];
+  for(const p of avail){ roll -= wt(p); if(roll<=0){ plan = p; break; } }
+  S.planLog = {date:key, p:plan, prev};
+  const base = planSlots(plan, L, r).map(t => t==="pron" ? (micBlocked ? "pron:m" : ["pron:m","pron:w","pron:s"][Math.floor(r()*3)]) : t);
   if(S.settings.tech==="daily" || (S.settings.tech==="some" && r()<0.5)) base.splice(5,0,"tech");
-  if(offerOn()) base.splice(1,0,"interview:w"); else if(L>=2 && r()<0.35) base.splice(1,0,"interview:v");
+  if(plan!=="work"){ if(offerOn() && r()<0.7) base.splice(2,0,"interview:w"); else if(L>=2 && r()<0.3) base.splice(2,0,"interview:v"); }
   const due = dueReview().slice(0, REVIEW_CAP);
   due.forEach(id=>used.add(id));
   const w = weakest();
-  if(w && !due.length) base.splice(3,0,w);
-  base.forEach(t => { const it=pickItems(t,L,1,r,used)[0]; if(it){ used.add(it.id); ids.push(it.id); } });
-  [2,7,12].forEach((pos,k) => { if(due[k]) ids.splice(Math.min(pos, ids.length), 0, due[k]); });
-  S.daily = {date:key, v:DAILY_V, ids, review:due, done:false, score:null, fact:null};
+  if(w && !due.length && r()<0.6) base.splice(4,0,w);
+  /* evita repetir lo que salió en los últimos retos si hay alternativas */
+  const recent = new Set((S.recentDaily||[]).flatMap(x => (x && x.ids) || []));
+  base.forEach(t => { let it = pickItems(t,L,1,r,new Set([...used, ...recent]))[0] || pickItems(t,L,1,r,used)[0];
+    if(it){ used.add(it.id); ids.push(it.id); } });
+  const order = spreadOrder(ids, r);
+  [2,6,10].forEach((pos,k) => { if(due[k]) order.splice(Math.min(pos, order.length), 0, due[k]); });
+  S.recentDaily = [...(S.recentDaily||[]).filter(x => x && x.d && x.d!==key), {d:key, ids:order.slice()}].slice(-3);
+  S.daily = {date:key, v:DAILY_V, plan, ids:order, review:due, done:false, score:null, fact:null};
+  if(S.dailyRun && S.dailyRun.date!==key) S.dailyRun = null;
   save();
   return S.daily;
 }
@@ -4238,10 +4299,14 @@ function renderHome(){
     <button class="btn full" data-act="checkride">Hacer el examen</button></div>`;
   const topics = uniq(d.ids.map(id=>ITEM[id].topic));
   if(!d.done){
+    const plan = DAILY_PLANS[d.plan] || DAILY_PLANS.mix, run = dailyRunFor(d);
     h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy</h2>
-      <p class="muted" style="margin-top:6px">${d.ids.length} ejercicios, unos ${Math.round(d.ids.length*1.2)} minutos, con conversación, voz y escritura. Al terminarlo sumas 40 XP extra y mantienes la racha.</p>
+      <p style="margin-top:6px"><b>${plan.icon} ${plan.name}</b> · ${plan.d.toLowerCase()}.</p>
+      <p class="muted" style="margin-top:6px">${run ? `Llevas ${run.i} de ${d.ids.length} ejercicios. Puedes seguir donde lo dejaste.` : `${d.ids.length} ejercicios, unos ${Math.round(d.ids.length*1.2)} minutos. Al terminarlo sumas 40 XP extra y mantienes la racha.`}</p>
+      ${run ? `<div class="bar" style="margin-top:10px"><i style="width:${Math.round(100*run.i/d.ids.length)}%"></i></div>` : ""}
       <div class="chips">${topics.slice(0,5).map(t=>`<span class="chip">${TOPICS[t].icon} ${TOPICS[t].name}</span>`).join("")}${topics.length>5?`<span class="chip">y ${topics.length-5} más</span>`:""}</div>
-      <button class="btn full" data-act="daily">Empezar el reto</button></div>`;
+      <button class="btn full" data-act="daily">${run ? "Continuar el reto" : "Empezar el reto"}</button>
+      <div class="row" style="justify-content:center;margin-top:10px">${radioButton("link radio-link")}</div></div>`;
   } else {
     h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy completado</h2>
       <p class="muted" style="margin:6px 0 14px">Acertaste ${d.score[0]} de ${d.score[1]}. Mañana tendrás uno nuevo.</p>
@@ -4472,7 +4537,10 @@ function doContinue(skip, selfOk){
     if(!ok) reviewMiss(ex.it.id); else reviewHit(ex.it.id);
     addXP((ok ? (XP_OK[ex.type]||15)*(st.result.typo?0.75:1) : (XP_OK[ex.type]?8:1)) * sess.mul);
   }
-  sess.res.push({ex, ok, skip:!!skip, your: yourAnswer(ex, st, skip)});
+  sess.res.push({ex, ok, skip:!!skip, your: yourAnswer(ex, st, skip), snap: snapOf(ex)});
+  /* el reto diario se guarda tras cada ejercicio: si se cierra la app, se continúa donde se dejó */
+  if(sess.kind==="daily" && S.daily && sess.i < sess.exs.length-1)
+    S.dailyRun = {date:S.daily.date, sig:S.daily.ids.join(","), i:sess.i+1, xp0:sess.xp0, res:sess.res.map(x=>({ok:x.ok, skip:x.skip, your:x.your, snap:x.snap}))};
   if(sess.i < sess.exs.length-1){ sess.i++; resetEx(); save(); render(); scrollTo(0,0); }
   else finishSession();
 }
@@ -4484,6 +4552,7 @@ function yourAnswer(ex, st, skip){
     return st.heard.reduce((b,a) => sim(a, ex.sol||"") > sim(b, ex.sol||"") ? a : b, st.heard[0]);
   return st.answer==null ? "" : String(st.answer);
 }
+function snapOf(ex){ return {q: questionText(ex), a: ex.sol, say: ex.full, model: LONG_TYPES.includes(ex.type) || ex.type==="reply"}; }
 function questionText(ex){
   const body = ex.big || ex.bot || ex.task || ex.es || (ex.sentence||"").split(GAP).join(" ___ ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
   const t = titleText(ex);
@@ -4493,7 +4562,7 @@ function finishSession(){
   Mic.abort();
   const s = sess, graded = s.res.filter(x=>!x.skip), correct = graded.filter(x=>x.ok).length, total = graded.length, key = todayKey();
   const m = {kind:s.kind, xp0:s.xp0, correct, total, fact:null, title:"Sesión terminada", sub:"",
-    answers: s.res.map(x=>({q: questionText(x.ex), your: x.your, a: x.ex.sol, ok: x.ok, skip: x.skip, say: x.ex.full, model: LONG_TYPES.includes(x.ex.type) || x.ex.type==="reply"}))};
+    answers: s.res.map(x=>Object.assign({your: x.your, ok: x.ok, skip: x.skip}, x.snap || snapOf(x.ex)))};
   m.misses = m.answers.filter(x=>!x.ok && !x.skip);
   if(s.kind==="daily"){
     if(S.lastDaily!==key){ S.streak = (S.lastDaily && dayDiff(S.lastDaily,key)===1) ? S.streak+1 : 1; S.lastDaily = key; }
@@ -4507,6 +4576,7 @@ function finishSession(){
       m.fact = FACTS[idx]; if(S.daily) S.daily.fact = idx;
     }
     if(S.daily){ S.daily.done = true; S.daily.score = [correct,total]; }
+    S.dailyRun = null;
     if(typeof pushDone==="function") pushDone();
     m.title = "Reto de hoy completado"; m.sub = correct===total ? "Pleno: +20 XP de bonificación." : "Mañana tendrás un reto nuevo.";
   } else if(s.kind==="checkride"){
@@ -4538,13 +4608,22 @@ function renderSummary(){
   h += `<div class="panel sec kpis"><div class="kpi"><b>${m.correct}/${m.total}</b><span>aciertos</span></div><div class="kpi"><b>+${fmt(Math.max(0,S.xp-m.xp0))}</b><span>XP ganados</span></div><div class="kpi"><b>${st}</b><span>días de racha</span></div></div>`;
   if(checkrideReady() && m.kind!=="checkride") h += `<div class="panel sec" style="border:2px solid var(--sun)"><h3>Examen de nivel disponible</h3><p class="muted" style="margin:4px 0 12px">Ya puedes intentar subir a ${LEVELS[S.level].code}.</p><button class="btn sm" data-act="checkride">Hacer el examen</button></div>`;
   if(m.fact) h += `<div class="fact sec"><p class="small" style="font-weight:700">Curiosidad del inglés</p><h3>${esc(m.fact[0])}</h3><p>${esc(m.fact[1])}</p></div>`;
+  if(m.kind==="daily") h += radioCardHTML();
   if(m.misses.length) h += `<div class="panel sec"><h3 style="margin-bottom:10px">Para repasar</h3><div class="miss-list">${m.misses.map(x=>answerRow(x,false)).join("")}</div><p class="note">Irán volviendo poco a poco en tus próximos retos (como mucho 3 en cada uno) y, cuando los aciertes, una vez más para confirmarlo.</p></div>`;
   if(m.answers && m.answers.length && m.kind!=="placement") h += `<details class="panel sec all-answers"${m.misses.length?"":" open"}><summary><b>Todas tus respuestas (${m.answers.length})</b></summary><div class="miss-list" style="margin-top:10px">${m.answers.map(x=>answerRow(x,true)).join("")}</div></details>`;
   return h + `<div class="sec"><button class="btn full" data-act="home">Continuar</button></div></div>`;
 }
 
 /* ---------- lanzadores ---------- */
-function startDaily(){ const d = buildDaily(); startSession({kind:"daily", items:d.ids.map(id=>ITEM[id]), review:d.review, seed:d.date}); }
+function dailyRunFor(d){ const run = S.dailyRun; return run && !d.done && run.date===d.date && run.sig===d.ids.join(",") && run.i>0 && run.i<d.ids.length ? run : null; }
+function startDaily(){
+  const d = buildDaily(), run = dailyRunFor(d);
+  startSession({kind:"daily", items:d.ids.map(id=>ITEM[id]), review:d.review, seed:d.date});
+  if(run && sess && sess.exs.length===d.ids.length){
+    sess.res = run.res.map((x,k)=>Object.assign({ex:sess.exs[k]}, x)); sess.i = run.i; sess.xp0 = run.xp0;
+    resetEx(); render(); scrollTo(0,0); toast(`Continúas por el ejercicio ${run.i+1} de ${d.ids.length}.`);
+  }
+}
 function startExtra(){
   const r = rng(Date.now()), used = new Set(), L = S.level;
   const specs = shuffle(["vocab","verbs","conv","conv","phrasal","write:t","speak", L>=2?"expr":"order", L>=2?"interview:v":"ask"], r);
@@ -4910,6 +4989,7 @@ const GAMES = [
   {id:"timed",icon:"⏱️",bg:"#FFF1BF",t:"Contrarreloj",d:"60 segundos para acertar todo lo que puedas."},
   {id:"quiz",icon:"🎯",bg:"#D8F3E6",t:"Test por temas",d:"Palabras esenciales, viajes, salud, trabajo, entrevistas, aviónica…"},
   {id:"speak",icon:"🎙️",bg:"#E0F5D6",t:"Habla",d:"Traduce y responde en voz alta."},
+  {id:"radio",icon:"📻",bg:"#FFF1C9",t:"Canciones de la radio",d:"Éxitos actuales con su videoclip en LyricsTraining. Se abre fuera de Lift."},
   {id:"pron",icon:"🗣️",bg:"#FFE9F0",t:"Pronunciación",d:"Sonidos que se confunden, palabras difíciles y frases para repetir, con correcciones."},
   {id:"conv",icon:"💬",bg:"#FFE0D1",t:"Respuesta rápida",d:"Responde a frases de conversaciones reales."},
   {id:"order",icon:"🔀",bg:"#EAE2FF",t:"Constructor de frases",d:"Ordena las palabras."},
@@ -4924,11 +5004,34 @@ function renderGames(){
       return `<button class="game ${i===0?"wide":""} ${locked?"locked":""}" data-act="game" data-g="${g.id}" ${locked?"disabled":""}>
         <span class="gi" style="background:${g.bg}" aria-hidden="true">${g.icon}</span><span><h3>${g.t}</h3><p>${locked?"Se desbloquea al llegar a A2.":g.d}</p></span></button>`; }).join("")}</div></div>`;
 }
+/* ---------- canciones de la radio: LyricsTraining (web externa, gratis en el navegador) ---------- */
+const LT_URL = "https://lyricstraining.com/en";
+function ltLevel(){
+  return [null,["Beginner (principiante)","Choice: eliges la palabra entre opciones"],["Beginner o Intermediate","Choice: eliges la palabra entre opciones"],
+    ["Intermediate (intermedio)","Write: escribes la palabra"],["Advanced (avanzado)","Write: escribes la palabra"],["Expert (todas las palabras)","Write: escribes la palabra"]][Math.min(5,S.level)];
+}
+function radioButton(cls){ return `<a class="${cls||"btn"}" href="${LT_URL}" target="_blank" rel="noopener" data-radio="1">📻 Abrir LyricsTraining</a>`; }
+function radioCardHTML(){
+  const [lvl, mode] = ltLevel();
+  return `<div class="panel sec radio-card"><p class="muted small">Extra opcional</p><h3 style="margin:2px 0 6px">📻 Una canción de la radio</h3>
+    <p class="muted" style="margin-bottom:10px">Practica con un éxito actual y su videoclip en LyricsTraining. Para tu nivel (${LEVELS[S.level-1].code}), elige <b>${lvl}</b> y el modo <b>${mode}</b>.</p>
+    ${radioButton("btn full")}</div>`;
+}
+function renderRadio(){
+  const [lvl, mode] = ltLevel();
+  return `<div class="wrap"><div class="row" style="gap:10px;align-items:center;margin-bottom:14px"><button class="icon-btn" data-act="tab" data-v="games" aria-label="Volver">←</button><h1 style="margin:0">Canciones de la radio</h1></div>
+    <div class="panel"><p>Abre <b>LyricsTraining</b>, busca la canción que quieras por título o artista y rellena las palabras que faltan mientras ves el videoclip.</p>
+      <h3 style="margin:16px 0 6px">Para tu nivel (${LEVELS[S.level-1].code})</h3>
+      <ul class="stack small" style="padding-left:18px"><li>Nivel: <b>${lvl}</b></li><li>Modo: <b>${mode}</b></li><li>Si te cuesta, baja un nivel; si te resulta fácil, súbelo.</li></ul>
+      <div class="sec">${radioButton("btn full")}</div>
+      <p class="note">Se abre en el navegador: no hace falta instalar nada y la web es gratis. Lo que hagas allí no cuenta para tus puntos ni tu racha de Lift, porque es otra web.</p></div></div>`;
+}
 function openGame(id){
   if(id==="flash"){ deckMode="flash"; view="deck"; return render(); }
   if(id==="quiz"){ deckMode="quiz"; view="deck"; return render(); }
   if(id==="memory"){ newMemory(); view="memory"; return render(); }
   if(id==="timed"){ tm = {started:false, over:false, score:0, total:0}; view="timed"; return render(); }
+  if(id==="radio"){ view="radio"; render(); return scrollTo(0,0); }
   const n = {order:6, ask:6, listen:6, verbs:8, speak:5, conv:6, expr:8, pron:8}[id];
   startPractice(id, n, {kind:"game", exOpt: id==="ask" && S.level>=2 ? {mcq:false} : {}});
 }
@@ -5036,7 +5139,7 @@ function memTap(i){
 /* ---------- contrarreloj ---------- */
 function tmNext(){
   const pool = [...POOL.vocab, ...POOL.phrasal, ...POOL.interview.filter(x=>x.kind==="v" || (x.kind==="w" && offerOn())), ...(S.settings.tech!=="never"?POOL.tech:[])].filter(it=>it.lvl<=S.level);
-  tm.q = makeEx(pool[Math.floor(Math.random()*pool.length)], Math.random);
+  tm.q = makeEx(pool[Math.floor(Math.random()*pool.length)], Math.random, {mcq:true});
 }
 function stopTimer(){ if(tmTimer){ clearInterval(tmTimer); tmTimer = null; } }
 function startTimed(){
@@ -5111,7 +5214,7 @@ const TAB_VIEWS = ["home","talk","games","progress"];
 function render(){
   applyTheme();
   const R = {onboard:renderOnboard, home:renderHome, talk:renderTalk, games:renderGames, progress:renderProgress, session:renderSession, summary:renderSummary,
-    deck:renderDeck, flash:renderFlash, memory:renderMemory, timed:renderTimed, chat:renderChat, ivintro:renderIvIntro, interview:renderInterview, writer:renderWriter};
+    deck:renderDeck, flash:renderFlash, memory:renderMemory, timed:renderTimed, radio:renderRadio, chat:renderChat, ivintro:renderIvIntro, interview:renderInterview, writer:renderWriter};
   app.innerHTML = (R[view]||renderHome)();
   tabs.hidden = !TAB_VIEWS.includes(view);
   tabs.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===view));
