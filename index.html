@@ -3351,7 +3351,7 @@ const TOPICS = {
 const STORE_KEY = "lift-english-v2";
 function defState(){
   return {v:2,started:false,level:1,xp:0,streak:0,best:0,lastDaily:null,days:{},stats:{},seen:{},review:{},
-    daily:null,facts:[],fc:{},settings:{accent:"en-GB",rate:0.95,theme:"auto",tech:"some",lang:"auto"}};
+    daily:null,facts:[],fc:{},settings:{accent:"en-GB",rate:0.95,theme:"auto",tech:"some",lang:"es",micTime:"more"}};
 }
 function load(){
   try{ const raw = localStorage.getItem(STORE_KEY);
@@ -3361,6 +3361,8 @@ function load(){
 }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){} }
 let S = load();
+/* explicaciones y correcciones en español por defecto; los títulos siguen el nivel */
+if(S.settings && !S.settings.langV){ if(S.settings.lang==="auto" || !S.settings.lang) S.settings.lang = "es"; if(!S.settings.micTime) S.settings.micTime = "more"; S.settings.langV = 1; }
 
 /* ---------- banco de ítems ---------- */
 const POOL = {}, ITEM = {};
@@ -3495,7 +3497,7 @@ function exWord(it, r, sub, opt={}){
   const en=it.d[0], es=it.d[1], x = opt.mcq ? 1 : r();
   /* formatos alternativos: escribir la palabra o reconocerla de oído */
   if(S.level>=2 && x<0.18){ const w = clean(en); return {it,type:"input",single:true,title:"Escríbelo en inglés",titleH:titleHTML("Escríbelo en inglés","Write it in English"),big:es,sub,
-      accepted:uniq([w, w.replace(/^to /,""), "to "+w.replace(/^to /,"")]),sol:`${en} = ${es}`,full:w,ph:tr("La palabra en inglés","The English word")}; }
+      accepted:uniq([w, w.replace(/^to /,""), "to "+w.replace(/^to /,"")]),sol:`${en} = ${es}`,full:w,ph:trI("La palabra en inglés","The English word")}; }
   if(x<0.32) return {it,type:"mcq",title:"Escucha: ¿qué significa?",titleH:titleHTML("Escucha: ¿qué significa?","Listen: what does it mean?"),audio:true,text:clean(en),sub,
       opts:shuffle([es,...distract(it,3,1,r)],r),answer:es,sol:`${en} = ${es}`,full:clean(en)};
   if(r()<0.5) return {it,type:"mcq",title:TT.meaning[0],titleH:tt("meaning"),big:en,say:clean(en),sub,opts:shuffle([es,...distract(it,3,1,r)],r),answer:es,sol:`${en} = ${es}`,full:clean(en)};
@@ -3511,9 +3513,9 @@ function makeEx(it, r, opt={}){
       return exWord(it,r,VSUBS[d[3]],opt);
     case "tech": return exWord(it,r,TSUBS[d[3]],opt);
     case "interview":
-      if(it.kind==="v") return exWord(it,r,tr("Vocabulario de entrevistas","Job interview vocabulary"),opt);
-      if(it.kind==="w") return exWord(it,r,tr("Tu oferta","Your job offer")+": "+tr(...OFFER_SUBS_T[d[3]]),opt);
-      return {it,type:"open",title:TT.interview[0],titleH:tt("interview"),sub:it.kind==="o"?tr("Tu oferta","Your job offer"):undefined,big:d.q,say:d.q,tip:tr(d.tip,d.tipE),phrases:d.p,sol:d.m,full:d.m,ai:"interview"};
+      if(it.kind==="v") return exWord(it,r,trI("Vocabulario de entrevistas","Job interview vocabulary"),opt);
+      if(it.kind==="w") return exWord(it,r,trI("Tu oferta","Your job offer")+": "+trI(...OFFER_SUBS_T[d[3]]),opt);
+      return {it,type:"open",title:TT.interview[0],titleH:tt("interview"),sub:it.kind==="o"?trI("Tu oferta","Your job offer"):undefined,big:d.q,say:d.q,tip:trI(d.tip,d.tipE),phrases:d.p,sol:d.m,full:d.m,ai:"interview"};
     case "phrasal":
       if(r()<0.6) return {it,type:"mcq",title:TT.phrMean[0],titleH:tt("phrMean"),big:d[0],say:d[0],opts:shuffle([d[1],...distract(it,3,1,r)],r),answer:d[1],sol:`${d[0]} = ${d[1]}`,example:d[3],full:d[3]};
       return {it,type:"mcq",title:TT.phrWhich[0],titleH:tt("phrWhich"),big:d[1],opts:shuffle([d[0],...distract(it,3,0,r)],r),answer:d[0],sol:`${d[0]} = ${d[1]}`,example:d[3],full:d[3]};
@@ -3526,34 +3528,34 @@ function makeEx(it, r, opt={}){
     case "verbs": {
       const mc = opt.mcq!=null ? opt.mcq : (L<=2 || r()<0.35), sent = esc(d.s).replace("___",GAP), full = fillVerb(d);
       if(mc) return {it,type:"mcq",title:TT.verbPick[0],titleH:tt("verbPick"),sentence:sent,opts:shuffle(d.o,r),answer:d.o[0],x:d.x,xe:d.xe,sol:full,full};
-      return {it,type:"input",single:true,title:TT.verbType[0],titleH:tt("verbType"),sentence:sent,accepted:d.a,strict:true,x:d.x,xe:d.xe,sol:full,full,ph:tr("Solo el hueco","Just the missing words")}; }
+      return {it,type:"input",single:true,title:TT.verbType[0],titleH:tt("verbType"),sentence:sent,accepted:d.a,strict:true,x:d.x,xe:d.xe,sol:full,full,ph:trI("Solo el hueco","Just the missing words")}; }
     case "order": {
       const words = d[0].replace(/[?.!,]/g,"").split(" ").map((w,i)=> i===0 && w!=="I" ? w.toLowerCase() : w);
       let sh=words; for(let k=0;k<6 && sh.join(" ")===words.join(" ");k++) sh=shuffle(words,r);
       return {it,type:"order",title:TT.order[0],titleH:tt("order"),es:d[1],words:sh,answer:words.join(" "),sol:d[0],full:d[0]}; }
     case "ask": {
-      const mc = opt.mcq!=null ? opt.mcq : L<=2, sent = esc(d.a).replace(esc(d.h), `<mark>${esc(d.h)}</mark>`), pre = tr(d.pre, d.preE);
+      const mc = opt.mcq!=null ? opt.mcq : L<=2, sent = esc(d.a).replace(esc(d.h), `<mark>${esc(d.h)}</mark>`), pre = trI(d.pre, d.preE);
       if(mc) return {it,type:"mcq",title:TT.askPick[0],titleH:tt("askPick"),sentence:sent,pre,opts:shuffle([d.q[0],...d.o],r),answer:d.q[0],x:d.x,xe:d.xe,sol:d.q[0],full:d.q[0]};
-      return {it,type:"input",title:TT.askType[0],titleH:tt("askType"),sentence:sent,pre,accepted:d.q,x:d.x,xe:d.xe,ai:"question",sol:d.q[0],full:d.q[0],ph:tr("Escribe la pregunta en inglés","Write the question in English")}; }
+      return {it,type:"input",title:TT.askType[0],titleH:tt("askType"),sentence:sent,pre,accepted:d.q,x:d.x,xe:d.xe,ai:"question",sol:d.q[0],full:d.q[0],ph:trI("Escribe la pregunta en inglés","Write the question in English")}; }
     case "speak":
       if(d.t==="say") return {it,type:"speak",mode:"say",title:TT.sayAloud[0],titleH:tt("sayAloud"),big:d.es,accepted:d.a,x:d.x,xe:d.xe,sol:d.a[0],full:d.a[0],ai:"speak"};
-      return {it,type:"speak",mode:"ans",title:TT.ansAloud[0],titleH:tt("ansAloud"),big:d.q,keywords:d.k,hint:tr(d.hint,d.hintE),sol:d.k[0],full:d.k[0],ai:"answer"};
+      return {it,type:"speak",mode:"ans",title:TT.ansAloud[0],titleH:tt("ansAloud"),big:d.q,keywords:d.k,hint:trI(d.hint,d.hintE),sol:d.k[0],full:d.k[0],ai:"answer"};
     case "write":
-      if(it.kind==="c") return {it,type:"compose",title:d.title,titleH:titleHTML(d.title,d.titleE),task:tr(d.task,d.taskE),from:d.from,checks:d.c.map(c=>[tr(c[0],c[2]),c[1]]),min:d.min,sol:d.m,full:d.m,ai:"compose"};
+      if(it.kind==="c") return {it,type:"compose",title:d.title,titleH:titleHTML(d.title,d.titleE),task:trI(d.task,d.taskE),from:d.from,checks:d.c.map(c=>[trI(c[0],c[2]),c[1]]),min:d.min,sol:d.m,full:d.m,ai:"compose"};
       { const ws = d.a[0].replace(/[?.!,]/g,"").split(" ");
         if(ws.length<=12 && r()<0.25){ const words = ws.map((w,i)=> i===0 && w!=="I" ? w.toLowerCase() : w); let sh = words;
           for(let k=0;k<6 && sh.join(" ")===words.join(" ");k++) sh = shuffle(words,r);
           return {it,type:"order",title:"Ordena las palabras para traducir la frase",titleH:titleHTML("Ordena las palabras para traducir la frase","Put the words in order to translate the sentence"),
             es:d.es,words:sh,answer:words.join(" "),x:d.x,xe:d.xe,sol:d.a[0],full:d.a[0]}; } }
-      return {it,type:"input",title:TT.translate[0],titleH:tt("translate"),big:d.es,accepted:d.a,x:d.x,xe:d.xe,ai:"translate",sol:d.a[0],full:d.a[0],ph:tr("Escribe en inglés","Write in English")};
+      return {it,type:"input",title:TT.translate[0],titleH:tt("translate"),big:d.es,accepted:d.a,x:d.x,xe:d.xe,ai:"translate",sol:d.a[0],full:d.a[0],ph:trI("Escribe en inglés","Write in English")};
     case "listen":
       return {it,type:"listen",title:TT.listen[0],titleH:tt("listen"),text:d.en,accepted:[d.en],meaning:d.es,sol:d.en,full:d.en};
     case "pron": return makePronEx(it, r);
     case "conv":
       if(r()<0.25){ const others = shuffle(POOL.conv.filter(x => x.d.sc!==d.sc && Math.abs(x.lvl-it.lvl)<=1), r).slice(0,2).map(x=>x.d.t.m);
         if(others.length===2) return {it,type:"mcq",title:"¿Qué responderías?",titleH:titleHTML("¿Qué responderías?","What would you reply?"),sub:d.sc.title,
-          sentence:`<i>${esc(d.t.b)}</i>`,pre:"🎯 "+(inEn()?d.t.tE:d.t.t),opts:shuffle([d.t.m,...others],r),answer:d.t.m,sol:d.t.m,full:d.t.m}; }
-      return {it,type:"reply",title:TT.reply[0],titleH:tt("reply"),sub:d.sc.title,bot:d.t.b,task:inEn()?d.t.tE:d.t.t,keys:d.t.k,sol:d.t.m,full:d.t.m,ai:"reply"};
+          sentence:`<i>${esc(d.t.b)}</i>`,pre:"🎯 "+trI(d.t.t,d.t.tE),opts:shuffle([d.t.m,...others],r),answer:d.t.m,sol:d.t.m,full:d.t.m}; }
+      return {it,type:"reply",title:TT.reply[0],titleH:tt("reply"),sub:d.sc.title,bot:d.t.b,task:trI(d.t.t,d.t.tE),keys:d.t.k,sol:d.t.m,full:d.t.m,ai:"reply"};
   }
 }
 function wordCount(t){ return (String(t||"").trim().match(/[A-Za-zÀ-ÿ0-9'’-]+/g)||[]).length; }
@@ -3659,27 +3661,67 @@ const MIC_ERR = {
   "start":"No se pudo iniciar el micrófono."
 };
 let micBlocked = !SRC;
+/* Micrófono con más tiempo: escucha de forma continua, aguanta las pausas y se reinicia
+   si el navegador corta antes de tiempo. Se para al tocar el botón o tras un silencio largo. */
+function micTimes(long){
+  const m = {normal:[2000,7000], more:[3500,12000], most:[6000,20000]}[S.settings.micTime||"more"] || [3500,12000];
+  return {pause: long ? Math.round(m[0]*1.6) : m[0], wait: m[1], max: long ? 180000 : 45000};
+}
+function combineAlts(segs){ const head = segs.slice(0,-1).map(a=>a[0]).join(" "), last = segs[segs.length-1]; return last.map(a => (head ? head+" " : "")+a); }
 const Mic = {
-  rec:null,
+  rec:null, sess:null,
   start(o){
     if(!SRC){ o.onError("unsupported"); return false; }
     this.abort();
-    let r; try{ r = new SRC(); }catch(e){ o.onError("start"); return false; }
-    r.lang = S.settings.accent; r.continuous = !!o.long; r.interimResults = !!o.long; r.maxAlternatives = o.long ? 1 : 5;
-    let fin = "";
-    r.onresult = ev => {
-      if(o.long){ let interim=""; for(let i=ev.resultIndex;i<ev.results.length;i++){ const res=ev.results[i]; if(res.isFinal) fin += (fin?" ":"")+res[0].transcript.trim(); else interim += res[0].transcript; } o.onResult(fin, interim); }
-      else { const res=ev.results[0], alts=[]; for(let i=0;i<res.length;i++) alts.push(res[i].transcript); o.onResult(alts); }
-    };
-    r.onerror = ev => { if(ev.error==="aborted") return; if(ev.error==="not-allowed"||ev.error==="service-not-allowed") micBlocked = true; o.onError(ev.error); };
-    r.onend = () => { if(this.rec===r) this.rec=null; if(o.onEnd) o.onEnd(); };
-    this.rec = r;
-    try{ r.start(); }catch(e){ this.rec=null; o.onError("start"); return false; }
+    const st = this.sess = {o, t0:Date.now(), last:Date.now(), heard:false, done:false, finished:false, segs:[], timer:null};
+    if(!this._spawn(st)){ this.sess = null; return false; }
+    st.timer = setInterval(() => {
+      if(st.finished){ clearInterval(st.timer); return; }
+      const T = micTimes(st.o.long), now = Date.now();
+      if((st.heard && now-st.last > T.pause) || (!st.heard && now-st.t0 > T.wait) || now-st.t0 > T.max) this.stop();
+    }, 250);
     return true;
   },
-  stop(){ if(this.rec){ try{ this.rec.stop(); }catch(e){} } },
-  abort(){ if(this.rec){ const r=this.rec; this.rec=null; try{ r.abort(); }catch(e){} } },
-  get on(){ return !!this.rec; }
+  _spawn(st){
+    let r; try{ r = new SRC(); }catch(e){ st.o.onError("start"); return false; }
+    r.lang = S.settings.accent; r.continuous = true; r.interimResults = true; r.maxAlternatives = st.o.long ? 1 : 5;
+    r.onspeechstart = () => { st.last = Date.now(); };
+    r.onresult = ev => {
+      st.last = Date.now(); let interim = "";
+      for(let i=ev.resultIndex;i<ev.results.length;i++){ const res = ev.results[i];
+        if(res.isFinal){ const alts = []; for(let k=0;k<res.length;k++) alts.push(String(res[k].transcript||"").trim()); if(alts[0]){ st.segs.push(alts); st.heard = true; } }
+        else { const t = String(res[0].transcript||""); interim += t; if(t.trim()) st.heard = true; } }
+      if(st.o.long) st.o.onResult(st.segs.map(a=>a[0]).join(" "), interim);
+      else if(st.segs.length) st.o.onResult(combineAlts(st.segs));
+    };
+    r.onerror = ev => {
+      if(ev.error==="aborted" || ev.error==="no-speech") return;
+      if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){ micBlocked = true; st.done = true; }
+      st.o.onError(ev.error);
+    };
+    r.onend = () => {
+      if(this.rec===r) this.rec = null;
+      if(st.finished) return;
+      if(!st.done){ const T = micTimes(st.o.long), now = Date.now();
+        const keep = now-st.t0 < T.max && ((!st.heard && now-st.t0 < T.wait) || (st.heard && now-st.last < T.pause));
+        if(keep && this._spawn(st)) return; }
+      this._finish(st);
+    };
+    this.rec = r;
+    try{ r.start(); }catch(e){ this.rec = null; st.o.onError("start"); return false; }
+    return true;
+  },
+  _finish(st){
+    if(st.finished) return; st.finished = true; st.done = true; clearInterval(st.timer);
+    if(this.sess===st) this.sess = null;
+    if(!st.heard && !micBlocked) st.o.onError("no-speech");
+    if(st.o.onEnd) st.o.onEnd();
+  },
+  stop(){ const st = this.sess; if(st) st.done = true;
+    if(this.rec){ try{ this.rec.stop(); }catch(e){ if(st) this._finish(st); } } else if(st) this._finish(st); },
+  abort(){ const st = this.sess; if(st){ st.done = true; st.finished = true; clearInterval(st.timer); this.sess = null; }
+    if(this.rec){ const r = this.rec; this.rec = null; try{ r.abort(); }catch(e){} } },
+  get on(){ return !!this.sess; }
 };
 
 /* ---------- Claude ---------- */
@@ -3706,14 +3748,20 @@ function toast(msg){
 /* ================= IDIOMA Y EXPLICACIONES ================= */
 /* Idioma de instrucciones y explicaciones: A1 en español, A2 títulos en inglés con ayuda en español, B1+ en inglés. */
 function langMode(){
-  const s = (S.settings && S.settings.lang) || "auto";
+  const s = (S.settings && S.settings.lang) || "es";
   if(s==="es") return "es"; if(s==="en") return "en";
   return S.level<=1 ? "es" : S.level===2 ? "bi" : "en";
 }
 const inEn = () => langMode()==="en";
 function tr(es, en){ return inEn() && en ? en : es; }
+/* Enunciados (lo que tienes que hacer): en español por defecto; se puede cambiar en Ajustes */
+/* Títulos de los ejercicios: según el nivel (A1 español, A2 inglés con ayuda, B1+ inglés).
+   Pistas, objetivos, consejos y explicaciones: en el idioma de las explicaciones (español por defecto). */
+function levelMode(){ return S.level<=1 ? "es" : S.level===2 ? "bi" : "en"; }
+function instrMode(){ const v = (S.settings && S.settings.instr) || "auto"; return v==="es" ? "es" : v==="en" ? "en" : levelMode(); }
+function trI(es, en){ return tr(es, en); }
 function titleHTML(es, en){
-  const m = langMode();
+  const m = instrMode();
   if(m==="en" && en) return esc(en);
   if(m==="bi" && en) return `${esc(en)}<span class="gloss">${esc(es)}</span>`;
   return esc(es);
@@ -3746,7 +3794,8 @@ const FB = {
   good:["¡Bien!","Good!"], forExample:["Por ejemplo","For example"], nowYou:["Ahora dilo tú.","Now you say it."]
 };
 const fb = k => tr(FB[k][0], FB[k][1]);
-function titleText(ex){ for(const k in TT) if(TT[k][0]===ex.title) return inEn() ? TT[k][1] : TT[k][0]; return ex.title; }
+const fbI = k => trI(FB[k][0], FB[k][1]);
+function titleText(ex){ for(const k in TT) if(TT[k][0]===ex.title) return instrMode()==="en" ? TT[k][1] : TT[k][0]; return ex.title; }
 const tt = k => titleHTML(TT[k][0], TT[k][1]);
 
 /* ---------- verbos irregulares: base → [pasado, participio] ---------- */
@@ -4352,7 +4401,7 @@ function micBlock(st, long){
   if(long){
     h += `<div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">${SRC && !micBlocked ? `<button class="btn sm ${st.listening?"":"ghost"}" data-act="dictate" ${st.checked?"disabled":""}>${st.listening?"⏹ Parar de dictar":"🎙️ Dictar con la voz"}</button>`:""}<span class="small muted" id="wc">${wordCount(st.answer)} palabras</span></div>`;
   } else if(!st.typing){
-    h += `<button class="mic ${st.listening?"on":""}" data-act="mic" ${st.checked?"disabled":""}><span class="dot">🎙️</span>${st.listening?"Te escucho. Toca para parar":(st.heard?"Toca para repetir":"Toca y habla")}</button>`;
+    h += `<button class="mic ${st.listening?"on":""}" data-act="mic" ${st.checked?"disabled":""}><span class="dot">🎙️</span>${st.listening?"Te escucho. Tómate tu tiempo y toca cuando termines":(st.heard?"Toca para repetir":"Toca y habla")}</button>`;
     if(st.heard) h += `<div class="heard"><span class="muted small">${tr("Hemos oído","We heard")}</span><br><b>${esc(st.heard[0])}</b></div>`;
     if(!st.checked) h += `<button class="link" data-act="typeInstead">Prefiero escribirlo</button>`;
   } else {
@@ -4393,20 +4442,20 @@ function renderSession(){
       break;
     case "speak":
       if(ex.mode==="rep") body += `<div class="big" lang="en">${esc(ex.big)}</div>${ex.ipa?`<p class="ipa big-ipa">${esc(ex.ipa)}</p>`:""}${ex.meaning?`<p class="sub">«${esc(ex.meaning)}»</p>`:""}<div class="row" style="gap:10px;margin:4px 0 12px;flex-wrap:wrap"><button class="btn sm" data-act="play">🔊 ${tr("Escuchar","Listen")}</button><button class="btn sm ghost" data-act="playslow">🐢 ${tr("Más despacio","Slower")}</button></div>`;
-      else body += ex.mode==="say" ? `<div class="big">«${esc(ex.big)}»</div>` : `<div class="big">${esc(ex.big)}${spk(ex.big)}</div>${ex.hint?`<p class="sub">${fb("hint")}: ${esc(ex.hint)}</p>`:""}`;
+      else body += ex.mode==="say" ? `<div class="big">«${esc(ex.big)}»</div>` : `<div class="big">${esc(ex.big)}${spk(ex.big)}</div>${ex.hint?`<p class="sub">${fbI("hint")}: ${esc(ex.hint)}</p>`:""}`;
       body += micBlock(st,false); break;
     case "reply":
       body += `<div class="chat mini"><div class="msg bot"><span>${esc(ex.bot)}</span>${spk(ex.bot)}</div></div><div class="goal">🎯 ${esc(ex.task)}</div>` + micBlock(st,false);
       break;
     case "open":
-      body += `<div class="chat mini"><div class="msg bot"><span><small class="who">${fb("interviewer")}</small>${esc(ex.big)}</span>${spk(ex.big)}</div></div>
-        <details class="tip"><summary>${fb("tip")}</summary><p>${esc(ex.tip)}</p></details>
-        <p class="small muted" style="margin:10px 0 6px">${fb("phrases")}</p><div class="chips">${ex.phrases.map(p=>`<button class="chip chip-btn" data-act="say" data-t="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+      body += `<div class="chat mini"><div class="msg bot"><span><small class="who">${fbI("interviewer")}</small>${esc(ex.big)}</span>${spk(ex.big)}</div></div>
+        <details class="tip"><summary>${fbI("tip")}</summary><p>${esc(ex.tip)}</p></details>
+        <p class="small muted" style="margin:10px 0 6px">${fbI("phrases")}</p><div class="chips">${ex.phrases.map(p=>`<button class="chip chip-btn" data-act="say" data-t="${esc(p)}">${esc(p)}</button>`).join("")}</div>
         <div style="margin-top:12px">${inputHTML(false,"Escribe o dicta tu respuesta en inglés",st,4)}</div>` + micBlock(st,true);
       break;
     case "compose":
       body += `<p style="margin-bottom:10px">${esc(ex.task)}</p>${ex.from?`<div class="chat mini"><div class="msg bot"><span>${esc(ex.from)}</span>${spk(ex.from)}</div></div>`:""}
-        <ul class="checks">${ex.checks.map(([label],i)=>{ const h = st.result && st.result.hits ? st.result.hits[i].ok : null; return `<li class="${h===true?"ok":h===false?"bad":""}">${h===true?"✓":h===false?"✗":"○"} ${esc(label)}</li>`; }).join("")}<li class="small muted">${fb("aim")} ${ex.min} ${fb("words")}</li></ul>
+        <ul class="checks">${ex.checks.map(([label],i)=>{ const h = st.result && st.result.hits ? st.result.hits[i].ok : null; return `<li class="${h===true?"ok":h===false?"bad":""}">${h===true?"✓":h===false?"✗":"○"} ${esc(label)}</li>`; }).join("")}<li class="small muted">${fbI("aim")} ${ex.min} ${fbI("words")}</li></ul>
         ${inputHTML(false,"Escribe aquí en inglés",st,6)}` + micBlock(st,true);
       break;
   }
@@ -4449,11 +4498,11 @@ function fbHTML(ex, st){
   let h;
   if(ex.type==="open"){
     h = `<div class="fb neutral" role="status"><h3>${r.ai?(ok?fb("goodAns"):fb("canImprove")):fb("compare")}</h3>`;
-    if(!r.ai){ h += `<p class="small">${r.words} ${fb("words")}${r.used.length?`. ${fb("used")}: ${r.used.map(esc).join(", ")}`:". "+fb("tryPhrases")}.</p>`;
+    if(!r.ai){ h += `<p class="small">${r.words} ${fbI("words")}${r.used.length?`. ${fb("used")}: ${r.used.map(esc).join(", ")}`:". "+fb("tryPhrases")}.</p>`;
       h += `<p><i>${esc(ex.sol)}</i> ${spk(ex.sol)}</p>`; }
   } else if(ex.type==="compose"){
     h = `<div class="fb ${ok?"ok":"bad"}" role="status"><h3>${r.ai?(ok?fb("goodText"):fb("checkFix")):ok?fb("allPoints"):fb("missPoint")}</h3>
-      <p class="small">${r.words} ${fb("words")} (${fb("aim").toLowerCase()} ${ex.min}).</p>
+      <p class="small">${r.words} ${fbI("words")} (${fbI("aim").toLowerCase()} ${ex.min}).</p>
       <details${ok?"":" open"}><summary>${fb("model")}</summary><p style="white-space:pre-line;margin-top:6px"><i>${esc(ex.sol)}</i></p></details>`;
   } else {
     const head = r.ai ? fb("valid") : ok ? (r.typo ? fb("typo") : fb("correct")) : fb("wrong");
@@ -4731,7 +4780,7 @@ function renderChat(){
   } else if(c.busy){
     bar = `<p class="muted small" style="text-align:center">Claude está respondiendo…</p>`;
   } else {
-    bar = guided ? `<div class="goal">🎯 ${tr("Tu turno: "+turn.t, "Your turn: "+(turn.tE||turn.t))}</div>` : `<div class="goal">${tr("Responde como "+sc.you+". Habla o escribe con naturalidad.", "Reply as "+sc.you+". Speak or write naturally.")}</div>`;
+    bar = guided ? `<div class="goal">🎯 ${trI("Tu turno: "+turn.t, "Your turn: "+(turn.tE||turn.t))}</div>` : `<div class="goal">${trI("Responde como "+sc.you+". Habla o escribe con naturalidad.", "Reply as "+sc.you+". Speak or write naturally.")}</div>`;
     if(c.typing){
       bar += `<div class="composer"><textarea id="chatin" class="inp" rows="2" placeholder="Escribe en inglés" autocapitalize="sentences" autocomplete="off" spellcheck="false">${esc(c.draft)}</textarea><button class="btn" data-act="chatsend" aria-label="Enviar">Enviar</button></div>`;
     } else {
@@ -4739,7 +4788,7 @@ function renderChat(){
         <textarea id="chatheard" class="inp" rows="2" autocapitalize="sentences" autocomplete="off" spellcheck="false" lang="en">${esc(c.pending.text)}</textarea>
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm ghost" data-act="chatretry">🎙️ Volver a decirlo</button><button class="btn sm ghost" data-act="chatmore">➕ Seguir hablando</button></div>
         <button class="btn full" style="margin-top:10px" data-act="chatconfirm">Enviar</button></div>`;
-      else bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening?"Te escucho. Toca cuando termines":"Toca y habla"}</button>`;
+      else bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening?"Te escucho. Tómate tu tiempo y toca cuando termines":"Toca y habla"}</button>`;
     }
     if(c.micErr) bar += `<p class="note">${esc(c.micErr)}</p>`;
     bar += `<div class="row" style="gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px">`;
@@ -4885,9 +4934,9 @@ function renderInterview(){
     return h;
   }
   h += `<div class="q-tag"><span>💼 Pregunta ${iv.i+1} de ${n}</span>${q.tech?'<span class="chip">Técnica</span>':OFFER_Q.includes(q)?'<span class="chip">Tu oferta</span>':""}</div>
-    <div class="chat mini"><div class="msg bot"><span><small class="who">${fb("interviewer")}</small>${esc(q.q)}</span>${spk(q.q)}</div></div>
-    <details class="tip"><summary>${fb("tip")}</summary><p>${esc(tr(q.tip,q.tipE))}</p></details>
-    <p class="small muted" style="margin:10px 0 6px">${fb("phrases")}</p><div class="chips">${q.p.map(p=>`<button class="chip chip-btn" data-act="say" data-t="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+    <div class="chat mini"><div class="msg bot"><span><small class="who">${fbI("interviewer")}</small>${esc(q.q)}</span>${spk(q.q)}</div></div>
+    <details class="tip"><summary>${fbI("tip")}</summary><p>${esc(trI(q.tip,q.tipE))}</p></details>
+    <p class="small muted" style="margin:10px 0 6px">${fbI("phrases")}</p><div class="chips">${q.p.map(p=>`<button class="chip chip-btn" data-act="say" data-t="${esc(p)}">${esc(p)}</button>`).join("")}</div>
     <textarea id="ivans" class="inp" rows="5" style="margin-top:12px" placeholder="Escribe o dicta tu respuesta en inglés" autocapitalize="sentences" spellcheck="false" ${iv.phase!=="q"?"disabled":""}>${esc(iv.answer)}</textarea>
     <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">${SRC && !micBlocked && iv.phase==="q" ? `<button class="btn sm ${iv.listening?"":"ghost"}" data-act="ivdictate">${iv.listening?"⏹ Parar de dictar":"🎙️ Responder con la voz"}</button>`:""}<span class="small muted" id="wc">${wordCount(iv.answer)} palabras</span></div>
     ${iv.micErr?`<p class="note">${esc(iv.micErr)}</p>`:""}</div>`;
@@ -4938,9 +4987,9 @@ function ivNext(ok){
 function openWriter(id){ const w = WRITING.find(x=>x.id===id); if(!w) return; Mic.abort(); wr = {w, text:"", res:null, ai:null, busy:false, listening:false, micErr:null, recorded:false, rewarded:false}; view = "writer"; render(); scrollTo(0,0); }
 function renderWriter(){
   const w = wr.w, r = wr.res;
-  let h = `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="tab" data-v="talk" aria-label="Volver">←</button><div class="grow"><b>${w.icon} ${esc(tr(w.title,w.titleE))}</b><div class="small muted">Nivel ${LEVELS[w.l-1].code}, unas ${w.min} palabras</div></div></div><div class="sess-body">`;
-  h += `<p style="margin-bottom:10px">${esc(tr(w.task,w.taskE))}</p>${w.from?`<div class="chat mini"><div class="msg bot"><span>${esc(w.from)}</span>${spk(w.from)}</div></div>`:""}
-    <ul class="checks">${w.c.map(([label,,labelE],i)=>{ label = tr(label,labelE); const ok = r ? r.hits[i].ok : null; return `<li class="${ok===true?"ok":ok===false?"bad":""}">${ok===true?"✓":ok===false?"✗":"○"} ${esc(label)}</li>`; }).join("")}</ul>
+  let h = `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="tab" data-v="talk" aria-label="Volver">←</button><div class="grow"><b>${w.icon} ${esc(trI(w.title,w.titleE))}</b><div class="small muted">Nivel ${LEVELS[w.l-1].code}, unas ${w.min} palabras</div></div></div><div class="sess-body">`;
+  h += `<p style="margin-bottom:10px">${esc(trI(w.task,w.taskE))}</p>${w.from?`<div class="chat mini"><div class="msg bot"><span>${esc(w.from)}</span>${spk(w.from)}</div></div>`:""}
+    <ul class="checks">${w.c.map(([label,,labelE],i)=>{ label = trI(label,labelE); const ok = r ? r.hits[i].ok : null; return `<li class="${ok===true?"ok":ok===false?"bad":""}">${ok===true?"✓":ok===false?"✗":"○"} ${esc(label)}</li>`; }).join("")}</ul>
     <textarea id="wrin" class="inp" rows="8" placeholder="Escribe aquí en inglés" autocapitalize="sentences" spellcheck="false">${esc(wr.text)}</textarea>
     <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">${SRC && !micBlocked ? `<button class="btn sm ${wr.listening?"":"ghost"}" data-act="wrdictate">${wr.listening?"⏹ Parar de dictar":"🎙️ Dictar con la voz"}</button>`:""}<span class="small muted" id="wc">${wordCount(wr.text)} palabras</span></div>
     ${wr.micErr?`<p class="note">${esc(wr.micErr)}</p>`:""}`;
@@ -5200,7 +5249,9 @@ function renderProgress(){
   h += `<div class="panel sec"><h2>Ajustes</h2><div class="stack" style="margin-top:12px">
     <label class="row between"><span>Inglés técnico de aviónica en los retos</span><select data-set="tech">${opt("never","Nunca",se.tech)}${opt("some","Algunos días",se.tech)}${opt("daily","Todos los días",se.tech)}</select></label>
     <label class="row between"><span>Preparar mi oferta de trabajo en los retos diarios</span><select data-set="offer">${opt("on","Sí",se.offer||"on")}${opt("off","No",se.offer||"on")}</select></label>
-    <label class="row between"><span>Idioma de instrucciones y explicaciones</span><select data-set="lang">${opt("auto","Según mi nivel",se.lang||"auto")}${opt("es","Siempre en español",se.lang||"auto")}${opt("en","Siempre en inglés",se.lang||"auto")}</select></label>
+    <label class="row between"><span>Idioma de los títulos de los ejercicios</span><select data-set="instr">${opt("auto","Según mi nivel",se.instr||"auto")}${opt("es","Siempre en español",se.instr||"auto")}${opt("en","Siempre en inglés",se.instr||"auto")}</select></label>
+    <label class="row between"><span>Idioma de las explicaciones, pistas y correcciones</span><select data-set="lang">${opt("es","Siempre en español",se.lang||"es")}${opt("auto","Según mi nivel",se.lang||"es")}${opt("en","Siempre en inglés",se.lang||"es")}</select></label>
+    <label class="row between"><span>Tiempo para responder hablando</span><select data-set="micTime">${opt("normal","Normal",se.micTime||"more")}${opt("more","Más tiempo",se.micTime||"more")}${opt("most","Mucho más tiempo",se.micTime||"more")}</select></label>
     <label class="row between"><span>Acento de la voz</span><select data-set="accent">${opt("en-GB","Británico",se.accent)}${opt("en-US","Americano",se.accent)}</select></label>
     <label class="row between"><span>Tema</span><select data-set="theme">${opt("auto","Automático",se.theme)}${opt("light","Claro",se.theme)}${opt("dark","Oscuro",se.theme)}</select></label>
     <label><span>Velocidad de la voz</span><input type="range" min="0.6" max="1.1" step="0.05" value="${se.rate}" data-set="rate"></label>
