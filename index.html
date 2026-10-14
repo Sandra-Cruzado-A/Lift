@@ -346,6 +346,8 @@ a.btn.full{display:flex}
 .room-word{display:grid;gap:2px} .story{line-height:1.8} .story .me{color:var(--accent)}
 .big-letter{font-size:1.3rem;color:var(--accent)} .wrong-line{color:var(--bad);font-weight:700}
 .bk-code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;font-size:1.05rem}
+.lvl-status ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px;font-size:.93rem}
+.lvl-status li.ok{color:var(--ok)}
 </style>
 </head>
 <body>
@@ -3459,7 +3461,7 @@ function weakest(){
 }
 function curStreak(){ if(!S.lastDaily) return 0; return dayDiff(S.lastDaily,todayKey())<=1 ? S.streak : 0; }
 function addXP(n){ S.xp = Math.max(0, S.xp+Math.round(n)); if(n>0){ S.xpLog = S.xpLog || {}; const k = todayKey(); S.xpLog[k] = (S.xpLog[k]||0) + Math.round(n); } }
-function checkrideReady(){ return S.level<5 && S.xp>=LEVELS[S.level].xp; }
+function checkrideReady(){ return S.level<5 && S.xp>=LEVELS[S.level].xp && masteryOK() && !(S.crWait && S.crWait>todayKey()); }
 /* ---------- repaso de fallos, repartido entre los próximos retos ----------
    Cada fallo se guarda con el número de reto a partir del cual puede volver (due) y una caja:
    caja 1 = recién fallado (vuelve en uno de los próximos retos);
@@ -5016,52 +5018,6 @@ function renderOnboard(){
 }
 
 /* ---------- inicio ---------- */
-function renderHome(){
-  const d = buildDaily(), cur = LEVELS[S.level-1], next = LEVELS[S.level];
-  const dateStr = cap(new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}));
-  let h = `<div class="wrap">${topBar()}${progressCard()}`;
-  const struggle = levelStruggle();
-  if(struggle!=null && !(S.lvlSnooze && S.lvlSnooze>todayKey())){ const prev = LEVELS[S.level-2];
-    h += `<div class="panel sec" style="border:2px solid var(--line)"><h2>¿Este nivel te cuesta demasiado?</h2>
-      <p class="muted" style="margin:6px 0 14px">En tus últimos ejercicios de ${cur.code} has acertado el ${Math.round(struggle*100)} %. Si quieres, puedes bajar a ${prev.code} para afianzar la base y volver a subir con el examen cuando estés preparado.</p>
-      <div class="row" style="gap:10px"><button class="btn ghost" style="flex:1" data-act="lvlkeep">Seguir en ${cur.code}</button><button class="btn" style="flex:1" data-act="lvldown">Bajar a ${prev.code}</button></div></div>`; }
-  if(checkrideReady()) h += `<div class="panel sec" style="border:2px solid var(--sun)"><h2>Examen de nivel ${next.code}</h2>
-    <p class="muted" style="margin:6px 0 14px">Tienes experiencia suficiente. Acierta 7 de 10 preguntas de nivel ${cur.code} para pasar a ${next.name}.</p>
-    <button class="btn full" data-act="checkride">Hacer el examen</button></div>`;
-  const topics = uniq(d.ids.map(id=>ITEM[id].topic));
-  if(!d.done){
-    const plan = DAILY_PLANS[d.plan] || DAILY_PLANS.mix, run = dailyRunFor(d);
-    h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy</h2>
-      <p style="margin-top:6px"><b>${plan.icon} ${plan.name}</b> · ${plan.d.toLowerCase()}.</p>
-      <p class="muted" style="margin-top:6px">${run ? `Llevas ${run.i} de ${d.ids.length} ejercicios. Puedes seguir donde lo dejaste.` : `${d.ids.length} ejercicios, unos ${Math.round(d.ids.length*1.2)} minutos. Al terminarlo sumas 40 XP extra y mantienes la racha.`}</p>
-      ${run ? `<div class="bar" style="margin-top:10px"><i style="width:${Math.round(100*run.i/d.ids.length)}%"></i></div>` : ""}
-      <div class="chips">${topics.slice(0,5).map(t=>`<span class="chip">${TOPICS[t].icon} ${TOPICS[t].name}</span>`).join("")}${topics.length>5?`<span class="chip">y ${topics.length-5} más</span>`:""}</div>
-      <button class="btn full" data-act="daily">${run ? "Continuar el reto" : "Empezar el reto"}</button>
-      <div class="row" style="justify-content:center;margin-top:10px">${radioButton("link radio-link")}</div></div>`;
-  } else {
-    h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy completado</h2>
-      <p class="muted" style="margin:6px 0 14px">Acertaste ${d.score[0]} de ${d.score[1]}. Mañana tendrás uno nuevo.</p>
-      <button class="btn" data-act="extra">Hacer un reto extra</button></div>`;
-    if(d.fact!=null){ const f=FACTS[d.fact]; h += `<div class="fact sec"><p class="small" style="font-weight:700">Curiosidad de hoy</p><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`; }
-  }
-  const r = rng(hashStr("home"+todayKey()));
-  const scs = SCENARIOS.filter(s=>s.l<=S.level && s.l>=S.level-1), sc = scs[Math.floor(r()*scs.length)] || SCENARIOS[0];
-  if(typeof homeExtras==="function") h += homeExtras();
-  if(typeof pushHomeCard==="function") h += pushHomeCard();
-  h += `<div class="panel sec talk-card"><p class="muted small">Conversación sugerida</p>
-    <div class="row" style="margin:8px 0 12px"><span class="gi" style="background:#FFE3D6" aria-hidden="true">${sc.icon}</span><div><h3>${esc(sc.title)}</h3><p class="small muted">${sc.turns.length} intervenciones, nivel ${LEVELS[sc.l-1].code}</p></div></div>
-    <div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="scen" data-id="${sc.id}">Empezar a hablar</button><button class="btn sm ghost" data-act="tab" data-v="talk">Ver más conversaciones</button></div></div>`;
-  const w = weakest(), due = dueReview();
-  if(w) h += `<div class="panel sec"><h3>Refuerza: ${TOPICS[w].name.toLowerCase()}</h3><p class="muted" style="margin:4px 0 12px">Es tu tema más flojo ahora mismo: ${Math.round(acc(w)*100)} % de aciertos recientes.</p><button class="btn sm" data-act="practice" data-topic="${w}">Practicar</button></div>`;
-  const extra = due.filter(id => !(d && d.ids.includes(id)));
-  if(extra.length) h += `<div class="panel sec"><h3>Repaso de fallos</h3><p class="muted" style="margin:4px 0 12px">Tus fallos van entrando en los retos poco a poco. Si quieres adelantarte, ahora mismo puedes repasar ${extra.length} ${extra.length===1?"ejercicio":"ejercicios"}.</p><button class="btn sm" data-act="review">Repasar ahora</button></div>`;
-  const pool = S.level>=2 ? POOL.expr.filter(it=>it.lvl<=S.level+1) : POOL.phrasal.filter(it=>it.lvl<=2), it = pool[Math.floor(r()*pool.length)];
-  h += `<div class="panel sec"><p class="muted small">${it.topic==="expr"?"Expresión":"Phrasal verb"} del día</p>
-    <div class="row between" style="margin-top:6px;align-items:flex-start"><div><div class="wod-word">${esc(it.d[0])}</div><div>${esc(it.d[1])}</div><p class="small muted" style="margin-top:6px"><i>${esc(it.d[3])}</i></p></div>${spk(it.d[3])}</div></div>`;
-  if(typeof installCard==="function") h += installCard();
-  return h + `</div>`;
-}
-
 /* ---------- sesiones ---------- */
 function startSession(cfg){
   const r = rng(hashStr(cfg.seed || String(Date.now())));
@@ -5269,7 +5225,8 @@ function doContinue(skip, selfOk){
     record(ex.it.topic, ok);
     S.seen[ex.it.id] = today;
     if(!ok) reviewMiss(ex.it.id); else reviewHit(ex.it.id);
-    addXP((ok ? (XP_OK[ex.type]||15)*(st.result.typo?0.75:1) : (XP_OK[ex.type]?8:1)) * sess.mul);
+    if(sess.kind!=="checkride") addXP(ok ? (XP_OK[ex.type]||15) * (st.result.typo?0.75:1) * diffFactor(ex.it) * sess.mul : 0);
+    if(sess.kind!=="checkride") trackMastery(ex.it, ok);
   }
   sess.res.push({ex, ok, skip:!!skip, your: yourAnswer(ex, st, skip), snap: snapOf(ex)});
   /* el reto diario se guarda tras cada ejercicio: si se cierra la app, se continúa donde se dejó */
@@ -5302,7 +5259,7 @@ function finishSession(){
     if(S.lastDaily!==key){ S.streak = (S.lastDaily && dayDiff(S.lastDaily,key)===1) ? S.streak+1 : 1; S.lastDaily = key; }
     if(S.daily && !S.daily.done) S.dn = (S.dn||0)+1;
     S.best = Math.max(S.best, S.streak); S.days[key] = 1;
-    addXP(40 + (correct===total ? 20 : 0));
+    const accD = total ? correct/total : 0, bonus = accD>=0.6 ? Math.round(40*accD) + (correct===total ? 20 : 0) : 0; addXP(bonus);
     const r = rng(hashStr("fact"+key));
     if(r()<0.7 || !S.facts.length){
       const avail = FACTS.map((_,i)=>i).filter(i=>!S.facts.includes(i)), pool = avail.length?avail:FACTS.map((_,i)=>i);
@@ -5312,14 +5269,14 @@ function finishSession(){
     if(S.daily){ S.daily.done = true; S.daily.score = [correct,total]; }
     S.dailyRun = null;
     if(typeof pushDone==="function") pushDone();
-    m.title = "Reto de hoy completado"; m.sub = correct===total ? "Pleno: +20 XP de bonificación." : "Mañana tendrás un reto nuevo.";
+    m.title = "Reto de hoy completado"; m.sub = (bonus ? `+${bonus} XP de bonus por acertar el ${Math.round(accD*100)} %${correct===total?" (¡pleno!)":""}.` : `Sin bonus esta vez: para conseguirlo hay que acertar al menos el 60 % (has acertado el ${Math.round(accD*100)} %).`) + (typeof autoLevelCheck==="function" ? autoLevelCheck() : "");
   } else if(s.kind==="checkride"){
-    const need = Math.ceil(total*0.7);
-    if(correct>=need){ S.level = Math.min(5, S.level+1); const L=LEVELS[S.level-1]; m.xp0 = L.xp; m.title = `¡Nivel ${L.code}!`; m.sub = `Ahora estás en «${L.name}». Llegan conversaciones, estructuras y expresiones nuevas${S.level===2?", incluido el inglés coloquial":""}.`; S.daily = null; }
-    else { m.title = "Casi"; m.sub = `Necesitabas ${need} aciertos y has conseguido ${correct}. Repasa tus fallos y vuelve a intentarlo cuando quieras.`; }
+    const cr = checkrideResult(s.res);
+    if(cr.pass){ S.crWait = null; S.level = Math.min(5, S.level+1); const L=LEVELS[S.level-1]; m.xp0 = L.xp; m.title = `¡Nivel ${L.code}!`; m.sub = `Ahora estás en «${L.name}». Llegan conversaciones, estructuras y expresiones nuevas${S.level===2?", incluido el inglés coloquial":""}.`; S.daily = null; }
+    else { S.crWait = addDays(todayKey(), 3); m.title = "Todavía no"; m.sub = `Has acertado el ${Math.round(cr.accAll*100)} % (hacía falta el 80 %) y el ${Math.round(cr.accN*100)} % de las preguntas de nivel ${LEVELS[Math.min(4,S.level)].code} (hacía falta el 70 %). Sigue practicando: podrás repetir el examen dentro de 3 días.`; }
   } else if(s.kind==="placement"){
     let start = 1;
-    for(let L=1; L<=4; L++){ const g = s.res.filter(x=>x.ex.it.lvl===L); if(g.filter(x=>x.ok).length>=2) start=L+1; else break; }
+    for(let L=1; L<=4; L++){ const g = s.res.filter(x=>x.ex.it.lvl===L); if(g.filter(x=>x.ok).length >= (S.started ? 3 : 2)) start=L+1; else break; }
     start = Math.min(5,start);
     if(!S.started || start>S.level){ S.level = start; S.xp = Math.max(S.xp, LEVELS[start-1].xp); S.daily = null; }
     S.started = true;
@@ -5371,12 +5328,6 @@ function startPractice(spec, n=8, opts={}){
   startSession(Object.assign({kind:"practice", mul:0.5, items:pickItems(spec,S.level,n,r)}, opts));
 }
 function startReview(){ const d = S.daily && S.daily.date===todayKey() && !S.daily.done ? S.daily.ids : []; const ids = dueReview().filter(id=>!d.includes(id)).slice(0,10); startSession({kind:"review", mul:0.5, items:ids.map(id=>ITEM[id]), review:ids}); }
-function startCheckride(){
-  const L = S.level, r = rng(Date.now()), used = new Set();
-  const specs = ["vocab","verbs","conn","order","ask","conv", L>=2?"expr":"phrasal","write:t","vocab","verbs"];
-  const items = specs.map(t=>{ const it=pickItems(t,L,1,r,used,true)[0]; if(it) used.add(it.id); return it; });
-  startSession({kind:"checkride", items, exOpt: L>=2 ? {mcq:false} : {}});
-}
 function startPlacement(){
   const r = rng(Date.now()), used = new Set(), items = [];
   for(let L=1; L<=4; L++) for(const t of ["vocab:v","verbs","conn"]){ const it=pickItems(t,L,1,r,used,true)[0]; if(it){ used.add(it.id); items.push(it); } }
@@ -5524,14 +5475,14 @@ function chatSubmit(cands, voice=false){
 function guidedOk(text){
   const turn = chat.sc.turns[chat.i], first = chat.tries===0 && !chat.peek;
   if(first) chat.score++;
-  record("conv", first); addXP(first?20:8);
+  record("conv", first); addXP(first?20:0);
   chat.log.push({who:"note", ok:true, html:`✓ ${fb("good")}${sim(text,turn.m)<0.9?` ${fb("other")}: <b>${esc(turn.m)}</b> ${spk(turn.m)}`:""}${noteWhy(turn.m)}${chatPron(turn)}`});
   nextTurn(); render(); scrollChat();
 }
 function nextTurn(){
   chat.i++; chat.tries=0; chat.peek=false;
   if(chat.i < chat.sc.turns.length){ const b = chat.sc.turns[chat.i].b; chat.log.push({who:"bot", text:b}); setTimeout(()=>speak(b), 350); }
-  else { chat.done = true; addXP(30 + (chat.score===chat.sc.turns.length?20:0)); save(); }
+  else { chat.done = true; addXP(chat.score/chat.sc.turns.length>=0.6 ? 30 + (chat.score===chat.sc.turns.length?20:0) : 0); save(); }
 }
 async function chatAIcheck(){
   if(!AI || !chat.last || chat.busy) return;
@@ -5567,7 +5518,7 @@ Set "end" to true only if the conversation has clearly reached its natural end.`
     const fixed = !!(j.correction && j.correction.trim());
     if(fixed || (j.better && sim(j.better, chat.last[0])<0.9)) chat.log.push({who:"note", ok:!fixed, html:`${fixed?"💡 "+esc(j.correction):"✓ Se entiende bien."}${j.better?` Más natural: <b>${esc(j.better)}</b> ${spk(j.better)}`:""}`});
     if(j.reply){ chat.log.push({who:"bot", text:j.reply}); setTimeout(()=>speak(j.reply), 200); }
-    record("conv", !fixed); addXP(12); save();
+    record("conv", !fixed); addXP(fixed?3:12); save();
     chat.busy = false;
     if(j.end || chat.userTurns>=10){ render(); return endFree(); }
   }catch(e){ chat.busy = false; chat.log.push({who:"note", ok:false, html:esc(aiErr(e))}); }
@@ -5580,7 +5531,7 @@ async function endFree(){
 ${transcript()}
 
 Return JSON only, no markdown: {"score": integer 1-10, "summary": "two sentences in ${expLang()} on how the student did", "tips": ["up to 3 short, concrete tips in ${expLang()}"], "phrases": ["3 useful English phrases for this kind of conversation"]}`;
-  try{ const j = await aiJSON(prompt,"default"); chat.final = Object.assign({ai:true}, j); addXP(40); save(); }
+  try{ const j = await aiJSON(prompt,"default"); chat.final = Object.assign({ai:true}, j); addXP(Math.round(4*Math.min(10, +j.score||0))); save(); }
   catch(e){ chat.final = {err: aiErr(e)}; }
   if(view==="chat") { render(); scrollChat(); }
 }
@@ -5660,7 +5611,7 @@ Return JSON only, no markdown: {"score": integer 1-10, "good": "what went well, 
 function ivNext(ok){
   const q = iv.qs[iv.i], f = iv.fb, id = OFFER_Q.includes(q) ? "interview:o"+OFFER_Q.indexOf(q) : "interview:q"+INTERVIEW.indexOf(q);
   iv.results.push({q:q.q, ok, score: f && f.ai ? +f.score : null});
-  record("interview", ok); addXP(ok?25:8);
+  record("interview", ok); addXP(ok?25:0);
   if(ITEM[id]){ S.seen[id] = todayKey(); if(!ok) reviewMiss(id); else reviewHit(id); }
   save();
   iv.i++; iv.answer = ""; iv.fb = null; iv.phase = iv.i<iv.qs.length ? "q" : "done"; iv.micErr = null;
@@ -5692,7 +5643,7 @@ function renderWriter(){
 function wrCheck(){
   Mic.stop(); const a = $("#wrin"); if(a) wr.text = a.value;
   wr.res = checkCompose(wr.text, wr.w.c, wr.w.min); wr.ai = null;
-  if(!wr.recorded){ wr.recorded = true; record("write", wr.res.ok); addXP(wr.res.ok?30:10); const id = "write:c"+WRITING.indexOf(wr.w); S.seen[id] = todayKey(); save(); }
+  if(!wr.recorded){ wr.recorded = true; record("write", wr.res.ok); addXP(wr.res.ok?30:0); const id = "write:c"+WRITING.indexOf(wr.w); S.seen[id] = todayKey(); save(); }
   render();
 }
 async function wrAI(){
@@ -5837,7 +5788,7 @@ function renderFlash(){
 function fcNext(known){
   const it = fl.cards[fl.i];
   fl.seen += fl.again.has(it.id) ? 0 : 1;
-  if(known){ S.fc[it.id] = Math.min(4,(S.fc[it.id]||0)+1); if(!fl.again.has(it.id)) fl.known++; addXP(3); S.seen[it.id]=todayKey(); }
+  if(known){ S.fc[it.id] = Math.min(4,(S.fc[it.id]||0)+1); if(!fl.again.has(it.id)) fl.known++; addXP(1); S.seen[it.id]=todayKey(); }
   else { S.fc[it.id] = 0; if(!fl.again.has(it.id)){ fl.again.add(it.id); fl.cards.push(it); } }
   fl.i++; fl.flip = false; save(); render();
 }
@@ -5865,7 +5816,7 @@ function memTap(i){
     mem.moves++;
     const [a,b] = mem.open, A = mem.cards[a], B = mem.cards[b];
     if(A.k===B.k){ mem.done.add(a); mem.done.add(b); mem.open = []; speak(A.en?A.t:B.t);
-      if(mem.done.size===mem.cards.length){ mem.finished = true; addXP(15); save(); } }
+      if(mem.done.size===mem.cards.length){ mem.finished = true; addXP(5); save(); } }
     else { mem.lock = true; render(); setTimeout(()=>{ if(!mem) return; mem.bad=[a,b]; mem.open=[]; mem.lock=false; if(view==="memory") render(); }, 950); return; }
   }
   render();
@@ -5919,8 +5870,8 @@ function renderProgress(){
   const tot = Object.values(S.stats).reduce((a,s)=>a+s.t,0), ok = Object.values(S.stats).reduce((a,s)=>a+s.c,0);
   let h = `<div class="wrap">${topBar()}<h1 style="margin-bottom:14px">Progreso</h1>${progressCard()}`;
   if(typeof progressExtras==="function") h += progressExtras();
-  h += `<div class="panel sec"><h2>Cambiar de nivel</h2><p class="muted small" style="margin:6px 0 12px">Si el nivel te resulta demasiado difícil, baja uno para afianzar la base. Para subir, haz el examen de nivel cuando tengas los puntos, o repite la prueba inicial.</p>
-    <div class="row" style="gap:10px;flex-wrap:wrap">${S.level>1?`<button class="btn sm ghost" data-act="lvldown">Bajar a ${LEVELS[S.level-2].code}</button>`:""}<button class="btn sm ghost" data-act="placement">Repetir la prueba de nivel</button></div></div>`;
+  h += `<div class="panel sec"><h2>Tu nivel</h2><p class="muted small" style="margin:6px 0 12px">El nivel lo decide la app según tus respuestas. Para subir tienes que dominar tu nivel y aprobar el examen. Si durante un tiempo aciertas menos de la mitad de los ejercicios de tu nivel, la app te baja uno para afianzar la base.</p>
+    <div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn sm ghost" data-act="placement">Repetir la prueba de nivel</button></div></div>`;
   h += `<div class="panel sec"><h2>Racha</h2><div class="kpis" style="margin-top:12px"><div class="kpi"><b>${st}</b><span>días seguidos</span></div><div class="kpi"><b>${S.best}</b><span>mejor racha</span></div><div class="kpi"><b>${daysN}</b><span>días de reto</span></div></div>
     <div class="lights" aria-label="Últimos 14 días">${lights}</div><p class="note">Cada punto encendido es un reto diario completado en las últimas dos semanas.</p></div>`;
   h += `<div class="panel sec"><div class="row between"><h2>Por tema</h2><span class="small muted">${tot?Math.round(ok/tot*100)+" % global":""}</span></div>
@@ -6282,7 +6233,7 @@ function serStart(n){ sv = {n, i:0, phase:"lines", es:new Set(), pick:null, qi:0
 function serQuizSetup(){ const c = SERIES.find(x=>x.n===sv.n); sv.qorder = shuffle([0,1,2], rng(hashStr(c.t+sv.qi))); sv.qa = null; }
 function serFinish(){
   const st = serState(), c = SERIES.find(x=>x.n===sv.n);
-  if(!st.done.includes(c.n)){ st.done.push(c.n); st.at[c.n] = todayKey(); sv.xp = 15 + 5*sv.ok; addXP(sv.xp); }
+  if(!st.done.includes(c.n)){ st.done.push(c.n); st.at[c.n] = todayKey(); sv.xp = 10*sv.ok; addXP(sv.xp); }
   sv.phase = "end"; save(); checkMedals(); render();
 }
 
@@ -6441,7 +6392,7 @@ async function capStartRec(){
     mr.onstop = async () => { stream.getTracks().forEach(t=>t.stop()); clearInterval(cv.timer); const blob = new Blob(chunks, {type: mr.mimeType || "audio/webm"});
       const k = cv.id+":"+cv.qi; await idbPut(k, blob); const m = await analyzeBlob(blob); cv.items[cv.qi] = m; cv.recording = false;
       if(cv.qi < CAP_Q.length-1){ cv.qi++; render(); }
-      else { capList().push({id:cv.id, date:todayKey(), items:cv.items}); addXP(30); cv = null; save(); checkMedals(); toast("⏳ Cápsula guardada. Te avisaremos dentro de dos meses."); if(typeof backupSoon==="function") backupSoon(); render(); } };
+      else { capList().push({id:cv.id, date:todayKey(), items:cv.items}); addXP(10); cv = null; save(); checkMedals(); toast("⏳ Cápsula guardada. Te avisaremos dentro de dos meses."); if(typeof backupSoon==="function") backupSoon(); render(); } };
     cv.mr = mr; cv.recording = true; cv.sec = 0; mr.start();
     cv.timer = setInterval(() => { if(!cv) return; cv.sec++; if(cv.sec>=90) capStopRec(); else if(view==="capsule"){ const p = app.querySelector(".panel .sec"); if(p) p.textContent = `⏺️ Grabando… ${cv.sec}s (máximo 90 s)`; } }, 1000);
     render();
@@ -6643,6 +6594,132 @@ try{ if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("
 if(location.hash==="#room"){ setTimeout(() => { if(S.room){ history.replaceState(null, "", location.pathname); roomOpen(); } }, 600); }
 /* copia automática al abrir la app si han pasado más de 6 horas */
 setTimeout(() => { if(typeof pushConfig==="function") pushConfig().then(() => { if(roomURL() && Date.now() - (bkState().last||0) > 6*3600*1000) backupNow(true); }); }, 2500);
+
+
+/* ================= NIVEL REAL: puntos por aciertos, dominio del nivel, examen exigente y ajuste automático ================= */
+/* más puntos cuanto más alto es el ejercicio respecto a tu nivel; los fáciles casi no cuentan */
+function diffFactor(it){ const d = (it && it.lvl || S.level) - S.level; return d<=-2 ? 0.25 : d===-1 ? 0.5 : d>=1 ? 1.3 : 1; }
+/* dominio: solo cuentan los ejercicios de tu nivel o superiores */
+function trackMastery(it, ok){
+  if(!it || (it.lvl||0) < S.level) return;
+  S.mastery = S.mastery || []; S.mastery.push([S.level, it.topic, ok?1:0]); if(S.mastery.length>80) S.mastery.splice(0, S.mastery.length-80);
+}
+var MASTERY_N = 40, MASTERY_ACC = 0.75, MASTERY_TOPICS = 4;
+function masteryStats(){
+  const all = (S.mastery||[]).filter(x => x[0]===S.level).slice(-50), n = all.length;
+  const acc = n ? all.reduce((t,x)=>t+x[2],0)/n : 0, byT = {};
+  all.forEach(x => { byT[x[1]] = (byT[x[1]]||0) + 1; });
+  const topics = Object.values(byT).filter(c => c>=3).length;
+  return {n, acc, topics};
+}
+function masteryOK(){ const m = masteryStats(); return m.n>=MASTERY_N && m.acc>=MASTERY_ACC && m.topics>=MASTERY_TOPICS; }
+function levelStatusHTML(){
+  if(S.level>=5) return "";
+  const m = masteryStats(), nx = LEVELS[S.level], xpOk = S.xp>=nx.xp, wait = S.crWait && S.crWait>todayKey();
+  const pct = Math.round(m.acc*100), need = Math.round(MASTERY_ACC*100);
+  const row = (ok, txt) => `<li class="${ok?"ok":""}">${ok?"✅":"⬜"} ${txt}</li>`;
+  return `<div class="panel sec lvl-status"><h3>Para subir a ${nx.code}</h3><ul>
+    ${row(xpOk, xpOk ? "Puntos suficientes" : `Puntos: ${S.xp} de ${nx.xp}`)}
+    ${row(m.n>=MASTERY_N, `Ejercicios de tu nivel: ${Math.min(m.n,MASTERY_N)} de ${MASTERY_N}`)}
+    ${row(m.n>=10 && m.acc>=MASTERY_ACC, m.n ? `Dominio de ${LEVELS[S.level-1].code}: ${pct} % (hace falta ${need} %)` : `Dominio de ${LEVELS[S.level-1].code}: todavía sin datos`)}
+    ${row(m.topics>=MASTERY_TOPICS, `Temas distintos dominados: ${Math.min(m.topics,MASTERY_TOPICS)} de ${MASTERY_TOPICS}`)}
+    ${wait ? `<li>⏳ Podrás repetir el examen a partir del ${new Date(S.crWait+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long"})}</li>` : ""}</ul>
+    <p class="note">Solo cuentan los ejercicios de tu nivel o superiores, y los fallos no suman puntos.</p></div>`;
+}
+/* examen: 16 preguntas, 10 del nivel siguiente; hay que acertar el 80 % y el 70 % de las del nivel siguiente */
+function startCheckride(){
+  const L = S.level, r = rng(Date.now()), used = new Set(), items = [];
+  const nextSpecs = ["vocab:c","verbs","conn","ask","write:t","conv","order", L>=2?"expr":"phrasal","listen","spanglish"];
+  const curSpecs = ["verbs","vocab:c","ask","write:t","conv","conn"];
+  nextSpecs.forEach(t => { const it = pickItems(t,L+1,1,r,used,true)[0] || pickItems(t,L,1,r,used,true)[0]; if(it){ used.add(it.id); items.push(it); } });
+  curSpecs.forEach(t => { const it = pickItems(t,L,1,r,used,true)[0]; if(it){ used.add(it.id); items.push(it); } });
+  startSession({kind:"checkride", mul:0, items: shuffle(items, r), exOpt: {mcq:false}});
+}
+function checkrideResult(res){
+  const total = res.length, ok = res.filter(x=>x.ok).length, nx = res.filter(x=>x.ex.it.lvl>S.level), okN = nx.filter(x=>x.ok).length;
+  const accAll = total ? ok/total : 0, accN = nx.length ? okN/nx.length : accAll;
+  return {pass: accAll>=0.8 && accN>=0.7, ok, total, accAll, accN, nN: nx.length, okN};
+}
+/* bajada automática: si en tus últimos 40 ejercicios de nivel aciertas menos de la mitad (como mucho una vez por semana) */
+function autoLevelCheck(){
+  if(S.level<=1) return "";
+  const all = (S.mastery||[]).filter(x => x[0]===S.level).slice(-40);
+  if(all.length<40) return "";
+  const acc = all.reduce((t,x)=>t+x[2],0)/all.length;
+  if(acc>=0.5) return "";
+  if(S.autoDownAt && dayDiff(S.autoDownAt, todayKey())<7) return "";
+  const from = LEVELS[S.level-1].code; levelDown(); S.autoDownAt = todayKey(); save();
+  return ` Hemos ajustado tu nivel de ${from} a ${LEVELS[S.level-1].code}: en tus últimos ejercicios de ${from} acertaste el ${Math.round(acc*100)} %. Afianza la base y volverás a subir con el examen.`;
+}
+/* ---------- pantalla Hoy ---------- */
+function seriesHomeCard(){
+  const st = serState(), c = nextChapter();
+  if(!c) return `<div class="panel sec"><p class="muted small">📺 Flat 4B</p><h3 style="margin:4px 0 6px">Primera temporada terminada</h3><p class="muted small" style="margin-bottom:10px">Puedes volver a ver cualquier capítulo.</p><button class="btn sm ghost" data-act="game" data-g="series">Ver capítulos</button></div>`;
+  const open = chapterOpen(c.n);
+  return `<div class="panel sec"><p class="muted small">📺 Flat 4B · capítulo ${c.n} de ${SERIES.length}</p><h3 style="margin:4px 0 6px">${esc(c.t)}</h3><p class="muted small" style="margin-bottom:10px">${esc(c.es)} · ${LEVELS[c.lvl-1].code}</p>
+    ${open ? `<button class="btn sm" data-act="serplay" data-n="${c.n}">Ver el capítulo</button>` : `<p class="small">🔒 Se desbloquea mañana.</p>`}</div>`;
+}
+function mysteryHomeCard(){
+  const st = mystState(), pend = MYSTERIES.filter(m => !st.solved.includes(m.id));
+  if(!pend.length) return `<div class="panel sec"><p class="muted small">🕵️ Misterio</p><h3 style="margin-top:4px">¡Has resuelto los ${MYSTERIES.length} casos!</h3></div>`;
+  const near = pend.filter(m => m.lvl<=S.level+1).sort((a,b)=>Math.abs(a.lvl-S.level)-Math.abs(b.lvl-S.level));
+  const r = rng(hashStr("myst"+todayKey())), pool = near.length ? near.slice(0, Math.max(3, Math.min(near.length, 6))) : pend, m = pool[Math.floor(r()*pool.length)];
+  return `<div class="panel sec"><p class="muted small">🕵️ Misterio del día · ${st.solved.length} de ${MYSTERIES.length} resueltos</p><h3 style="margin:4px 0 6px">${esc(m.t)}</h3><p class="small" style="margin-bottom:10px" lang="en">${esc(m.story)}</p><button class="btn sm" data-act="myplay" data-id="${m.id}">Investigar</button></div>`;
+}
+function roomHomeCard(){
+  if(!STANDALONE) return "";
+  return S.room ? `<div class="panel sec"><p class="muted small">💬 Sala</p><h3 style="margin:4px 0 10px">Sala ${esc(S.room.code)}</h3><button class="btn sm" data-act="game" data-g="room">Entrar en la sala</button></div>`
+    : `<div class="panel sec"><p class="muted small">💬 Sala</p><h3 style="margin:4px 0 6px">Practica con tu grupo</h3><p class="muted small" style="margin-bottom:10px">Crea una sala o entra con un código para chatear, enviaros palabras y jugar juntos.</p><button class="btn sm" data-act="game" data-g="room">Ir a la sala</button></div>`;
+}
+function gameOfDayCard(){
+  const skip = new Set(["series","mystery","room","phrases","capsule"]), list = GAMES.filter(g => !skip.has(g.id));
+  if(!list.length) return "";
+  const g = list[hashStr("juego"+todayKey()) % list.length];
+  return `<div class="panel sec"><p class="muted small">🎲 Juego sugerido de hoy</p><div class="row" style="margin:8px 0 12px;gap:12px"><span class="gi" style="background:${g.bg}" aria-hidden="true">${g.icon}</span><div><h3>${esc(g.t)}</h3><p class="small muted">${esc(g.d)}</p></div></div><button class="btn sm" data-act="game" data-g="${g.id}">Jugar</button></div>`;
+}
+function refuerzoCard(d){
+  const w = weakest(), due = dueReview(), extra = due.filter(id => !(d && d.ids.includes(id)));
+  if(!w && !extra.length) return `<div class="panel sec"><p class="muted small">💪 Refuerzo</p><p style="margin-top:4px">Ahora mismo no tienes fallos pendientes ni temas flojos. ¡Bien!</p></div>`;
+  let h = `<div class="panel sec"><p class="muted small">💪 Refuerzo</p>`;
+  if(w) h += `<h3 style="margin:4px 0 4px">${TOPICS[w].icon} ${esc(TOPICS[w].name)}</h3><p class="muted small" style="margin-bottom:10px">Es tu tema más flojo: ${Math.round(acc(w)*100)} % de aciertos recientes.</p><button class="btn sm" data-act="practice" data-t="${w}">Reforzar este tema</button>`;
+  if(extra.length) h += `<p class="small" style="margin-top:${w?"14px":"4px"}">Tienes ${extra.length} ${extra.length===1?"fallo pendiente":"fallos pendientes"} de repasar.</p><button class="btn sm ghost" style="margin-top:8px" data-act="review">Repasar fallos</button>`;
+  return h + `</div>`;
+}
+function renderHome(){
+  const d = buildDaily(), cur = LEVELS[S.level-1], next = LEVELS[S.level];
+  const dateStr = cap(new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}));
+  let h = `<div class="wrap">${topBar()}`;
+  /* 1. Progreso */
+  h += progressCard();
+  if(checkrideReady()) h += `<div class="panel sec" style="border:2px solid var(--sun)"><h2>Examen de nivel ${next.code}</h2>
+    <p class="muted" style="margin:6px 0 14px">Dominas tu nivel. El examen tiene 16 preguntas, 10 de ellas de nivel ${next.code}, sin opciones para elegir. Para aprobar: 80 % de aciertos en total y 70 % en las de ${next.code}.</p>
+    <button class="btn full" data-act="checkride">Hacer el examen</button></div>`;
+  else h += levelStatusHTML();
+  /* 2. Reto de hoy */
+  const topics = uniq(d.ids.map(id=>ITEM[id] && ITEM[id].topic).filter(Boolean));
+  if(!d.done){
+    const plan = DAILY_PLANS[d.plan] || DAILY_PLANS.mix, run = dailyRunFor(d);
+    h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy</h2>
+      <p style="margin-top:6px"><b>${plan.icon} ${plan.name}</b> · ${plan.d.toLowerCase()}.</p>
+      <p class="muted" style="margin-top:6px">${run ? `Llevas ${run.i} de ${d.ids.length} ejercicios. Puedes seguir donde lo dejaste.` : `${d.ids.length} ejercicios, unos ${Math.round(d.ids.length*1.2)} minutos. Si aciertas al menos el 60 %, ganas un bonus de hasta 60 XP y mantienes la racha.`}</p>
+      ${run ? `<div class="bar" style="margin-top:10px"><i style="width:${Math.round(100*run.i/d.ids.length)}%"></i></div>` : ""}
+      <div class="chips">${topics.slice(0,5).map(t=>`<span class="chip">${TOPICS[t].icon} ${TOPICS[t].name}</span>`).join("")}${topics.length>5?`<span class="chip">y ${topics.length-5} más</span>`:""}</div>
+      <button class="btn full" data-act="daily">${run ? "Continuar el reto" : "Empezar el reto"}</button>
+      <div class="row" style="justify-content:center;margin-top:10px">${radioButton("link radio-link")}</div></div>`;
+  } else {
+    h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy completado</h2>
+      <p class="muted" style="margin:6px 0 14px">Acertaste ${d.score[0]} de ${d.score[1]}. Mañana tendrás uno nuevo.</p>
+      <button class="btn" data-act="extra">Hacer un reto extra</button></div>`;
+    if(d.fact!=null){ const f=FACTS[d.fact]; h += `<div class="fact sec"><p class="small" style="font-weight:700">Curiosidad de hoy</p><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`; }
+  }
+  /* 3. Flat 4B · 4. Misterio · 5. Sala · 6. Juego del día · 7. Refuerzo */
+  h += seriesHomeCard() + mysteryHomeCard() + roomHomeCard() + gameOfDayCard() + refuerzoCard(d);
+  /* avisos secundarios */
+  if(typeof capDue==="function" && capDue() && capList().length) h += `<div class="panel sec"><h3>⏳ Tu cápsula del tiempo está lista</h3><p class="muted small" style="margin:4px 0 10px">Han pasado dos meses desde la última. Graba la nueva y escucha cuánto has cambiado.</p><button class="btn sm" data-act="xgo" data-to="capsule">Grabar ahora</button></div>`;
+  if(typeof pushHomeCard==="function") h += pushHomeCard();
+  if(typeof installCard==="function") h += installCard();
+  return h + `</div>`;
+}
 
 </script>
 </body>
