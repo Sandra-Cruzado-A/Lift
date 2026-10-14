@@ -323,6 +323,29 @@ a.btn.full{display:flex}
 .yt-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;margin:4px 0 6px}
 .yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .sentence sup{font-size:.7em;color:var(--muted);margin-left:1px}
+
+/* serie, misterio, viaje, medallas, sala */
+.list-row{display:flex;gap:12px;align-items:center;width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;cursor:pointer}
+.list-row .ic{font-size:1.3rem}
+.ser-line{display:grid;gap:4px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.ser-line.narr{background:transparent;border-style:dashed;font-style:italic}
+.ser-who{font-size:.8rem;font-weight:700;color:var(--muted)}
+.ser-txt{font-size:1.05rem;cursor:pointer}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)} .opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.my-q{padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;gap:4px}
+.my-a{display:inline-block;padding:1px 8px;border-radius:99px;font-weight:800;font-size:.85rem;margin-right:6px;background:var(--chip)}
+.my-a.y{background:var(--ok-bg);color:var(--ok)} .my-a.n{background:var(--bad-bg);color:var(--bad)}
+.journey{width:100%;height:auto;display:block}
+.postcard{padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)} .postcard.locked{opacity:.6}
+.medals{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.medal{display:grid;justify-items:center;text-align:center;gap:2px;padding:10px 6px;border-radius:12px;border:1px solid var(--line);opacity:.55}
+.medal.on{opacity:1;background:var(--surface)} .medal span{font-size:1.6rem} .medal b{font-size:.78rem} .medal small{font-size:.68rem;color:var(--muted)}
+.room-log{max-height:52vh;overflow-y:auto;display:grid;gap:8px;padding:4px}
+.room-msg{max-width:85%;padding:8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);justify-self:start}
+.room-msg.me{justify-self:end;background:var(--chip)} .room-msg small{display:block;font-size:.72rem;color:var(--muted)}
+.room-word{display:grid;gap:2px} .story{line-height:1.8} .story .me{color:var(--accent)}
+.big-letter{font-size:1.3rem;color:var(--accent)} .wrong-line{color:var(--bad);font-weight:700}
+.bk-code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;font-size:1.05rem}
 </style>
 </head>
 <body>
@@ -3435,7 +3458,7 @@ function weakest(){
   return wa<0.75 ? w : null;
 }
 function curStreak(){ if(!S.lastDaily) return 0; return dayDiff(S.lastDaily,todayKey())<=1 ? S.streak : 0; }
-function addXP(n){ S.xp = Math.max(0, S.xp+Math.round(n)); }
+function addXP(n){ S.xp = Math.max(0, S.xp+Math.round(n)); if(n>0){ S.xpLog = S.xpLog || {}; const k = todayKey(); S.xpLog[k] = (S.xpLog[k]||0) + Math.round(n); } }
 function checkrideReady(){ return S.level<5 && S.xp>=LEVELS[S.level].xp; }
 /* ---------- repaso de fallos, repartido entre los próximos retos ----------
    Cada fallo se guarda con el número de reto a partir del cual puede volver (due) y una caja:
@@ -3558,6 +3581,9 @@ function makeEx(it, r, opt={}){
     case "pron": return makePronEx(it, r);
     case "song": return makeSongEx(it, r);
     case "scene": return makeSceneEx(it, r);
+    case "spanglish": return makeSpanglishEx(it, r);
+    case "shadow": return makeShadowEx(it, r);
+    case "mine": return makeMineEx(it, r);
     case "conv":
       if(r()<0.25){ const others = shuffle(POOL.conv.filter(x => x.d.sc!==d.sc && Math.abs(x.lvl-it.lvl)<=1), r).slice(0,2).map(x=>x.d.t.m);
         if(others.length===2) return {it,type:"mcq",title:"¿Qué responderías?",titleH:titleHTML("¿Qué responderías?","What would you reply?"),sub:d.sc.title,
@@ -3623,7 +3649,9 @@ function buildDaily(){
   for(const p of avail){ roll -= wt(p); if(roll<=0){ plan = p; break; } }
   S.planLog = {date:key, p:plan, prev};
   const base = planSlots(plan, L, r).map(t => t==="pron" ? (micBlocked ? "pron:m" : ["pron:m","pron:w","pron:s"][Math.floor(r()*3)]) : t);
-  if(MEDIA_ON && r()<0.3) base.splice(Math.min(5, base.length), 0, r()<0.6 ? "song" : "scene");
+  if(MEDIA_ON && r()<0.3) base.splice(Math.min(5, base.length), 0, "scene");
+  if(r()<0.35) base.splice(Math.min(3, base.length), 0, "spanglish");
+  if((S.phrases||[]).length>=3 && r()<0.3) base.push("mine");
   if(S.settings.tech==="daily" || (S.settings.tech==="some" && r()<0.3)) base.splice(5,0,"tech");
   if(plan!=="work"){ if(offerOn() && r()<0.12) base.splice(2,0,"interview:w"); else if(L>=2 && r()<0.1) base.splice(2,0,"interview:v"); }
   const due = dueReview().slice(0, REVIEW_CAP);
@@ -4295,11 +4323,10 @@ let chat = null, iv = null, wr = null, tmTimer = null, pendingAnim = null;
    Canciones: grabaciones de LibriVox (dominio público) desde el repositorio lift-audio.
    Escenas: Tears of Steel y Sintel (Blender Foundation, CC BY 3.0) desde YouTube. */
 const AUDIO_BASE = "https://raw.githubusercontent.com/Sandra-Cruzado-A/lift-audio/main/";
-const SONG_DATA = [{"id":"jingle1","t":"Jingle Bells","lvl":2,"f":"librivox-villancicos-2009/cc09_28_jinglebells_rd_64kb.mp3","s":12.83,"e":41.17,"l":["Dashing through the snow","In a one-horse open sleigh","O'er the fields we go","Laughing all the way","Bells on bob tails ring","Making spirits bright","What fun it is to ride and sing","A sleighing song tonight"]},{"id":"ships1","t":"I Saw Three Ships","lvl":1,"f":"librivox-villancicos-2011/isawthreeships_unknown_tg_64kb.mp3","s":14.15,"e":25.41,"l":["I saw three ships come sailing in","On Christmas Day, on Christmas Day","I saw three ships come sailing in","On Christmas Day in the morning"]},{"id":"wassailing1","t":"Here We Come A-wassailing","lvl":2,"f":"librivox-villancicos-2006/05_herewecomeawassailing_cg_64kb.mp3","s":11.23,"e":42.35,"l":["Here we come a-wassailing","Among the leaves so green","Here we come a-wandering","So fair to be seen","Love and joy come to you","And to you your wassail too","And God bless you and send you a happy new year","And God send you a happy new year"]},{"id":"manger1","t":"Away in a Manger","lvl":1,"f":"librivox-villancicos-2009/cc09_25_awayinamanger_kb_64kb.mp3","s":6.05,"e":36.05,"l":["Away in a manger, no crib for a bed","The little Lord Jesus laid down his sweet head","The stars in the bright sky looked down where he lay","The little Lord Jesus asleep on the hay"]},{"id":"gotell1","t":"Go Tell It on the Mountain","lvl":1,"f":"librivox-villancicos-2009/cc09_22_gotellitonthemountain_bt_64kb.mp3","s":5.67,"e":22.95,"l":["Go, tell it on the mountain","Over the hills and everywhere","Go, tell it on the mountain","That Jesus Christ is born"]},{"id":"gotell2","t":"Go Tell It on the Mountain","lvl":1,"f":"librivox-villancicos-2011/go_tellit_work_eh_64kb.mp3","s":2.29,"e":41.65,"l":["Go, tell it on the mountain","Over the hills and everywhere","Go, tell it on the mountain","That Jesus Christ is born"]},{"id":"dingdong1","t":"Ding Dong Merrily on High","lvl":2,"f":"librivox-villancicos-2009/cc09_18_dingdongmerillyonhigh_sp_64kb.mp3","s":7.25,"e":38.89,"l":["Ding dong merrily on high","In heaven the bells are ringing","Ding dong verily the sky","Is riven with angel singing","Gloria, Hosanna in excelsis"]},{"id":"joy1","t":"Joy to the World","lvl":2,"f":"librivox-villancicos-2006/06_Joy-to-the-World_KB.mp3_64kb.mp3","s":7.29,"e":42.67,"l":["Joy to the world, the Lord is come","Let earth receive her King","Let every heart prepare him room","And heaven and nature sing","And heaven and nature sing","And heaven, and heaven, and nature sing"]},{"id":"joy2","t":"Joy to the World","lvl":2,"f":"librivox-villancicos-2009/cc09_03_joytotheworld_kb_64kb.mp3","s":10.33,"e":51.4,"l":["Joy to the world, the Lord is come","Let earth receive her King","Let every heart prepare him room","And heaven and nature sing","And heaven and nature sing","And heaven, and heaven, and nature sing"]},{"id":"kings1","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2009/cc09_24_wethreekings_klh_64kb.mp3","s":6.91,"e":39.62,"l":["We three kings of Orient are","Bearing gifts we traverse afar","Field and fountain, moor and mountain","Following yonder star","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"]},{"id":"kings2","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2009/cc09_29_wethreekingsoforientare_ni_64kb.mp3","s":7.21,"e":44.77,"l":["We three kings of Orient are","Bearing gifts we traverse afar","Field and fountain, moor and mountain","Following yonder star","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"]},{"id":"kings3","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2011/wethreekings_hopkins_sl_64kb.mp3","s":5.89,"e":39.37,"l":["We three kings of Orient are","Bearing gifts we traverse afar","Field and fountain, moor and mountain","Following yonder star","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"]},{"id":"angels1","t":"Angels We Have Heard on High","lvl":2,"f":"librivox-villancicos-2009/cc09_01_angelswehaveheardonhigh_sp_64kb.mp3","s":7.53,"e":30.53,"l":["Angels we have heard on high","Sweetly singing o'er the plains","And the mountains in reply","Echoing their joyous strains","Gloria in excelsis Deo","Gloria in excelsis Deo"]},{"id":"angels2","t":"Angels We Have Heard on High","lvl":2,"f":"librivox-villancicos-2009/cc09_27_angelswehaveheardonhigh_mjk_64kb.mp3","s":11.41,"e":37.25,"l":["Angels we have heard on high","Sweetly singing o'er the plains","And the mountains in reply","Echoing their joyous strains","Gloria in excelsis Deo","Gloria in excelsis Deo"]},{"id":"silent1","t":"Silent Night","lvl":2,"f":"librivox-villancicos-2009/cc09_11_silentnight_ce_64kb.mp3","s":12.29,"e":56.69,"l":["Silent night, holy night","All is calm, all is bright","Round yon virgin mother and child","Holy infant so tender and mild","Sleep in heavenly peace","Sleep in heavenly peace"]},{"id":"silent2","t":"Silent Night","lvl":2,"f":"librivox-villancicos-2009/cc09_21_silent_night_mkab_64kb.mp3","s":6.37,"e":43.59,"l":["Silent night, holy night","All is calm, all is bright","Round yon virgin mother and child","Holy infant so tender and mild","Sleep in heavenly peace","Sleep in heavenly peace"]},{"id":"wenceslas1","t":"Good King Wenceslas","lvl":3,"f":"librivox-villancicos-2006/04_good_king_wenceslas_add_64kb.mp3","s":19.83,"e":49.61,"l":["Good King Wenceslas looked out","On the feast of Stephen","When the snow lay round about","Deep and crisp and even","Brightly shone the moon that night","Though the frost was cruel","When a poor man came in sight","Gathering winter fuel"]},{"id":"wenceslas2","t":"Good King Wenceslas","lvl":3,"f":"librivox-villancicos-2010/goodkingwenceslas_neale_ks_64kb.mp3","s":14.61,"e":46.17,"l":["Good King Wenceslas looked out","On the feast of Stephen","When the snow lay round about","Deep and crisp and even","Brightly shone the moon that night","Though the frost was cruel","When a poor man came in sight","Gathering winter fuel"]},{"id":"littletown1","t":"O Little Town of Bethlehem","lvl":3,"f":"librivox-villancicos-2010/olittletown_brooksredner_bt_64kb.mp3","s":9.79,"e":37.99,"l":["O little town of Bethlehem","How still we see thee lie","Above thy deep and dreamless sleep","The silent stars go by","Yet in thy dark streets shineth","The everlasting Light","The hopes and fears of all the years","Are met in thee tonight"]},{"id":"hark1","t":"Hark! The Herald Angels Sing","lvl":3,"f":"librivox-villancicos-2009/cc09_12_harktheherald_tg_64kb.mp3","s":7.63,"e":55.77,"l":["Hark! the herald angels sing","Glory to the newborn King","Peace on earth and mercy mild","God and sinners reconciled","Joyful, all ye nations rise","Join the triumph of the skies","With the angelic host proclaim","Christ is born in Bethlehem","Hark! the herald angels sing","Glory to the newborn King"]},{"id":"midnight1","t":"It Came Upon the Midnight Clear","lvl":3,"f":"librivox-villancicos-2006/11_itcameuponthemidnightclear_klh_64kb.mp3","s":10.95,"e":49.37,"l":["It came upon the midnight clear","That glorious song of old","From angels bending near the earth","To touch their harps of gold","Peace on the earth, good will to men","From heaven's all-gracious King","The world in solemn stillness lay","To hear the angels sing"]},{"id":"midnight2","t":"It Came Upon the Midnight Clear","lvl":3,"f":"librivox-villancicos-2011/itcameuponthemidnightclear_sears_pb_64kb.mp3","s":21.77,"e":71.93,"l":["It came upon the midnight clear","That glorious song of old","From angels bending near the earth","To touch their harps of gold","Peace on the earth, good will to men","From heaven's all-gracious King","The world in solemn stillness lay","To hear the angels sing"]},{"id":"holynight1","t":"O Holy Night","lvl":4,"f":"librivox-villancicos-2006/01_oholynight_krs_64kb.mp3","s":9.13,"e":82.12,"l":["O holy night, the stars are brightly shining","It is the night of the dear Saviour's birth","Long lay the world in sin and error pining","Till he appeared and the soul felt its worth","A thrill of hope, the weary world rejoices","For yonder breaks a new and glorious morn","Fall on your knees, O hear the angel voices","O night divine, O night when Christ was born"]},{"id":"holynight2","t":"O Holy Night","lvl":4,"f":"librivox-villancicos-2010/oholynight_cappeaudwight_bt_64kb.mp3","s":19.63,"e":88.6,"l":["O holy night, the stars are brightly shining","It is the night of the dear Saviour's birth","Long lay the world in sin and error pining","Till he appeared and the soul felt its worth","A thrill of hope, the weary world rejoices","For yonder breaks a new and glorious morn","Fall on your knees, O hear the angel voices","O night divine, O night when Christ was born"]},{"id":"whatchild1","t":"What Child Is This","lvl":3,"f":"librivox-villancicos-2009/cc09_02_whatchild_krs_64kb.mp3","s":9.04,"e":59.4,"l":["What child is this, who, laid to rest","On Mary's lap is sleeping","Whom angels greet with anthems sweet","While shepherds watch are keeping","This, this is Christ the King","Whom shepherds guard and angels sing","Haste, haste to bring him laud","The babe, the son of Mary"]},{"id":"whatchild2","t":"What Child Is This","lvl":3,"f":"librivox-villancicos-2010/whatchild_dix_mfslaw_64kb.mp3","s":13.15,"e":53.77,"l":["What child is this, who, laid to rest","On Mary's lap is sleeping","Whom angels greet with anthems sweet","While shepherds watch are keeping","This, this is Christ the King","Whom shepherds guard and angels sing","Haste, haste to bring him laud","The babe, the son of Mary"]},{"id":"godrest1","t":"God Rest Ye Merry, Gentlemen","lvl":3,"f":"librivox-villancicos-2006/03_godrestyemerry_dy_64kb.mp3","s":6.93,"e":58.59,"l":["God rest ye merry, gentlemen","Let nothing you dismay","Remember Christ our Saviour","Was born on Christmas Day","To save us all from Satan's power","When we were gone astray","O tidings of comfort and joy","Comfort and joy","O tidings of comfort and joy"]},{"id":"godrest2","t":"God Rest Ye Merry, Gentlemen","lvl":3,"f":"librivox-villancicos-2009/cc09_23_godrestyoumerrygentlemen_rd_64kb.mp3","s":9.79,"e":66.19,"l":["God rest ye merry, gentlemen","Let nothing you dismay","Remember Christ our Saviour","Was born on Christmas Day","To save us all from Satan's power","When we were gone astray","O tidings of comfort and joy","Comfort and joy","O tidings of comfort and joy"]},{"id":"godrest3","t":"God Rest Ye Merry, Gentlemen","lvl":3,"f":"librivox-villancicos-2011/godrestyoumerry_unknown_ndf_64kb.mp3","s":7.15,"e":55.88,"l":["God rest ye merry, gentlemen","Let nothing you dismay","Remember Christ our Saviour","Was born on Christmas Day","To save us all from Satan's power","When we were gone astray","O tidings of comfort and joy","Comfort and joy","O tidings of comfort and joy"]},{"id":"bells1","t":"I Heard the Bells on Christmas Day","lvl":3,"f":"librivox-villancicos-2006/07_iheardthebellsonchristmasday_klh_64kb.mp3","s":11.85,"e":30.43,"l":["I heard the bells on Christmas Day","Their old familiar carols play","And wild and sweet the words repeat","Of peace on earth, good will to men"]},{"id":"bells2","t":"I Heard the Bells on Christmas Day","lvl":3,"f":"librivox-villancicos-2010/iheardthebells_longfellow_mjk_64kb.mp3","s":5.63,"e":21.55,"l":["I heard the bells on Christmas Day","Their old familiar carols play","And wild and sweet the words repeat","Of peace on earth, good will to men"]},{"id":"bells3","t":"I Heard the Bells on Christmas Day","lvl":3,"f":"librivox-villancicos-2011/iheardthebells_longfellow_tg_64kb.mp3","s":19.43,"e":39.87,"l":["I heard the bells on Christmas Day","Their old familiar carols play","And wild and sweet the words repeat","Of peace on earth, good will to men"]},{"id":"bleak1","t":"In the Bleak Midwinter","lvl":4,"f":"librivox-villancicos-2009/cc09_14_inthebleakmidwinter_klh_64kb.mp3","s":8.59,"e":50.03,"l":["In the bleak midwinter, frosty wind made moan","Earth stood hard as iron, water like a stone","Snow had fallen, snow on snow, snow on snow","In the bleak midwinter, long ago"]},{"id":"bleak2","t":"In the Bleak Midwinter","lvl":4,"f":"librivox-villancicos-2009/cc09_26_bleakmidwinter_krs_64kb.mp3","s":6.81,"e":46.37,"l":["In the bleak midwinter, frosty wind made moan","Earth stood hard as iron, water like a stone","Snow had fallen, snow on snow, snow on snow","In the bleak midwinter, long ago"]},{"id":"coventry1","t":"Coventry Carol","lvl":5,"f":"librivox-villancicos-2006/10_Coventry-Carol_KB_64kb.mp3","s":7.97,"e":24.17,"l":["Lully, lullay, thou little tiny child","By by, lully lullay","Lully, lullay, thou little tiny child","By by, lully lullay"]},{"id":"rose1","t":"Lo, How a Rose E'er Blooming","lvl":5,"f":"librivox-villancicos-2009/cc09_06_lohowaroseereblooming_bt_64kb.mp3","s":5.61,"e":38.31,"l":["Lo, how a rose e'er blooming","From tender stem hath sprung","Of Jesse's lineage coming","As men of old have sung","It came, a flower bright","Amid the cold of winter","When half spent was the night"]},{"id":"rose2","t":"Lo, How a Rose E'er Blooming","lvl":5,"f":"librivox-villancicos-2009/cc09_17_lohowarose_mfslaw_64kb.mp3","s":7.37,"e":55.89,"l":["Lo, how a rose e'er blooming","From tender stem hath sprung","Of Jesse's lineage coming","As men of old have sung","It came, a flower bright","Amid the cold of winter","When half spent was the night"]},{"id":"sussex1","t":"Sussex Carol","lvl":3,"f":"librivox-villancicos-2009/cc09_07_sussexcarol_klh_64kb.mp3","s":7.81,"e":29.21,"l":["On Christmas night all Christians sing","To hear the news the angels bring","On Christmas night all Christians sing","To hear the news the angels bring","News of great joy, news of great mirth","News of our merciful King's birth"]},{"id":"sussex2","t":"Sussex Carol","lvl":3,"f":"librivox-villancicos-2011/sussexcarol_traditional_ks_64kb.mp3","s":13.35,"e":32.43,"l":["On Christmas night all Christians sing","To hear the news the angels bring","On Christmas night all Christians sing","To hear the news the angels bring","News of great joy, news of great mirth","News of our merciful King's birth"]},{"id":"sussex3","t":"Sussex Carol","lvl":3,"f":"librivox-villancicos-2011/onchristmasnight_sharp_rg_64kb.mp3","s":6.93,"e":31.15,"l":["On Christmas night all Christians sing","To hear the news the angels bring","On Christmas night all Christians sing","To hear the news the angels bring","News of great joy, news of great mirth","News of our merciful King's birth"]},{"id":"emmanuel1","t":"O Come, O Come, Emmanuel","lvl":4,"f":"librivox-villancicos-2009/cc09_09_ocomeocome_group_64kb.mp3","s":7.59,"e":36.11,"l":["O come, O come, Emmanuel","And ransom captive Israel","That mourns in lonely exile here","Until the Son of God appear","Rejoice! Rejoice! Emmanuel","Shall come to thee, O Israel"]},{"id":"torch1","t":"Bring a Torch, Jeanette, Isabella","lvl":3,"f":"librivox-villancicos-2010/bringatorch_traditional_um_64kb.mp3","s":11.91,"e":33.78,"l":["Bring a torch, Jeanette, Isabella","Bring a torch, to the cradle run","It is Jesus, good folk of the village","Christ is born and Mary's calling","Ah! ah! beautiful is the Mother","Ah! ah! beautiful is her Son"]},{"id":"holly1","t":"The Holly and the Ivy","lvl":3,"f":"librivox-villancicos-2010/hollyandivy_traditional_ks_64kb.mp3","s":13.07,"e":29.83,"l":["The holly and the ivy","When they are both full grown","Of all the trees that are in the wood","The holly bears the crown","O the rising of the sun","And the running of the deer","The playing of the merry organ","Sweet singing in the choir"]},{"id":"lovecame1","t":"Love Came Down at Christmas","lvl":3,"f":"librivox-villancicos-2010/lovecamedown_rossetti_csm_64kb.mp3","s":10.53,"e":28.55,"l":["Love came down at Christmas","Love all lovely, Love Divine","Love was born at Christmas","Star and Angels gave the sign"]},{"id":"boar1","t":"The Boar's Head Carol","lvl":5,"f":"librivox-villancicos-2006/02_boars_head_carol_ks_64kb.mp3","s":10.21,"e":22.39,"l":["The boar's head in hand bear I","Bedecked with bays and rosemary","And I pray you, my masters, be merry","Quot estis in convivio"]},{"id":"boar2","t":"The Boar's Head Carol","lvl":5,"f":"librivox-villancicos-2010/boarshead_unknown_rg_64kb.mp3","s":8.05,"e":25.17,"l":["The boar's head in hand bear I","Bedecked with bays and rosemary","And I pray you, my masters, be merry","Quot estis in convivio"]},{"id":"christborn1","t":"Christ Was Born on Christmas Day","lvl":3,"f":"librivox-villancicos-2011/christborn_neale_rg_64kb.mp3","s":24.01,"e":37.85,"l":["Christ was born on Christmas Day","Wreathe the holly, twine the bay","Christus natus hodie","The Babe, the Son, the Holy One of Mary"]},{"id":"gesu1","t":"Gesù Bambino","lvl":4,"f":"librivox-villancicos-2011/gesubambino_yon_skh_64kb.mp3","s":10.39,"e":22.97,"l":["When blossoms flowered 'mid the snows","Upon a winter night","Was born the Child, the Christmas Rose","The King of Love and Light"]},{"id":"worthy1","t":"Come All You Worthy Gentlemen","lvl":4,"f":"librivox-villancicos-2011/comeallyouworthy_sharp_rg_64kb.mp3","s":21.61,"e":62.46,"l":["Come all you worthy gentlemen that may be standing by","Christ our blessed Saviour was born on Christmas Day","The blessed Virgin Mary unto the Lord did pray","O we wish you the comfort and tidings of joy"]},{"id":"amazing1","t":"Amazing Grace","lvl":3,"f":"librivox-himnos/hymns001_amazinggrace_meg_64kb.mp3","s":13.21,"e":47.99,"l":["Amazing grace, how sweet the sound","That saved a wretch like me","I once was lost, but now am found","Was blind, but now I see"]},{"id":"vision1","t":"Be Thou My Vision","lvl":4,"f":"librivox-himnos/hymns001_bethoumyvision_kgb_64kb.mp3","s":7.73,"e":38.33,"l":["Be Thou my Vision, O Lord of my heart","Naught be all else to me, save that Thou art","Thou my best Thought, by day or by night","Waking or sleeping, Thy presence my light"]},{"id":"assurance1","t":"Blessed Assurance","lvl":3,"f":"librivox-himnos/hymns001_blessedassurance_mfslaw_64kb.mp3","s":9.49,"e":41.99,"l":["Blessed assurance, Jesus is mine","O what a foretaste of glory divine","Heir of salvation, purchase of God","Born of His Spirit, washed in His blood","This is my story, this is my song","Praising my Saviour all the day long"]},{"id":"fount1","t":"Come, Thou Fount of Every Blessing","lvl":4,"f":"librivox-himnos/hymns001_comethoufount_lw_64kb.mp3","s":13.51,"e":33.15,"l":["Come, Thou Fount of every blessing","Tune my heart to sing Thy grace","Streams of mercy, never ceasing","Call for songs of loudest praise"]},{"id":"fount2","t":"Come, Thou Fount of Every Blessing","lvl":4,"f":"librivox-himnos/hymns001_comethoufount_mk_64kb.mp3","s":12.49,"e":29.69,"l":["Come, Thou Fount of every blessing","Tune my heart to sing Thy grace","Streams of mercy, never ceasing","Call for songs of loudest praise"]},{"id":"dearlord1","t":"Dear Lord and Father of Mankind","lvl":5,"f":"librivox-himnos/hymns001_dearlordandfather_gl_64kb.mp3","s":8.53,"e":28.86,"l":["Dear Lord and Father of mankind","Forgive our foolish ways","Reclothe us in our rightful mind","In purer lives Thy service find","In deeper reverence, praise"]},{"id":"beauty1","t":"For the Beauty of the Earth","lvl":3,"f":"librivox-himnos/hymns001_forthebeautyoftheearth_tg_64kb.mp3","s":11.95,"e":40.51,"l":["For the beauty of the earth","For the glory of the skies","For the love which from our birth","Over and around us lies","Lord of all, to Thee we raise","This our hymn of grateful praise"]},{"id":"wayfaring1","t":"I Am a Poor Wayfaring Stranger","lvl":3,"f":"librivox-himnos/hymns001_iamapoorwayfaringstranger_meg_64kb.mp3","s":10.71,"e":52.75,"l":["I am a poor wayfaring stranger","While travelling through this world of woe","Yet there's no sickness, toil nor danger","In that bright world to which I go","I'm going there to see my father","I'm going there no more to roam","I'm only going over Jordan","I'm only going over home"]},{"id":"surrender1","t":"I Surrender All","lvl":2,"f":"librivox-himnos/hymns001_isurrenderall_ezwa_64kb.mp3","s":14.41,"e":59.25,"l":["All to Jesus I surrender","All to Him I freely give","I will ever love and trust Him","In His presence daily live","I surrender all, I surrender all","All to Thee, my blessed Saviour","I surrender all"]},{"id":"itiswell1","t":"It Is Well with My Soul","lvl":4,"f":"librivox-himnos/hymns001_itiswellwithmysoul_jc_64kb.mp3","s":13.89,"e":42.19,"l":["When peace like a river attendeth my way","When sorrows like sea billows roll","Whatever my lot, Thou hast taught me to say","It is well, it is well with my soul"]},{"id":"justasiam1","t":"Just As I Am","lvl":3,"f":"librivox-himnos/hymns001_justasiam_ezwa_64kb.mp3","s":5.67,"e":26.31,"l":["Just as I am, without one plea","But that Thy blood was shed for me","And that Thou bidd'st me come to Thee","O Lamb of God, I come, I come"]},{"id":"myjesus1","t":"My Jesus, I Love Thee","lvl":4,"f":"librivox-himnos/hymns001_myjesusilovethee_js_64kb.mp3","s":4.59,"e":39.76,"l":["My Jesus, I love Thee, I know Thou art mine","For Thee all the follies of sin I resign","My gracious Redeemer, my Saviour art Thou","If ever I loved Thee, my Jesus, 'tis now"]},{"id":"rockofages1","t":"Rock of Ages","lvl":5,"f":"librivox-himnos/hymns001_rockofages_lw_64kb.mp3","s":9.09,"e":37.29,"l":["Rock of Ages, cleft for me","Let me hide myself in Thee","Let the water and the blood","From Thy wounded side which flowed","Be of sin the double cure","Save from wrath and make me pure"]},{"id":"softly1","t":"Softly and Tenderly","lvl":3,"f":"librivox-himnos/hymns001_softlyandtenderly_bt_64kb.mp3","s":10.41,"e":45.43,"l":["Softly and tenderly Jesus is calling","Calling for you and for me","See, on the portals He's waiting and watching","Watching for you and for me","Come home, come home","Ye who are weary, come home","Earnestly, tenderly, Jesus is calling","Calling, O sinner, come home"]},{"id":"tissweet1","t":"'Tis So Sweet to Trust in Jesus","lvl":3,"f":"librivox-himnos/hymns001_tissosweettotrustinjesus_jle_64kb.mp3","s":10.57,"e":36.55,"l":["'Tis so sweet to trust in Jesus","Just to take Him at His word","Just to rest upon His promise","Just to know, Thus saith the Lord"]},{"id":"trustobey1","t":"Trust and Obey","lvl":2,"f":"librivox-himnos/hymns001_trustandobey_tg_64kb.mp3","s":10.47,"e":50.43,"l":["When we walk with the Lord","In the light of His word","What a glory He sheds on our way","While we do His good will","He abides with us still","And with all who will trust and obey","Trust and obey, for there's no other way","To be happy in Jesus, but to trust and obey"]},{"id":"gather1","t":"We Gather Together","lvl":4,"f":"librivox-himnos/hymns001_wegathertogether_cc_64kb.mp3","s":6.73,"e":36.05,"l":["We gather together to ask the Lord's blessing","He chastens and hastens His will to make known","The wicked oppressing now cease from distressing","Sing praises to His name, He forgets not His own"]},{"id":"allglory1","t":"All Glory, Laud and Honor","lvl":4,"f":"librivox-himnos/hymns001_allglorylaudandhonor_js_64kb.mp3","s":2.85,"e":32.73,"l":["All glory, laud and honor","To Thee, Redeemer, King","To whom the lips of children","Made sweet hosannas ring"]},{"id":"deadman1","t":"Dead Man's Chest","lvl":3,"f":"librivox-baladas/deadmanschest_sv_64kb.mp3","s":5.46,"e":22.43,"l":["Fifteen men on the dead man's chest","Yo-ho-ho, and a bottle of rum","Drink and the devil had done for the rest","Yo-ho-ho, and a bottle of rum"]},{"id":"gotell2v2","t":"Go Tell It on the Mountain","lvl":1,"f":"librivox-villancicos-2011/go_tellit_work_eh_64kb.mp3","s":41.35,"e":73.89,"l":["While shepherds kept their watching","O'er silent flocks by night","Behold throughout the heavens","There shone a holy light","Go, tell it on the mountain","Over the hills and everywhere","Go, tell it on the mountain","That Jesus Christ is born"],"v":2},{"id":"joy2v2","t":"Joy to the World","lvl":2,"f":"librivox-villancicos-2009/cc09_03_joytotheworld_kb_64kb.mp3","s":51.1,"e":83.19,"l":["Joy to the earth, the Saviour reigns","Let men their songs employ","While fields and floods, rocks, hills and plains","Repeat the sounding joy","Repeat the sounding joy","Repeat, repeat the sounding joy"],"v":2},{"id":"kings1v2","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2009/cc09_24_wethreekings_klh_64kb.mp3","s":39.32,"e":80.7,"l":["Born a King on Bethlehem's plain","Gold I bring to crown Him again","King forever, ceasing never","Over us all to reign","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"],"v":2},{"id":"kings1v3","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2009/cc09_24_wethreekings_klh_64kb.mp3","s":80.4,"e":133.15,"l":["Frankincense to offer have I","Incense owns a Deity nigh","Prayer and praising, all men raising","Worship Him, God on high","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"],"v":3},{"id":"kings2v2","t":"We Three Kings","lvl":2,"f":"librivox-villancicos-2009/cc09_29_wethreekingsoforientare_ni_64kb.mp3","s":44.47,"e":78.45,"l":["Born a King on Bethlehem's plain","Gold I bring to crown Him again","King forever, ceasing never","Over us all to reign","O star of wonder, star of night","Star with royal beauty bright","Westward leading, still proceeding","Guide us to thy perfect light"],"v":2},{"id":"silent1v2","t":"Silent Night","lvl":2,"f":"librivox-villancicos-2009/cc09_11_silentnight_ce_64kb.mp3","s":56.71,"e":100.73,"l":["Silent night, holy night","Shepherds quake at the sight","Glories stream from heaven afar","Heavenly hosts sing Alleluia","Christ the Saviour is born","Christ the Saviour is born"],"v":2},{"id":"silent1v3","t":"Silent Night","lvl":2,"f":"librivox-villancicos-2009/cc09_11_silentnight_ce_64kb.mp3","s":100.43,"e":142.42,"l":["Silent night, holy night","Son of God, love's pure light","Radiant beams from thy holy face","With the dawn of redeeming grace","Jesus, Lord, at thy birth","Jesus, Lord, at thy birth"],"v":3},{"id":"hark1v2","t":"Hark! The Herald Angels Sing","lvl":3,"f":"librivox-villancicos-2009/cc09_12_harktheherald_tg_64kb.mp3","s":55.81,"e":105.13,"l":["Christ, by highest heaven adored","Christ, the everlasting Lord","Late in time behold him come","Offspring of a virgin's womb","Veiled in flesh the Godhead see","Hail the incarnate Deity","Pleased as man with man to dwell","Jesus, our Emmanuel","Hark! the herald angels sing","Glory to the newborn King"],"v":2},{"id":"midnight1v2","t":"It Came Upon the Midnight Clear","lvl":3,"f":"librivox-villancicos-2006/11_itcameuponthemidnightclear_klh_64kb.mp3","s":49.91,"e":88.35,"l":["Still through the cloven skies they come","With peaceful wings unfurled","And still their heavenly music floats","O'er all the weary world","Above its sad and lowly plains","They bend on hovering wing","And ever o'er its Babel sounds","The blessed angels sing"],"v":2},{"id":"midnight2v2","t":"It Came Upon the Midnight Clear","lvl":3,"f":"librivox-villancicos-2011/itcameuponthemidnightclear_sears_pb_64kb.mp3","s":71.93,"e":122.11,"l":["Still through the cloven skies they come","With peaceful wings unfurled","And still their heavenly music floats","O'er all the weary world","Above its sad and lowly plains","They bend on hovering wing","And ever o'er its Babel sounds","The blessed angels sing"],"v":2},{"id":"godrest1v2","t":"God Rest Ye Merry, Gentlemen","lvl":3,"f":"librivox-villancicos-2006/03_godrestyemerry_dy_64kb.mp3","s":58.29,"e":111.13,"l":["In Bethlehem, in Israel","This blessed Babe was born","And laid within a manger","Upon this blessed morn","The which his mother Mary","Did nothing take in scorn","O tidings of comfort and joy","Comfort and joy","O tidings of comfort and joy"],"v":2},{"id":"bells1v2","t":"I Heard the Bells on Christmas Day","lvl":3,"f":"librivox-villancicos-2006/07_iheardthebellsonchristmasday_klh_64kb.mp3","s":30.13,"e":50.61,"l":["And thought how, as the day had come","The belfries of all Christendom","Had rolled along the unbroken song","Of peace on earth, good will to men"],"v":2},{"id":"bells3v2","t":"I Heard the Bells on Christmas Day","lvl":3,"f":"librivox-villancicos-2011/iheardthebells_longfellow_tg_64kb.mp3","s":39.57,"e":57.75,"l":["And thought how, as the day had come","The belfries of all Christendom","Had rolled along the unbroken song","Of peace on earth, good will to men"],"v":2},{"id":"amazing1v2","t":"Amazing Grace","lvl":3,"f":"librivox-himnos/hymns001_amazinggrace_meg_64kb.mp3","s":49.21,"e":77.23,"l":["'Twas grace that taught my heart to fear","And grace my fears relieved","How precious did that grace appear","The hour I first believed"],"v":2},{"id":"amazing1v3","t":"Amazing Grace","lvl":3,"f":"librivox-himnos/hymns001_amazinggrace_meg_64kb.mp3","s":76.93,"e":101.43,"l":["Through many dangers, toils and snares","I have already come","'Tis grace hath brought me safe thus far","And grace will lead me home"],"v":3},{"id":"beauty1v2","t":"For the Beauty of the Earth","lvl":3,"f":"librivox-himnos/hymns001_forthebeautyoftheearth_tg_64kb.mp3","s":40.63,"e":64.49,"l":["For the beauty of each hour","Of the day and of the night","Hill and vale, and tree and flower","Sun and moon, and stars of light","Lord of all, to Thee we raise","This our hymn of grateful praise"],"v":2},{"id":"rockofages1v2","t":"Rock of Ages","lvl":5,"f":"librivox-himnos/hymns001_rockofages_lw_64kb.mp3","s":36.99,"e":56.31,"l":["Not the labours of my hands","Can fulfil Thy law's demands","Could my zeal no respite know","Could my tears forever flow","All for sin could not atone","Thou must save, and Thou alone"],"v":2},{"id":"softly1v2","t":"Softly and Tenderly","lvl":3,"f":"librivox-himnos/hymns001_softlyandtenderly_bt_64kb.mp3","s":45.13,"e":89.19,"l":["Why should we tarry when Jesus is pleading","Pleading for you and for me","Why should we linger and heed not His mercies","Mercies for you and for me","Come home, come home","Ye who are weary, come home","Earnestly, tenderly, Jesus is calling","Calling, O sinner, come home"],"v":2},{"id":"trustobey1v2","t":"Trust and Obey","lvl":2,"f":"librivox-himnos/hymns001_trustandobey_tg_64kb.mp3","s":50.13,"e":89.69,"l":["Not a shadow can rise","Not a cloud in the skies","But His smile quickly drives it away","Not a doubt or a fear","Not a sigh or a tear","Can abide while we trust and obey","Trust and obey, for there's no other way","To be happy in Jesus, but to trust and obey"],"v":2}];
+const SONG_DATA = [];
 const SCENE_DATA = [{"id":"tos1","film":"tos","yt":"R6MlUcmOul8","s":23.0,"e":24.5,"en":"You're a jerk, Thom.","es":"Eres un imbécil, Thom."},{"id":"tos2","film":"tos","yt":"R6MlUcmOul8","s":25.0,"e":27.0,"en":"Look Celia, we have to follow our passions;","es":"Mira Celia, debemos seguir nuestras pasiones;"},{"id":"tos3","film":"tos","yt":"R6MlUcmOul8","s":27.0,"e":30.5,"en":"you have your robotics, and I just want to be awesome in space.","es":"tú tienes tu robótica, y yo solo quiero ser fantástico en el espacio."},{"id":"tos4","film":"tos","yt":"R6MlUcmOul8","s":30.8,"e":34.0,"en":"Why don't you just admit that you're freaked out by my robot hand?","es":"¡¿Por qué no admites que estás asustado de mi brazo robot?!"},{"id":"tos5","film":"tos","yt":"R6MlUcmOul8","s":34.5,"e":36.0,"en":"I'm not freaked out by... it's","es":"No estoy asustado dees"},{"id":"tos7","film":"tos","yt":"R6MlUcmOul8","s":38.0,"e":41.0,"en":"I'm freaked out! I have nightmares that I'm being chased","es":"¡Estoy asustado! Tengo pesadillas de ser perseguido"},{"id":"tos8","film":"tos","yt":"R6MlUcmOul8","s":41.0,"e":42.0,"en":"by these giant robotic claws of death","es":"por esas garras robóticas de la muerte"},{"id":"tos10","film":"tos","yt":"R6MlUcmOul8","s":50.0,"e":53.5,"en":"Robot's memory synced and locked!","es":"¡Memoria del robot sincronizada y guardada!"},{"id":"tos11","film":"tos","yt":"R6MlUcmOul8","s":61.0,"e":63.0,"en":"This is pretty freaky.","es":"Esto es bastante raro."},{"id":"tos12","film":"tos","yt":"R6MlUcmOul8","s":117.0,"e":119.0,"en":"Shouldn't you be down there?","es":"¿No deberías estar abajo?"},{"id":"tos13","film":"tos","yt":"R6MlUcmOul8","s":131.0,"e":133.0,"en":"I heard you guys talking last night.","es":"Los escuché hablando anoche."},{"id":"tos14","film":"tos","yt":"R6MlUcmOul8","s":136.0,"e":138.0,"en":"It's not my fault, you know.","es":"No es mi culpa, sabes."},{"id":"tos15","film":"tos","yt":"R6MlUcmOul8","s":191.0,"e":192.0,"en":"Are you ready?","es":"¿Estás listo?"},{"id":"tos16","film":"tos","yt":"R6MlUcmOul8","s":193.0,"e":195.0,"en":"Of course you're ready, you're a rockstar.","es":"Claro que estás listo. ¡Eres una estrella!"},{"id":"tos17","film":"tos","yt":"R6MlUcmOul8","s":197.0,"e":198.0,"en":"How's it looking, Barley?","es":"¿Cómo lo ves, Barley?"},{"id":"tos18","film":"tos","yt":"R6MlUcmOul8","s":199.0,"e":201.0,"en":"We should have about ten minutes","es":"Debemos tener unos diez minutos"},{"id":"tos19","film":"tos","yt":"R6MlUcmOul8","s":201.5,"e":203.0,"en":"Well that's perfect.","es":"Bueno, perfecto."},{"id":"tos20","film":"tos","yt":"R6MlUcmOul8","s":203.5,"e":206.5,"en":"We're on in one! All systems go! Yeah you, go!","es":"¡Empezamos en uno! ¡Todos los sistemas encendidos! Sí, tú. ¡Vé!"},{"id":"tos21","film":"tos","yt":"R6MlUcmOul8","s":208.0,"e":212.0,"en":"Go! Move your asses! Go go go!","es":"¡Vamos! ¡Muevan el trasero! ¡Vamos, vamos, vamos!"},{"id":"tos22","film":"tos","yt":"R6MlUcmOul8","s":213.0,"e":217.0,"en":"I love it! Come on, go!","es":"¡Me encanta! ¡Vamos!"},{"id":"tos24","film":"tos","yt":"R6MlUcmOul8","s":224.5,"e":225.7,"en":"Nothing to worry about.","es":"Nada de qué preocuparse."},{"id":"tos26","film":"tos","yt":"R6MlUcmOul8","s":231.0,"e":233.0,"en":"There she is.","es":"Allí está ella."},{"id":"tos28","film":"tos","yt":"R6MlUcmOul8","s":235.0,"e":236.0,"en":"You love her.","es":"Tú la amas."},{"id":"tos29","film":"tos","yt":"R6MlUcmOul8","s":237.0,"e":238.5,"en":"She is your passion!","es":"¡Ella es tu pasión!"},{"id":"tos30","film":"tos","yt":"R6MlUcmOul8","s":240.0,"e":241.0,"en":"Be tender to her.","es":"Sé tierno con ella."},{"id":"tos31","film":"tos","yt":"R6MlUcmOul8","s":241.5,"e":244.5,"en":"Be honest! Ehbe tender.","es":"¡Sé honesto! Ehsé tierno."},{"id":"tos32","film":"tos","yt":"R6MlUcmOul8","s":245.0,"e":248.0,"en":"Remind her what love is.","es":"Recuérdale lo que es el amor."},{"id":"tos34","film":"tos","yt":"R6MlUcmOul8","s":296.5,"e":298.0,"en":"Memory overwrite in progress!","es":"¡Sobreescritura de la memoria en progreso!"},{"id":"tos35","film":"tos","yt":"R6MlUcmOul8","s":299.0,"e":301.0,"en":"You're a jerk, Thom!","es":"¡Eres un imbécil, Thom!"},{"id":"tos38","film":"tos","yt":"R6MlUcmOul8","s":318.0,"e":320.0,"en":"We have to follow our passions.","es":"Debemos seguir nuestras pasiones."},{"id":"tos39","film":"tos","yt":"R6MlUcmOul8","s":321.0,"e":323.0,"en":"You have your robotics","es":"Tú tienes tu robótica"},{"id":"tos40","film":"tos","yt":"R6MlUcmOul8","s":325.0,"e":328.0,"en":"and I just want to be awesome in space.","es":"y yo sólo quiero ser el fantástico en el espacio."},{"id":"tos41","film":"tos","yt":"R6MlUcmOul8","s":339.0,"e":341.0,"en":"Okay, they're coming. Two minutes left!","es":"Están en camino. ¡Quedan dos minutos!"},{"id":"tos42","film":"tos","yt":"R6MlUcmOul8","s":343.0,"e":344.0,"en":"Speed it up, Thom!","es":"¡Apresúrate, Thom!"},{"id":"tos44","film":"tos","yt":"R6MlUcmOul8","s":347.0,"e":350.0,"en":"Why don't you just admit that you're freaked out by my robot hand?","es":"¡¿Por qué no admites que te da miedo mi brazo robot?!"},{"id":"tos45","film":"tos","yt":"R6MlUcmOul8","s":356.0,"e":359.0,"en":"Listen Celia, I was young","es":"Escucha Celia, yo era joven"},{"id":"tos46","film":"tos","yt":"R6MlUcmOul8","s":359.5,"e":361.0,"en":"and a dick.","es":"y un idiota."},{"id":"tos47","film":"tos","yt":"R6MlUcmOul8","s":361.0,"e":363.0,"en":"But that's no reason to destroy the world.","es":"Pero esa no es razón para destruir el mundo."},{"id":"tos48","film":"tos","yt":"R6MlUcmOul8","s":365.0,"e":366.0,"en":"Why does he do this?","es":"¿Por qué hace eso?"},{"id":"tos49","film":"tos","yt":"R6MlUcmOul8","s":366.5,"e":368.5,"en":"We already tried that one!","es":"¡Ya lo intentamos!"},{"id":"tos55","film":"tos","yt":"R6MlUcmOul8","s":383.0,"e":385.0,"en":"You broke my heart.","es":"Me rompiste el corazón."},{"id":"tos57","film":"tos","yt":"R6MlUcmOul8","s":387.0,"e":389.0,"en":"You forgot me on earth.","es":"Me olvidaste en la tierra."},{"id":"tos59","film":"tos","yt":"R6MlUcmOul8","s":390.5,"e":393.0,"en":"I should just crush you.","es":"Debería triturarte."},{"id":"tos62","film":"tos","yt":"R6MlUcmOul8","s":410.0,"e":411.0,"en":"Good ad-lib.","es":"Buena improvisación."},{"id":"tos63","film":"tos","yt":"R6MlUcmOul8","s":419.0,"e":420.5,"en":"Not my fault!","es":"¡No es mi culpa!"},{"id":"tos65","film":"tos","yt":"R6MlUcmOul8","s":428.0,"e":429.5,"en":"Quiet on set!","es":"¡Silencio en el set!"},{"id":"tos66","film":"tos","yt":"R6MlUcmOul8","s":430.0,"e":431.0,"en":"We're out of time!","es":"Nos quedamos sin tiempo!"},{"id":"tos70","film":"tos","yt":"R6MlUcmOul8","s":506.0,"e":508.0,"en":"Captain! We have to abort!","es":"¡Capitán! ¡Debemos cancelar la misión!"},{"id":"tos71","film":"tos","yt":"R6MlUcmOul8","s":518.0,"e":520.0,"en":"The world's changed, Celia","es":"El mundo cambió, Celia"},{"id":"tos72","film":"tos","yt":"R6MlUcmOul8","s":534.0,"e":536.0,"en":"maybe we can too.","es":"quizás nosotros podamos también."},{"id":"tos73","film":"tos","yt":"R6MlUcmOul8","s":538.0,"e":539.0,"en":"Memory overwrite complete!","es":"¡Sobreescritura de la memoria completada!"},{"id":"tos75","film":"tos","yt":"R6MlUcmOul8","s":562.0,"e":564.0,"en":"There's a lesson to be learned from this.","es":"Hay una lección que aprender de esto."},{"id":"tos76","film":"tos","yt":"R6MlUcmOul8","s":566.0,"e":567.0,"en":"Could'a gone worse.","es":"Podría haber ido peor."},{"id":"sintel1","film":"sintel","yt":"eRsGyueVLvQ","s":107.25,"e":110.5,"en":"This blade has a dark past.","es":""},{"id":"sintel2","film":"sintel","yt":"eRsGyueVLvQ","s":111.8,"e":115.8,"en":"It has shed much innocent blood.","es":""},{"id":"sintel3","film":"sintel","yt":"eRsGyueVLvQ","s":118.0,"e":121.45,"en":"You're a fool for traveling alone, so completely unprepared.","es":""},{"id":"sintel4","film":"sintel","yt":"eRsGyueVLvQ","s":121.75,"e":124.8,"en":"You're lucky your blood's still flowing.","es":""},{"id":"sintel7","film":"sintel","yt":"eRsGyueVLvQ","s":129.4,"e":133.8,"en":"What brings you to the land of the gatekeepers?","es":""},{"id":"sintel8","film":"sintel","yt":"eRsGyueVLvQ","s":135.0,"e":137.5,"en":"I'm searching for someone.","es":""},{"id":"sintel9","film":"sintel","yt":"eRsGyueVLvQ","s":138.0,"e":142.2,"en":"Someone very dear? A kindred spirit?","es":""},{"id":"sintel11","film":"sintel","yt":"eRsGyueVLvQ","s":148.85,"e":151.75,"en":"A dangerous quest for a lone hunter.","es":""},{"id":"sintel12","film":"sintel","yt":"eRsGyueVLvQ","s":152.95,"e":155.87,"en":"I've been alone for as long as I can remember.","es":""},{"id":"sintel13","film":"sintel","yt":"eRsGyueVLvQ","s":207.25,"e":210.5,"en":"We're almost done. Shhh","es":""},{"id":"sintel14","film":"sintel","yt":"eRsGyueVLvQ","s":210.75,"e":213.5,"en":"Hey, sit still.","es":""},{"id":"sintel15","film":"sintel","yt":"eRsGyueVLvQ","s":228.25,"e":232.25,"en":"Good night, Scales.","es":""},{"id":"sintel16","film":"sintel","yt":"eRsGyueVLvQ","s":250.35,"e":253.85,"en":"Get him, Scales! Come on!","es":""},{"id":"sintel18","film":"sintel","yt":"eRsGyueVLvQ","s":304.0,"e":307.5,"en":"Yeah! Come on!","es":""},{"id":"sintel20","film":"sintel","yt":"eRsGyueVLvQ","s":445.85,"e":447.5,"en":"I have failed.","es":""},{"id":"sintel21","film":"sintel","yt":"eRsGyueVLvQ","s":452.8,"e":456.5,"en":"You've only failed to see","es":""},{"id":"sintel22","film":"sintel","yt":"eRsGyueVLvQ","s":457.8,"e":460.5,"en":"These are dragon lands, Sintel.","es":""},{"id":"sintel23","film":"sintel","yt":"eRsGyueVLvQ","s":460.85,"e":464.0,"en":"You are closer than you know.","es":""},{"id":"dlg1","film":"tos","yt":"R6MlUcmOul8","s":23.0,"e":34.0,"en":"You're a jerk, Thom. / Look Celia, we have to follow our passions; / you have your robotics, and I just want to be awesome in space. / Why don't you just admit that you're freaked out by my robot hand?","es":"Eres un imbécil, Thom. / Mira Celia, debemos seguir nuestras pasiones; / tú tienes tu robótica, y yo solo quiero ser fantástico en el espacio. / ¡¿Por qué no admites que estás asustado de mi brazo robot?!","lines":["You're a jerk, Thom.","Look Celia, we have to follow our passions;","you have your robotics, and I just want to be awesome in space.","Why don't you just admit that you're freaked out by my robot hand?"],"dlg":1},{"id":"dlg5","film":"tos","yt":"R6MlUcmOul8","s":34.5,"e":42.0,"en":"I'm not freaked out by... it's / I'm freaked out! I have nightmares that I'm being chased / by these giant robotic claws of death","es":"No estoy asustado dees / ¡Estoy asustado! Tengo pesadillas de ser perseguido / por esas garras robóticas de la muerte","lines":["I'm not freaked out by... it's","I'm freaked out! I have nightmares that I'm being chased","by these giant robotic claws of death"],"dlg":1},{"id":"dlg15","film":"tos","yt":"R6MlUcmOul8","s":191.0,"e":201.0,"en":"Are you ready? / Of course you're ready, you're a rockstar. / How's it looking, Barley? / We should have about ten minutes","es":"¿Estás listo? / Claro que estás listo. ¡Eres una estrella! / ¿Cómo lo ves, Barley? / Debemos tener unos diez minutos","lines":["Are you ready?","Of course you're ready, you're a rockstar.","How's it looking, Barley?","We should have about ten minutes"],"dlg":1},{"id":"dlg19","film":"tos","yt":"R6MlUcmOul8","s":201.5,"e":217.0,"en":"Well that's perfect. / We're on in one! All systems go! Yeah you, go! / Go! Move your asses! Go go go! / I love it! Come on, go!","es":"Bueno, perfecto. / ¡Empezamos en uno! ¡Todos los sistemas encendidos! Sí, tú. ¡Vé! / ¡Vamos! ¡Muevan el trasero! ¡Vamos, vamos, vamos! / ¡Me encanta! ¡Vamos!","lines":["Well that's perfect.","We're on in one! All systems go! Yeah you, go!","Go! Move your asses! Go go go!","I love it! Come on, go!"],"dlg":1},{"id":"dlg26","film":"tos","yt":"R6MlUcmOul8","s":231.0,"e":241.0,"en":"There she is. / You love her. / She is your passion! / Be tender to her.","es":"Allí está ella. / Tú la amas. / ¡Ella es tu pasión! / Sé tierno con ella.","lines":["There she is.","You love her.","She is your passion!","Be tender to her."],"dlg":1},{"id":"dlg31","film":"tos","yt":"R6MlUcmOul8","s":241.5,"e":248.0,"en":"Be honest! Ehbe tender. / Remind her what love is.","es":"¡Sé honesto! Ehsé tierno. / Recuérdale lo que es el amor.","lines":["Be honest! Ehbe tender.","Remind her what love is."],"dlg":1},{"id":"dlg34","film":"tos","yt":"R6MlUcmOul8","s":296.5,"e":301.0,"en":"Memory overwrite in progress! / You're a jerk, Thom!","es":"¡Sobreescritura de la memoria en progreso! / ¡Eres un imbécil, Thom!","lines":["Memory overwrite in progress!","You're a jerk, Thom!"],"dlg":1},{"id":"dlg38","film":"tos","yt":"R6MlUcmOul8","s":318.0,"e":328.0,"en":"We have to follow our passions. / You have your robotics / and I just want to be awesome in space.","es":"Debemos seguir nuestras pasiones. / Tú tienes tu robótica / y yo sólo quiero ser el fantástico en el espacio.","lines":["We have to follow our passions.","You have your robotics","and I just want to be awesome in space."],"dlg":1},{"id":"dlg41","film":"tos","yt":"R6MlUcmOul8","s":339.0,"e":344.0,"en":"Okay, they're coming. Two minutes left! / Speed it up, Thom!","es":"Están en camino. ¡Quedan dos minutos! / ¡Apresúrate, Thom!","lines":["Okay, they're coming. Two minutes left!","Speed it up, Thom!"],"dlg":1},{"id":"dlg45","film":"tos","yt":"R6MlUcmOul8","s":356.0,"e":366.0,"en":"Listen Celia, I was young / and a dick. / But that's no reason to destroy the world. / Why does he do this?","es":"Escucha Celia, yo era joven / y un idiota. / Pero esa no es razón para destruir el mundo. / ¿Por qué hace eso?","lines":["Listen Celia, I was young","and a dick.","But that's no reason to destroy the world.","Why does he do this?"],"dlg":1},{"id":"dlg55","film":"tos","yt":"R6MlUcmOul8","s":383.0,"e":393.0,"en":"You broke my heart. / You forgot me on earth. / I should just crush you.","es":"Me rompiste el corazón. / Me olvidaste en la tierra. / Debería triturarte.","lines":["You broke my heart.","You forgot me on earth.","I should just crush you."],"dlg":1},{"id":"dlg65","film":"tos","yt":"R6MlUcmOul8","s":428.0,"e":431.0,"en":"Quiet on set! / We're out of time!","es":"¡Silencio en el set! / Nos quedamos sin tiempo!","lines":["Quiet on set!","We're out of time!"],"dlg":1},{"id":"dlg72","film":"tos","yt":"R6MlUcmOul8","s":534.0,"e":539.0,"en":"maybe we can too. / Memory overwrite complete!","es":"quizás nosotros podamos también. / ¡Sobreescritura de la memoria completada!","lines":["maybe we can too.","Memory overwrite complete!"],"dlg":1},{"id":"dlg75","film":"tos","yt":"R6MlUcmOul8","s":562.0,"e":567.0,"en":"There's a lesson to be learned from this. / Could'a gone worse.","es":"Hay una lección que aprender de esto. / Podría haber ido peor.","lines":["There's a lesson to be learned from this.","Could'a gone worse."],"dlg":1}];
 
 const MEDIA_ON = !!STANDALONE;
-TOPICS.song = {name:"Canciones", icon:"🎵"};
 TOPICS.scene = {name:"Escenas de películas", icon:"🎬"};
 const CORE_ES = {}, CORE_RANK = {};
 CORE.forEach(d => { const w = String(d[0]).toLowerCase(); if(!(w in CORE_RANK)){ CORE_ES[w] = d[1]; CORE_RANK[w] = d[5]; } });
@@ -4310,8 +4337,7 @@ SCENE_DATA.forEach(sc => {
   sc.lvl = rare>=2 ? 5 : rare===1 || ws.length>10 ? 4 : 3;
 });
 if(MEDIA_ON){
-  SONG_DATA.forEach(d => addItem("song","s",d.lvl,d,d.id));
-  SCENE_DATA.forEach(d => addItem("scene","c",d.lvl,d,d.id));
+  SCENE_DATA.forEach(d => { if(!(S.clipOff && S.clipOff[d.id])) addItem("scene","c",d.lvl,d,d.id); });
 }
 const GAP_STOP = new Set(["the","a","an","and","of","to","in","on","is","be","for","with","his","her","its","our","their","that","this","as","at","by","or","but","so","was","are","am","ye","thy","thee","thou","la","fa"]);
 /* elige qué palabras quitar según el nivel: en A1 palabras muy frecuentes; en C1, también las poco comunes */
@@ -4365,7 +4391,7 @@ function makeSongEx(it, r){
 }
 function makeSceneEx(it, r){
   const d = it.d, L = S.level, film = d.film==="tos" ? "Tears of Steel (2012)" : "Sintel (2010)";
-  const yt = {id: d.yt, s: Math.max(0, Math.floor(d.s - 0.7)), e: Math.ceil(d.e + 0.7)};
+  const pad = (S.clipFix && S.clipFix[d.id] && S.clipFix[d.id].pad) || 0, yt = {id: d.yt, s: Math.max(0, Math.floor(d.s - 0.7 - pad)), e: Math.ceil(d.e + 0.7 + pad)};
   const credit = `🎬 ${film} · © Blender Foundation · licencia CC BY 3.0`;
   const others = SCENE_DATA.filter(x => x.film===d.film && x.id!==d.id && x.es && !!x.dlg===!!d.dlg);
   if(d.es && others.length>=3 && r()<0.4){
@@ -4396,6 +4422,540 @@ function mediaHTML(ex){
   if(ex.yt) return `<div class="yt-wrap"><iframe id="ytframe" src="https://www.youtube-nocookie.com/embed/${ex.yt.id}?start=${ex.yt.s}&end=${ex.yt.e}&rel=0&playsinline=1&modestbranding=1" title="Escena" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
     <div class="row" style="gap:10px;margin:8px 0 14px"><button class="btn sm ghost" data-act="ytreplay">↺ ${tr("Ver la escena otra vez","Watch again")}</button></div>`;
   return "";
+}
+
+/* ================= SERIE ORIGINAL: «Flat 4B» =================
+   Lucía, ingeniera española, se muda a Londres. Personajes fijos y un capítulo nuevo cada día. */
+const SERIES_CAST = {
+  lucia:{name:"Lucía", icon:"👩🏽‍💼", voice:0, pitch:1.08, rate:0.95, desc:"Ingeniera española recién llegada a Londres"},
+  tom:{name:"Tom", icon:"🧑🏻‍🍳", voice:1, pitch:0.85, rate:1.0, desc:"Compañero de piso, cocinero, muy bromista"},
+  priya:{name:"Priya", icon:"👩🏾‍⚕️", voice:2, pitch:1.15, rate:1.02, desc:"Compañera de piso, enfermera, muy organizada"},
+  green:{name:"Mrs Green", icon:"👵🏼", voice:3, pitch:0.95, rate:0.85, desc:"La casera, amable pero estricta"},
+  daniel:{name:"Daniel", icon:"🧑🏼‍💻", voice:4, pitch:0.95, rate:1.05, desc:"Compañero de trabajo de Lucía"},
+  narrator:{name:"Narrador", icon:"🎙️", voice:5, pitch:1.0, rate:0.95, desc:""}
+};
+const SERIES = [
+ {n:1, lvl:2, t:"The new flat", es:"El piso nuevo", lines:[
+  ["narrator","Lucía arrives in London with two big suitcases.","Lucía llega a Londres con dos maletas grandes."],
+  ["tom","Hi! You must be Lucía. I'm Tom. Come in, come in!","¡Hola! Tú debes de ser Lucía. Soy Tom. ¡Pasa, pasa!"],
+  ["lucia","Hi, Tom. Nice to meet you. Sorry, my English is a bit slow.","Hola, Tom. Encantada. Perdona, mi inglés es un poco lento."],
+  ["tom","Don't worry, my Spanish is much worse. I only know 'paella'.","No te preocupes, mi español es mucho peor. Solo sé decir «paella»."],
+  ["tom","This is the living room, and your bedroom is upstairs, on the left.","Este es el salón, y tu habitación está arriba, a la izquierda."],
+  ["lucia","It's lovely! Is that a piano?","¡Es precioso! ¿Eso es un piano?"],
+  ["tom","Yes, but nobody can play it. It's just for decoration.","Sí, pero nadie sabe tocarlo. Es solo de decoración."],
+  ["priya","Hello! I'm Priya. I live here too. Do you want a cup of tea?","¡Hola! Soy Priya. Yo también vivo aquí. ¿Quieres una taza de té?"]],
+  choice:{q:"Priya te ofrece té, pero prefieres café. ¿Qué respondes?", o:[
+   ["Thanks, but could I have a coffee instead?",1,"Perfecto: «Could I have…?» es educado, e «instead» significa «en su lugar»."],
+   ["No. I want coffee.",0,"Se entiende, pero suena brusco. Mejor «Thanks, but could I have a coffee instead?»."],
+   ["Yes, I am coffee.",0,"Cuidado: «I am coffee» significa «soy café». Di «I'd like a coffee»."]]},
+  quiz:[["¿Dónde está la habitación de Lucía?",["Arriba, a la izquierda","Abajo, a la derecha","Al lado del salón"],0],
+        ["¿Quién sabe tocar el piano?",["Nadie","Tom","Priya"],0]]},
+ {n:2, lvl:2, t:"House rules", es:"Las normas de la casa", lines:[
+  ["priya","Lucía, have you got a minute? I want to explain the house rules.","Lucía, ¿tienes un minuto? Quiero explicarte las normas de la casa."],
+  ["lucia","Sure. Are there many rules?","Claro. ¿Hay muchas normas?"],
+  ["priya","Only three. First, we take turns to clean the kitchen. This week it's Tom's turn.","Solo tres. Primero, nos turnamos para limpiar la cocina. Esta semana le toca a Tom."],
+  ["tom","Unfortunately.","Por desgracia."],
+  ["priya","Second, the bins go out on Tuesday night. Green for paper, black for everything else.","Segundo, la basura se saca el martes por la noche. El verde para papel, el negro para todo lo demás."],
+  ["priya","And third, no loud music after eleven. Mrs Green lives downstairs.","Y tercero, nada de música alta después de las once. La señora Green vive abajo."],
+  ["lucia","Who's Mrs Green?","¿Quién es la señora Green?"],
+  ["tom","Our landlady. She's very nice, but she hears everything. Everything.","Nuestra casera. Es muy maja, pero lo oye todo. Todo."]],
+  choice:{q:"Quieres preguntar qué día se saca la basura. ¿Cómo lo dices?", o:[
+   ["Which day do the bins go out?",1,"Muy bien: «Which day…» + do + sujeto + verbo."],
+   ["Which day the bins go out?",0,"Falta el auxiliar: «Which day do the bins go out?»."],
+   ["What day goes out the bins?",0,"El orden no es correcto: «What day do the bins go out?»."]]},
+  quiz:[["¿A quién le toca limpiar la cocina esta semana?",["A Tom","A Priya","A Lucía"],0],
+        ["¿Por qué no se puede poner música alta tarde?",["Porque la casera vive abajo","Porque Tom trabaja temprano","Porque hay un bebé"],0]]},
+ {n:3, lvl:2, t:"First day at work", es:"Primer día de trabajo", lines:[
+  ["daniel","Good morning! You're the new engineer, right? I'm Daniel, from the test team.","¡Buenos días! Eres la nueva ingeniera, ¿verdad? Soy Daniel, del equipo de pruebas."],
+  ["lucia","Yes, I'm Lucía. Nice to meet you. Where should I put my things?","Sí, soy Lucía. Encantada. ¿Dónde dejo mis cosas?"],
+  ["daniel","You can use the desk by the window. It's the quietest one.","Puedes usar la mesa junto a la ventana. Es la más tranquila."],
+  ["lucia","Great. And where's the coffee machine? I didn't sleep very well.","Genial. ¿Y dónde está la máquina de café? No he dormido muy bien."],
+  ["daniel","Down the corridor, next to the meeting room. But be careful, it's a bit temperamental.","Al final del pasillo, al lado de la sala de reuniones. Pero cuidado, tiene su carácter."],
+  ["narrator","Five minutes later, there's coffee everywhere.","Cinco minutos después, hay café por todas partes."],
+  ["daniel","I did warn you! Don't worry, it happens to everyone on their first day.","¡Ya te avisé! Tranquila, le pasa a todo el mundo el primer día."]],
+  choice:{q:"Has manchado de café el suelo. ¿Qué le dices a Daniel?", o:[
+   ["I'm so sorry, I've made a mess. Where can I find a cloth?",1,"Muy natural: «make a mess» es «ensuciar, liarla», y «a cloth» es «un trapo»."],
+   ["Sorry, I have done a dirty.",0,"No se dice así. Usa «I've made a mess»."],
+   ["The machine is guilty.",0,"Tiene gracia, pero mejor: «Sorry, I've made a mess»."]]},
+  quiz:[["¿En qué equipo trabaja Daniel?",["En el de pruebas","En el de ventas","En el de diseño"],0],
+        ["¿Qué le pasa a Lucía con la máquina de café?",["Lo llena todo de café","No funciona","Está apagada"],0]]},
+ {n:4, lvl:3, t:"Lost in the Tube", es:"Perdida en el metro", lines:[
+  ["lucia","Excuse me, is this the right platform for Camden Town?","Perdone, ¿es este el andén correcto para Camden Town?"],
+  ["narrator","An old man looks at her map for a long time.","Un señor mayor mira su mapa durante un buen rato."],
+  ["lucia","Sorry, I think I'm lost. I've been going round in circles for half an hour.","Perdone, creo que me he perdido. Llevo media hora dando vueltas."],
+  ["narrator","Then her phone rings. It's Tom.","Entonces suena su móvil. Es Tom."],
+  ["tom","Where are you? Dinner's almost ready!","¿Dónde estás? ¡La cena está casi lista!"],
+  ["lucia","I'm on the wrong line. I should have changed at King's Cross.","Estoy en la línea equivocada. Tendría que haber cambiado en King's Cross."],
+  ["tom","No problem. Get off at the next stop, take the Northern line northbound, and I'll meet you at the station.","No pasa nada. Bájate en la próxima, coge la Northern line dirección norte y te espero en la estación."],
+  ["lucia","Thanks, Tom. You're a lifesaver.","Gracias, Tom. Me has salvado."]],
+  choice:{q:"Quieres decir que llevas media hora esperando. ¿Qué dices?", o:[
+   ["I've been waiting for half an hour.",1,"Correcto: «llevar + tiempo + gerundio» = present perfect continuous + for."],
+   ["I'm waiting since half an hour.",0,"En inglés se usa present perfect: «I've been waiting for half an hour»."],
+   ["I wait half an hour ago.",0,"Mezcla tiempos. Di «I've been waiting for half an hour»."]]},
+  quiz:[["¿Qué error ha cometido Lucía?",["No cambió de línea en King's Cross","Se dejó el móvil en casa","Perdió el billete"],0],
+        ["¿Qué significa «You're a lifesaver»?",["Me has salvado","Eres socorrista","Tienes mucha suerte"],0]]},
+ {n:5, lvl:3, t:"Dinner disaster", es:"Desastre en la cena", lines:[
+  ["tom","Tonight I'm making my famous lasagne. Well, famous in this flat.","Esta noche hago mi famosa lasaña. Bueno, famosa en este piso."],
+  ["priya","Tom, what's that smell? Is something burning?","Tom, ¿qué es ese olor? ¿Se está quemando algo?"],
+  ["narrator","Suddenly, the smoke alarm goes off.","De repente, salta la alarma de humo."],
+  ["tom","Open the windows! Quick! Before Mrs Green hears it!","¡Abrid las ventanas! ¡Rápido! ¡Antes de que lo oiga la señora Green!"],
+  ["narrator","Too late. Someone is knocking at the door.","Demasiado tarde. Alguien llama a la puerta."],
+  ["green","Is everything all right up here? I could smell smoke from my kitchen.","¿Va todo bien aquí arriba? Olía a humo desde mi cocina."],
+  ["lucia","Everything's fine, Mrs Green. Tom was just... experimenting.","Todo bien, señora Green. Tom solo estaba... experimentando."],
+  ["green","Well, next time experiment with the windows open. Goodnight, dears.","Pues la próxima vez experimentad con las ventanas abiertas. Buenas noches, queridos."],
+  ["priya","Pizza, anyone?","¿Alguien quiere pizza?"]],
+  choice:{q:"La lasaña se ha quemado y Tom está triste. ¿Cómo le animas?", o:[
+   ["Never mind, Tom. It's the thought that counts.",1,"Precioso: «Never mind» = «no pasa nada», y «it's the thought that counts» = «lo que cuenta es la intención»."],
+   ["Your lasagne is a disaster, but OK.",0,"Sincero, pero poco amable. Prueba «Never mind, it's the thought that counts»."],
+   ["Don't worry, it's not your fault, it's the oven.",1,"También vale: echarle la culpa al horno siempre ayuda."]]},
+  quiz:[["¿Por qué salta la alarma?",["Porque se quema la lasaña","Porque alguien fuma","Porque hay una tormenta"],0],
+        ["¿Qué cenan al final?",["Pizza","Lasaña","Té con galletas"],0]]},
+ {n:6, lvl:3, t:"At the doctor's", es:"En el médico", lines:[
+  ["priya","You look terrible, Lucía. You should see a doctor.","Tienes muy mala cara, Lucía. Deberías ir al médico."],
+  ["lucia","I've had a sore throat and a temperature since Sunday.","Tengo dolor de garganta y fiebre desde el domingo."],
+  ["priya","Call the GP surgery at eight. That's when they give out appointments.","Llama al centro de salud a las ocho. Es cuando dan las citas."],
+  ["narrator","Later, at the surgery.","Más tarde, en la consulta."],
+  ["lucia","I'm not sure if I need antibiotics. I don't usually take any medicine.","No sé si necesito antibióticos. Normalmente no tomo ningún medicamento."],
+  ["narrator","The doctor says it's a virus and antibiotics won't help.","El médico dice que es un virus y que los antibióticos no servirán."],
+  ["lucia","So I just need to rest and drink plenty of water? That's easy.","¿Entonces solo tengo que descansar y beber mucha agua? Eso es fácil."],
+  ["priya","Easy for you. Tom is going to make you soup.","Fácil para ti. Tom te va a hacer sopa."]],
+  choice:{q:"El médico pregunta desde cuándo te encuentras mal. ¿Qué respondes?", o:[
+   ["I've been feeling ill since Sunday.",1,"Perfecto: present perfect continuous + since + momento de inicio."],
+   ["I feel ill from Sunday.",0,"Para algo que empezó y continúa, usa «I've been feeling ill since Sunday»."],
+   ["I am ill since three days.",0,"Dos errores: present perfect y «for three days»."]]},
+  quiz:[["¿Qué tiene Lucía?",["Dolor de garganta y fiebre","Dolor de espalda","Una alergia"],0],
+        ["¿Qué le recomienda el médico?",["Descansar y beber agua","Tomar antibióticos","Ir al hospital"],0]]},
+ {n:7, lvl:4, t:"A small lie", es:"Una pequeña mentira", lines:[
+  ["daniel","Lucía, can you keep a secret? It's Priya's birthday on Friday.","Lucía, ¿sabes guardar un secreto? El viernes es el cumpleaños de Priya."],
+  ["lucia","Wait, how do you know Priya?","Espera, ¿y tú de qué conoces a Priya?"],
+  ["daniel","We met at your flat-warming party. We've been seeing each other for a few weeks.","Nos conocimos en la fiesta de inauguración de tu piso. Llevamos unas semanas viéndonos."],
+  ["lucia","I had no idea! Nobody tells me anything.","¡No tenía ni idea! Nadie me cuenta nada."],
+  ["daniel","I want to throw her a surprise party, but I need someone to get her out of the flat.","Quiero darle una fiesta sorpresa, pero necesito que alguien la saque del piso."],
+  ["lucia","Leave it to me. I'll tell her I need help choosing a dress for a wedding.","Déjamelo a mí. Le diré que necesito ayuda para elegir un vestido para una boda."],
+  ["daniel","Perfect. But whatever you do, don't let Tom find out. He can't keep a secret to save his life.","Perfecto. Pero, hagas lo que hagas, que no se entere Tom. Es incapaz de guardar un secreto."]],
+  choice:{q:"Priya te pregunta qué haces el viernes. No quieres mentir mucho. ¿Qué dices?", o:[
+   ["I was hoping you could help me with something, actually.",1,"Muy hábil: no mientes del todo y la llevas a tu terreno. «Actually» aquí = «de hecho»."],
+   ["Nothing. Absolutely nothing. Why?",0,"Demasiado sospechoso. Suena a que escondes algo."],
+   ["There is a surprise party for you.",0,"¡Acabas de arruinar la sorpresa!"]]},
+  quiz:[["¿Qué está organizando Daniel?",["Una fiesta sorpresa","Un viaje","Una cena de trabajo"],0],
+        ["¿Por qué no deben contárselo a Tom?",["Porque no sabe guardar secretos","Porque está enfadado con Priya","Porque trabaja el viernes"],0]]},
+ {n:8, lvl:4, t:"The broken boiler", es:"La caldera rota", lines:[
+  ["tom","There's no hot water again. I've just had a freezing shower.","Otra vez no hay agua caliente. Me acabo de dar una ducha helada."],
+  ["priya","That's the third time this month. We need to talk to Mrs Green.","Es la tercera vez este mes. Tenemos que hablar con la señora Green."],
+  ["lucia","Let me do it. I've been practising how to complain politely.","Déjame a mí. He estado practicando cómo quejarme con educación."],
+  ["lucia","Mrs Green, I'm afraid the boiler has stopped working again. Would it be possible to call an engineer?","Señora Green, me temo que la caldera ha vuelto a dejar de funcionar. ¿Sería posible llamar a un técnico?"],
+  ["green","Oh dear, not again. I'll ring the plumber this morning, but he might not come until tomorrow.","Ay, madre, otra vez no. Llamaré al fontanero esta mañana, pero puede que no venga hasta mañana."],
+  ["lucia","I understand. If it keeps happening, perhaps it would be worth replacing it.","Lo entiendo. Si sigue pasando, quizá merecería la pena cambiarla."],
+  ["green","You're quite right, love. I've been putting it off for years.","Tienes toda la razón, cielo. Llevo años posponiéndolo."]],
+  choice:{q:"Quieres pedir que arreglen la caldera de forma educada. ¿Qué frase eliges?", o:[
+   ["Would it be possible to get it fixed this week?",1,"Muy educado: «Would it be possible…» y «get something fixed» = «que te lo arreglen»."],
+   ["Fix the boiler, please.",0,"Es una orden; con la casera conviene suavizarlo."],
+   ["You must to fix it.",0,"Además de brusco, «must» nunca lleva «to»."]]},
+  quiz:[["¿Cuántas veces ha fallado la caldera este mes?",["Tres","Una","Ninguna"],0],
+        ["¿Qué significa «I've been putting it off»?",["Llevo tiempo posponiéndolo","Lo he apagado","Lo he tirado"],0]]},
+ {n:9, lvl:4, t:"Weekend in Brighton", es:"Fin de semana en Brighton", lines:[
+  ["narrator","On Saturday morning, the four friends are at Victoria station.","El sábado por la mañana, los cuatro amigos están en la estación Victoria."],
+  ["tom","Bad news. Our train has been cancelled because of a signal failure.","Malas noticias. Han cancelado nuestro tren por una avería en la señalización."],
+  ["daniel","Typical. There's another one in forty minutes, but it stops everywhere.","Lo de siempre. Hay otro dentro de cuarenta minutos, pero para en todas partes."],
+  ["priya","Let's grab a coffee while we wait. It's going to be a long day.","Vamos a tomar un café mientras esperamos. Va a ser un día largo."],
+  ["narrator","Three hours later, they finally reach the beach.","Tres horas después, por fin llegan a la playa."],
+  ["lucia","Wait, the beach is made of stones? Where's the sand?","Espera, ¿la playa es de piedras? ¿Dónde está la arena?"],
+  ["tom","Welcome to the British seaside! Stones, wind and fish and chips.","¡Bienvenida a la costa británica! Piedras, viento y pescado con patatas."],
+  ["lucia","Honestly, I love it. But don't tell my family in Spain.","La verdad es que me encanta. Pero no se lo digáis a mi familia en España."]],
+  choice:{q:"Os han cancelado el tren. Quieres proponer algo positivo. ¿Qué dices?", o:[
+   ["Never mind, why don't we make the most of it and explore the station?",1,"Muy bien: «make the most of it» = «aprovecharlo al máximo»."],
+   ["This country is a disaster.",0,"Comprensible, pero no muy constructivo."],
+   ["Let's to go home.",0,"Después de «let's» va el verbo sin «to»: «Let's go home»."]]},
+  quiz:[["¿Por qué cancelan el tren?",["Por una avería en la señalización","Por una huelga","Por la nieve"],0],
+        ["¿Qué le sorprende a Lucía de la playa?",["Que es de piedras","Que está llena de gente","Que el agua está caliente"],0]]},
+ {n:10, lvl:4, t:"Staying or leaving?", es:"¿Quedarse o volver?", lines:[
+  ["lucia","I've got something to tell you. A company in Madrid has offered me a job.","Tengo que contaros algo. Una empresa de Madrid me ha ofrecido un trabajo."],
+  ["priya","That's amazing! But... does that mean you're leaving?","¡Es increíble! Pero... ¿eso quiere decir que te vas?"],
+  ["lucia","I haven't decided yet. The salary is better, and I'd be closer to my family.","Aún no lo he decidido. El sueldo es mejor, y estaría más cerca de mi familia."],
+  ["tom","But who's going to rescue me when I burn the lasagne?","Pero ¿quién me va a rescatar cuando queme la lasaña?"],
+  ["daniel","Whatever you decide, we'll support you. Just make sure it's what you really want.","Decidas lo que decidas, te apoyaremos. Solo asegúrate de que es lo que de verdad quieres."],
+  ["lucia","If I'd known it would be this hard, I wouldn't have made such good friends.","Si hubiera sabido que sería tan difícil, no habría hecho tan buenos amigos."],
+  ["green","Whatever happens, dear, your room will be here for you.","Pase lo que pase, querida, tu habitación estará aquí para ti."]],
+  choice:{q:"Final de temporada: ¿qué decide Lucía? (Las dos respuestas valen.)", o:[
+   ["I've decided to stay. London is home now.",1,"Lucía se queda. ¡Habrá segunda temporada en Londres!"],
+   ["I'm going back to Spain, but I'll visit you every summer.",1,"Lucía vuelve, pero promete visitarles. «I'll visit you» = promesa con will."],
+   ["I will decided tomorrow.",0,"Después de «will» va el verbo base: «I'll decide tomorrow»."]]},
+  quiz:[["¿Qué le ofrecen a Lucía?",["Un trabajo en Madrid","Un piso más grande","Un viaje a Brighton"],0],
+        ["¿Qué tipo de frase es «If I'd known…, I wouldn't have…»?",["Tercer condicional","Primer condicional","Futuro simple"],0]]}
+];
+
+/* ================= MISTERIOS: preguntas de sí o no hasta resolver el caso (casos originales) =================
+   f: hechos con palabras clave (basta con que la pregunta contenga una de cada grupo). a: y = sí, n = no.
+   key: pistas importantes; con todas descubiertas se puede resolver con seguridad. */
+const MYSTERIES = [
+ {id:"party", lvl:2, t:"The silent party", es:"La fiesta silenciosa",
+  story:"Thirty people danced all night at a party in a small flat. The neighbours were at home, but they didn't hear any music.",
+  sol:"Era una «silent disco»: todos llevaban auriculares y escuchaban la música por ellos.",
+  wrong:["Los vecinos estaban dormidos con tapones.","La fiesta era en una casa insonorizada."],
+  f:[{k:[["headphone","headphones","earphones","headset","headsets"]],a:"y",key:1,r:"Yes! That's very important."},
+     {k:[["music"]],a:"y",key:1,r:"Yes, there was music. Loud music, in fact."},
+     {k:[["neighbour","neighbours","neighbor","neighbors"],["deaf"]],a:"n",r:"No. The neighbours could hear perfectly."},
+     {k:[["neighbour","neighbours","neighbor","neighbors"],["sleep","asleep","sleeping"]],a:"n",r:"No, they were awake."},
+     {k:[["walls","wall","soundproof"]],a:"n",r:"No, the walls were normal."},
+     {k:[["dance","danced","dancing"]],a:"y",r:"Yes, they really danced."},
+     {k:[["speaker","speakers","radio","stereo"]],a:"n",key:1,r:"No, there were no speakers in the room."},
+     {k:[["phone","phones","mobile","mobiles"]],a:"y",r:"Yes, phones were involved, but they aren't the main point."},
+     {k:[["outside","garden","street"]],a:"n",r:"No, it was inside the flat."}]},
+ {id:"race", lvl:2, t:"The happy loser", es:"La perdedora feliz",
+  story:"Ana came last in the race, but she was the happiest person there.",
+  sol:"Corría contra su hijo pequeño y se dejó ganar a propósito: era la primera carrera que él ganaba.",
+  wrong:["Había apostado contra sí misma y ganó dinero.","Se había lesionado y estaba contenta solo por terminar."],
+  f:[{k:[["son","child","kid","boy","daughter","family","mother","mum","mom"]],a:"y",key:1,r:"Yes! Family is very important here."},
+     {k:[["purpose","deliberately","slow","slowly","let"]],a:"y",key:1,r:"Yes. She did it on purpose."},
+     {k:[["first"],["win","won","race"]],a:"y",key:1,r:"Yes, it was somebody's first victory."},
+     {k:[["money","bet","prize"]],a:"n",r:"No, there was no money."},
+     {k:[["injured","hurt","injury"]],a:"n",r:"No, she wasn't injured."},
+     {k:[["professional","athlete","olympic"]],a:"n",r:"No, it wasn't a professional race."},
+     {k:[["children","school","small"]],a:"y",r:"Yes, it was a small race."}]},
+ {id:"car", lvl:3, t:"The broken window", es:"La ventanilla rota",
+  story:"A man broke the window of a car that wasn't his. When the owner arrived, she thanked him.",
+  sol:"Había un perro encerrado dentro del coche en un día de mucho calor. El hombre rompió la ventanilla para salvarlo.",
+  wrong:["El coche estaba ardiendo y había documentos dentro.","La dueña había perdido las llaves y le pidió ayuda."],
+  f:[{k:[["animal","animals","dog","pet","cat"]],a:"y",key:1,r:"Yes! There was an animal inside."},
+     {k:[["hot","heat","summer","sun","sunny"]],a:"y",key:1,r:"Yes, it was a very hot day."},
+     {k:[["steal","stole","thief","rob"]],a:"n",r:"No, he didn't steal anything."},
+     {k:[["key","keys"]],a:"n",r:"No, the keys aren't important."},
+     {k:[["fire","burning"]],a:"n",r:"No, there was no fire."},
+     {k:[["save","saved","rescue","help","helped"]],a:"y",key:1,r:"Yes, he saved someone's life."},
+     {k:[["police"]],a:"n",r:"The police weren't there."},
+     {k:[["know","knew","friend"]],a:"n",r:"No, they didn't know each other."}]},
+ {id:"coffee", lvl:3, t:"Two coffees", es:"Dos cafés",
+  story:"Every morning, a man orders two coffees in the same café. He drinks one and leaves without the other.",
+  sol:"Paga un «café pendiente»: deja pagado el segundo café para alguien que no puede permitírselo.",
+  wrong:["El segundo café es para su mujer, que ya no vive.","Lo pide para el camarero, que es su amigo."],
+  f:[{k:[["someone","somebody","another","person","stranger"]],a:"y",key:1,r:"Yes, the second coffee is for another person."},
+     {k:[["pay","pays","paid","money"]],a:"y",key:1,r:"Yes, he pays for both."},
+     {k:[["poor","homeless","afford","money"]],a:"y",key:1,r:"Yes! It's for someone who can't afford it."},
+     {k:[["know","knows","friend","wife","family"]],a:"n",r:"No, he doesn't know who will drink it."},
+     {k:[["dead","died","death"]],a:"n",r:"No, nobody has died."},
+     {k:[["waiter","barista"]],a:"n",r:"No, it isn't for the waiter."},
+     {k:[["tradition","custom","italy","naples"]],a:"y",r:"Yes, it's an old tradition."}]},
+ {id:"note", lvl:3, t:"The note on the fridge", es:"La nota en la nevera",
+  story:"Emma came home, read a note on her fridge, laughed out loud and then called the police.",
+  sol:"Habían entrado a robar. El ladrón le dejó una nota diciendo que su casa estaba tan desordenada que no había encontrado nada de valor.",
+  wrong:["Su hijo le había dejado una broma y llamó a la policía para asustarlo.","La nota era de su novio pidiéndole matrimonio."],
+  f:[{k:[["thief","burglar","robber","break","broke","stranger"]],a:"y",key:1,r:"Yes! Someone had been in her house."},
+     {k:[["steal","stole","stolen","take","took"]],a:"n",key:1,r:"No! Nothing was stolen. That's important."},
+     {k:[["messy","mess","untidy","dirty","clean"]],a:"y",key:1,r:"Yes! The state of the house is the key."},
+     {k:[["family","son","daughter","husband","boyfriend"]],a:"n",r:"No, the note wasn't from her family."},
+     {k:[["joke","funny"]],a:"y",r:"Yes, the note was funny, but the situation wasn't a joke."},
+     {k:[["money"]],a:"n",r:"No, the note didn't ask for money."}]},
+ {id:"suitcase", lvl:4, t:"The wrong suitcase", es:"La maleta equivocada",
+  story:"At the airport, Tom took the wrong suitcase by mistake. Thanks to that, he got his dream job.",
+  sol:"La maleta era de la directora de una empresa. Tom la llamó para devolvérsela, quedaron, hablaron de su trabajo y le ofreció un puesto.",
+  wrong:["Dentro de la maleta había un portátil con ofertas de empleo.","Le detuvieron y el abogado le consiguió trabajo."],
+  f:[{k:[["return","returned","give","gave","back"]],a:"y",key:1,r:"Yes, he returned it."},
+     {k:[["owner","woman","person","met","meet","call","called","phone"]],a:"y",key:1,r:"Yes! He contacted the owner."},
+     {k:[["boss","director","manager","company","ceo"]],a:"y",key:1,r:"Yes! The owner had an important job."},
+     {k:[["inside","laptop","computer","documents"]],a:"n",r:"No, what was inside doesn't matter."},
+     {k:[["police","arrested","prison"]],a:"n",r:"No, the police weren't involved."},
+     {k:[["interview"]],a:"y",r:"Sort of. Their conversation was like an interview."},
+     {k:[["steal","stole"]],a:"n",r:"No, it was an honest mistake."}]}
+];
+/* Casos de misterio originales (ampliación) */
+const MYSTERIES2 = [
+ {id:"snowman", lvl:2, t:"The snowman in July", es:"El muñeco de nieve en julio", story:"In July, Pablo built a snowman in his garden.",
+  sol:"Pablo vive en el hemisferio sur, por ejemplo en Argentina, donde julio es pleno invierno.", wrong:["Usó nieve artificial de una tienda.","Era un muñeco de plástico para una fiesta."],
+  f:[{k:[["country","south","southern","argentina","australia","chile","hemisphere"]],a:"y",key:1,r:"Yes! Where he lives is the key."},{k:[["winter"]],a:"y",key:1,r:"Yes, it was winter there."},{k:[["fake","artificial","plastic","machine"]],a:"n",r:"No, it was real snow."},{k:[["cold"]],a:"y",r:"Yes, it was very cold."},{k:[["fridge","freezer"]],a:"n",r:"No, there was no fridge."},{k:[["spain","europe"]],a:"n",key:1,r:"No, he doesn't live in Europe."}]},
+ {id:"silentphone", lvl:2, t:"The silent phone", es:"El móvil que no sonó", story:"Clara's phone didn't ring all day, and she was very happy about it.",
+  sol:"Estaba de vacaciones y, por primera vez en años, había desactivado las llamadas del trabajo.", wrong:["Se le había roto el móvil y quería uno nuevo.","Estaba enfadada con su familia."],
+  f:[{k:[["holiday","holidays","vacation","trip"]],a:"y",key:1,r:"Yes! She was on holiday."},{k:[["work","job","boss","office"]],a:"y",key:1,r:"Yes, work is important here."},{k:[["off","switched","turned","silent","notifications"]],a:"y",key:1,r:"Yes, she had switched something off."},{k:[["broken","broke"]],a:"n",r:"No, the phone worked perfectly."},{k:[["angry","sad","argument"]],a:"n",r:"No, she wasn't angry with anyone."},{k:[["lost"]],a:"n",r:"No, she didn't lose it."}]},
+ {id:"upside", lvl:3, t:"The upside-down house", es:"La casa del revés", story:"Every weekend, hundreds of people queue for hours to walk on the ceiling of a house.",
+  sol:"Es una casa construida del revés como atracción turística: los muebles están en el techo y se camina por él.", wrong:["Es una casa con un truco de magia.","Es la casa de un famoso que la enseña gratis."],
+  f:[{k:[["tourist","tourists","attraction","museum","visit"]],a:"y",key:1,r:"Yes! It's a tourist attraction."},{k:[["upside","down","inverted","backwards"]],a:"y",key:1,r:"Yes! The whole house is upside down."},{k:[["pay","ticket","money"]],a:"y",r:"Yes, they buy a ticket."},{k:[["live","lives","family"]],a:"n",r:"No, nobody lives there."},{k:[["magic","trick","illusion"]],a:"n",r:"It isn't magic."},{k:[["furniture","table","chairs"]],a:"y",key:1,r:"Yes, the furniture is important: it's on the ceiling."}]},
+ {id:"lottery", lvl:3, t:"The unlucky winner", es:"El ganador sin suerte", story:"Max's lucky numbers won the lottery, but that evening he was the saddest man in town.",
+  sol:"Jugaba siempre los mismos números, pero esa semana se le olvidó comprar el boleto.", wrong:["Le robaron el boleto ganador.","El premio era muy pequeño."],
+  f:[{k:[["ticket"]],a:"y",key:1,r:"Yes! The ticket is the key."},{k:[["forgot","forget","forgotten"]],a:"y",key:1,r:"Yes! He forgot something."},{k:[["same","always","every"]],a:"y",key:1,r:"Yes, he always played the same numbers."},{k:[["money","prize","rich"]],a:"n",r:"No, he didn't get any money."},{k:[["stolen","steal","stole","thief"]],a:"n",r:"No, nothing was stolen."},{k:[["small","little"]],a:"n",r:"No, the prize was huge."}]},
+ {id:"dogparty", lvl:2, t:"The birthday without cake", es:"El cumpleaños sin tarta", story:"It was Lily's birthday. There was no cake, but everyone sang and Lily was delighted.",
+  sol:"Lily es una perra. En lugar de tarta, le regalaron un hueso enorme.", wrong:["Lily estaba a dieta.","La tarta se había caído al suelo."],
+  f:[{k:[["dog","animal","pet","cat"]],a:"y",key:1,r:"Yes! Lily is an animal."},{k:[["person","girl","woman","child","human"]],a:"n",key:1,r:"No, Lily isn't a person."},{k:[["bone","food","present","gift"]],a:"y",key:1,r:"Yes, she got a special present."},{k:[["diet"]],a:"n",r:"No, she wasn't on a diet."},{k:[["fell","dropped","broken"]],a:"n",r:"No, nothing fell."}]},
+ {id:"pilot", lvl:3, t:"The late pilot", es:"El piloto que llegó tarde", story:"The pilot arrived at the airport two hours late, but the plane left on time.",
+  sol:"Ese día no trabajaba: viajaba de vacaciones como pasajero en otro vuelo. Su avión lo pilotaba otra persona.", wrong:["Lo despidieron y puso otro piloto.","El avión despegó sin piloto, en automático."],
+  f:[{k:[["passenger","travelling","traveling","flying"]],a:"y",key:1,r:"Yes! He was travelling as a passenger."},{k:[["holiday","holidays","vacation","day off"]],a:"y",key:1,r:"Yes, he wasn't working that day."},{k:[["another","other","different"]],a:"y",key:1,r:"Yes, another pilot flew the plane."},{k:[["fired","sacked","job"]],a:"n",r:"No, he still has his job."},{k:[["automatic","autopilot","robot"]],a:"n",r:"No, there was a pilot in the cockpit."},{k:[["missed","miss"]],a:"y",r:"He nearly missed his own flight, but the plane wasn't his to fly."}]},
+ {id:"donate", lvl:3, t:"The heavy suitcase", es:"La maleta pesada", story:"Paula's suitcase was very heavy when she left and almost empty when she came back. She was very happy.",
+  sol:"Llevaba ropa, libros y material escolar para donarlos a una escuela del país al que viajó.", wrong:["Le robaron casi todo en el hotel.","Se dejó la ropa en el hotel por error."],
+  f:[{k:[["gave","give","donate","donated","present","presents"]],a:"y",key:1,r:"Yes! She gave things away."},{k:[["school","children","kids","students"]],a:"y",key:1,r:"Yes! Children are important here."},{k:[["stolen","steal","stole","thief"]],a:"n",r:"No, nothing was stolen."},{k:[["forgot","lost","left"]],a:"n",r:"No, she didn't forget anything."},{k:[["books","clothes","pencils","toys"]],a:"y",key:1,r:"Yes, the suitcase was full of things for other people."}]},
+ {id:"icehotel", lvl:3, t:"The coldest room", es:"La habitación más fría", story:"A guest complained that his hotel room was freezing. The receptionist laughed and gave him a thick sleeping bag.",
+  sol:"Era un hotel de hielo en el norte de Suecia: todo, incluso la cama, está hecho de hielo.", wrong:["La calefacción estaba rota y no querían arreglarla.","Era una broma de cámara oculta."],
+  f:[{k:[["ice","snow","frozen"]],a:"y",key:1,r:"Yes! Ice is the key."},{k:[["sweden","north","arctic","lapland","norway","finland"]],a:"y",key:1,r:"Yes, it's very far north."},{k:[["heating","broken","radiator"]],a:"n",r:"No, nothing was broken."},{k:[["special","unusual","different"]],a:"y",key:1,r:"Yes, it's a very special hotel."},{k:[["joke","camera","prank"]],a:"n",r:"No, it wasn't a joke."}]},
+ {id:"barber", lvl:3, t:"The backwards clock", es:"El reloj al revés", story:"In Tom's barber shop, the clock on the wall runs backwards, but every customer can read the time perfectly.",
+  sol:"Los clientes miran el reloj a través del espejo, así que lo ven del derecho.", wrong:["Es un reloj mágico.","Los clientes llevan su propio reloj."],
+  f:[{k:[["mirror","reflection"]],a:"y",key:1,r:"Yes! A mirror is the key."},{k:[["sit","sitting","chair","face","facing"]],a:"y",key:1,r:"Yes, customers sit facing one direction."},{k:[["broken"]],a:"n",r:"No, the clock isn't broken."},{k:[["magic"]],a:"n",r:"It isn't magic."},{k:[["watch","phone"]],a:"n",r:"No, they don't use their own watches."},{k:[["haircut","hair"]],a:"y",key:1,r:"Yes, they're having a haircut while they look."}]},
+ {id:"carpark", lvl:3, t:"The night car park", es:"El aparcamiento de noche", story:"Every night at 3 a.m., a supermarket car park is full of cars, but the supermarket is closed.",
+  sol:"Está al lado de un hospital, y el personal del turno de noche aparca allí gratis.", wrong:["Hacen carreras ilegales de coches.","Es un cine al aire libre."],
+  f:[{k:[["hospital","clinic"]],a:"y",key:1,r:"Yes! There's a hospital nearby."},{k:[["work","working","shift","nurses","doctors"]],a:"y",key:1,r:"Yes, the drivers are working."},{k:[["free"]],a:"y",key:1,r:"Yes, parking there is free."},{k:[["shopping","buy"]],a:"n",r:"No, nobody is shopping."},{k:[["race","racing","party","cinema"]],a:"n",r:"No, nothing fun is happening."}]},
+ {id:"coach", lvl:4, t:"The dry swimmer", es:"La nadadora que nunca se mojaba", story:"Ana trained for the national swimming championship for months, but she never got wet.",
+  sol:"Ana era la entrenadora: «trained» también significa «entrenó a otros». Preparaba al equipo desde el borde de la piscina.", wrong:["Nadaba con un traje impermeable especial.","Se entrenaba en un simulador."],
+  f:[{k:[["coach","trainer","teacher","taught"]],a:"y",key:1,r:"Yes! That's the key."},{k:[["swim","swam","herself"]],a:"n",key:1,r:"No, she didn't swim herself."},{k:[["team","swimmers","others","students"]],a:"y",key:1,r:"Yes, she trained other people."},{k:[["pool"]],a:"y",r:"Yes, she was at the pool."},{k:[["suit","costume","simulator","machine"]],a:"n",r:"No, there was no special equipment."}]},
+ {id:"painting", lvl:4, t:"The angry artist", es:"El artista furioso", story:"Visitors loved the museum's new painting, but the artist was furious when he saw it.",
+  sol:"El museo había colgado el cuadro del revés.", wrong:["Alguien había pintado encima.","Era una copia falsa de su cuadro."],
+  f:[{k:[["upside","down","wrong","backwards"]],a:"y",key:1,r:"Yes! It was the wrong way round."},{k:[["museum","staff","mistake","hung"]],a:"y",key:1,r:"Yes, the museum made a mistake."},{k:[["fake","copy"]],a:"n",r:"No, it was the original."},{k:[["damaged","painted","broken"]],a:"n",r:"No, nobody damaged it."},{k:[["price","money"]],a:"n",r:"No, money isn't the problem."}]},
+ {id:"bustest", lvl:2, t:"The empty bus", es:"El autobús vacío", story:"The bus was completely empty, but the driver stopped at every bus stop.",
+  sol:"Era un conductor nuevo haciendo su examen práctico; tenía que hacer la ruta entera parando en todas las paradas.", wrong:["El conductor estaba despistado.","Esperaba a un pasajero concreto."],
+  f:[{k:[["test","exam","training","learn","learning","lesson"]],a:"y",key:1,r:"Yes! He was learning."},{k:[["new"]],a:"y",key:1,r:"Yes, he was a new driver."},{k:[["passengers","passenger"]],a:"n",r:"No, there were no passengers."},{k:[["rules","route"]],a:"y",key:1,r:"Yes, he had to follow the whole route."},{k:[["broken","lost"]],a:"n",r:"No, nothing was wrong with the bus."}]},
+ {id:"wrongname", lvl:3, t:"The wrong name", es:"El nombre equivocado", story:"Every morning, the café writes the wrong name on Peter's cup. He always goes back to the same café.",
+  sol:"Peter dice un nombre inventado y gracioso cada día: es un juego entre él y el camarero.", wrong:["Peter no sabe pronunciar su nombre.","El camarero no le cae bien."],
+  f:[{k:[["game","joke","fun","funny"]],a:"y",key:1,r:"Yes! It's a game."},{k:[["fake","different","invent","invented","false"]],a:"y",key:1,r:"Yes! He gives a different name every day."},{k:[["angry","annoyed"]],a:"n",r:"No, he isn't angry at all."},{k:[["friend","friends","waiter","barista"]],a:"y",key:1,r:"Yes, he gets on very well with the barista."},{k:[["mistake","error"]],a:"n",r:"No, it isn't a mistake."}]},
+ {id:"window", lvl:3, t:"The open windows", es:"Las ventanas abiertas", story:"It was freezing outside, but Sara opened all the windows and turned the heating up.",
+  sol:"Se le había quemado la cena y quería sacar el humo y el olor de casa.", wrong:["Le gusta dormir con frío.","Quería ventilar por un virus."],
+  f:[{k:[["smoke","smell","burnt","burned","burn"]],a:"y",key:1,r:"Yes! There was smoke."},{k:[["cooking","kitchen","dinner","food","oven"]],a:"y",key:1,r:"Yes, it happened in the kitchen."},{k:[["fire"]],a:"n",r:"No, there was no real fire."},{k:[["hot","heat"]],a:"n",r:"No, she wasn't too hot."},{k:[["air","fresh"]],a:"y",key:1,r:"Yes, she needed fresh air."}]},
+ {id:"dogbus", lvl:2, t:"The dog on the bus", es:"El perro en el autobús", story:"A dog got on a bus alone, got off at the right stop and walked home.",
+  sol:"Iba en ese autobús todos los días con su dueño, así que conocía el camino y la parada.", wrong:["El conductor lo llevó a su casa.","Tenía un GPS en el collar."],
+  f:[{k:[["every","always","habit","usually"]],a:"y",key:1,r:"Yes! He did it often."},{k:[["owner","master"]],a:"y",key:1,r:"Yes, he usually travelled with his owner."},{k:[["driver"]],a:"n",r:"No, the driver didn't help."},{k:[["gps","chip","phone"]],a:"n",r:"No, there was no technology."},{k:[["smart","clever","intelligent"]],a:"y",key:1,r:"Yes, he's a very clever dog."}]},
+ {id:"readdogs", lvl:3, t:"The strange audience", es:"El público extraño", story:"Every Saturday, children read books aloud in the library to an audience that doesn't understand a word.",
+  sol:"Leen en voz alta a perros. Es un programa para que los niños practiquen la lectura sin miedo a equivocarse.", wrong:["Leen para turistas extranjeros.","Leen en un idioma inventado."],
+  f:[{k:[["dog","dogs","animal","animals","pets"]],a:"y",key:1,r:"Yes! The audience is animals."},{k:[["practise","practice","shy","fear","afraid","learn"]],a:"y",key:1,r:"Yes! It helps the children."},{k:[["foreign","tourists","language"]],a:"n",r:"No, there are no foreigners."},{k:[["deaf"]],a:"n",r:"No, they can hear perfectly."},{k:[["library"]],a:"y",key:1,r:"Yes, it's a special library programme."}]},
+ {id:"volunteer", lvl:4, t:"The man who paid to work", es:"El hombre que pagó por trabajar", story:"Richard paid a lot of money to work very hard for two weeks, and he loved every minute.",
+  sol:"Hizo unas vacaciones de voluntariado: pagó el viaje para trabajar en una excavación arqueológica.", wrong:["Le obligaron a trabajar como castigo.","Era un trabajo con un sueldo enorme."],
+  f:[{k:[["holiday","holidays","vacation","trip"]],a:"y",key:1,r:"Yes! It was his holiday."},{k:[["volunteer","volunteering","dig","digging","archaeology","farm"]],a:"y",key:1,r:"Yes! He was a volunteer."},{k:[["salary","paid","money"]],a:"n",r:"No, he didn't earn any money."},{k:[["forced","punishment","prison"]],a:"n",r:"No, nobody forced him."},{k:[["learn","learned","learnt","experience"]],a:"y",key:1,r:"Yes, he learnt a lot."}]},
+ {id:"leapyear", lvl:2, t:"Ten birthdays", es:"Diez cumpleaños", story:"Lucy is forty years old, but she has only had ten birthday parties on her real birthday.",
+  sol:"Nació un 29 de febrero, y ese día solo existe cada cuatro años.", wrong:["Estuvo enferma muchos años.","Su familia se olvidaba siempre."],
+  f:[{k:[["february","29","twenty"]],a:"y",key:1,r:"Yes! The date is the key."},{k:[["four","leap"]],a:"y",key:1,r:"Yes! Every four years."},{k:[["ill","sick","hospital"]],a:"n",r:"No, she wasn't ill."},{k:[["forgot","forget"]],a:"n",r:"No, nobody forgot."},{k:[["calendar","date"]],a:"y",key:1,r:"Yes, the calendar is important."}]},
+ {id:"breakleg", lvl:4, t:"Break a leg", es:"Rómpete una pierna", story:"Before the show, everyone told Dan to break a leg. He did exactly what they said and had the best night of his life.",
+  sol:"«Break a leg» es una expresión de teatro que significa «¡mucha suerte!». Dan hizo una actuación fantástica y no se hizo ningún daño.", wrong:["Dan se rompió la pierna y salió en silla de ruedas.","Era una obra sobre un accidente."],
+  f:[{k:[["theatre","theater","show","actor","stage","play"]],a:"y",key:1,r:"Yes! It's about the theatre."},{k:[["expression","idiom","luck","saying"]],a:"y",key:1,r:"Yes! It's an expression."},{k:[["hospital","hurt","injured","broke"]],a:"n",key:1,r:"No, he didn't hurt himself at all."},{k:[["wheelchair"]],a:"n",r:"No."},{k:[["good"]],a:"y",r:"Yes, it was a good night."}]},
+ {id:"skidome", lvl:3, t:"Snow in the desert", es:"Nieve en el desierto", story:"In a city in the middle of the desert, people pay to ski on real snow, even in August.",
+  sol:"Hay una pista de esquí cubierta dentro de un centro comercial, con nieve de verdad y aire acondicionado.", wrong:["Esquían sobre arena.","Es un videojuego de realidad virtual."],
+  f:[{k:[["inside","indoor","indoors","building","mall","shopping"]],a:"y",key:1,r:"Yes! It's inside a building."},{k:[["real"]],a:"y",key:1,r:"Yes, the snow is real."},{k:[["sand"]],a:"n",r:"No, it isn't sand."},{k:[["virtual","game","video"]],a:"n",r:"No, it's not a game."},{k:[["cold","freezing","air"]],a:"y",key:1,r:"Yes, it's very cold inside."}]},
+ {id:"letter", lvl:4, t:"The letter that arrived too late", es:"La carta que llegó tarde", story:"Tom received a love letter that was written thirty years earlier, and a year later he married the woman who wrote it.",
+  sol:"La carta se perdió en Correos durante treinta años. Cuando llegó, los dos seguían solteros: él la buscó y se reencontraron.", wrong:["Ella le escribió de nuevo con la misma carta.","Él la encontró en un museo."],
+  f:[{k:[["lost","post","office","mail"]],a:"y",key:1,r:"Yes! It was lost in the post."},{k:[["school","friend","knew","young"]],a:"y",key:1,r:"Yes, they knew each other when they were young."},{k:[["single","married"]],a:"y",key:1,r:"Both were still single when the letter arrived."},{k:[["new"]],a:"n",r:"No, it was the old letter."},{k:[["museum"]],a:"n",r:"No."}]},
+ {id:"wheelchair", lvl:3, t:"The winner who didn't run", es:"El ganador que no corrió", story:"The winner of the city marathon didn't run a single step.",
+  sol:"Ganó la categoría de silla de ruedas del maratón.", wrong:["Hizo trampa y cogió un taxi.","Ganó por un error de los jueces."],
+  f:[{k:[["wheelchair","chair","wheels"]],a:"y",key:1,r:"Yes! That's the key."},{k:[["cheat","cheated","taxi","car"]],a:"n",key:1,r:"No, he didn't cheat at all."},{k:[["category","race","official"]],a:"y",key:1,r:"Yes, it was an official race."},{k:[["bike","bicycle"]],a:"n",r:"No, it wasn't a bike."},{k:[["mistake","judges"]],a:"n",r:"No, there was no mistake."}]},
+ {id:"lights", lvl:3, t:"The lights in the office", es:"Las luces de la oficina", story:"The lights in an office building stayed on all night, but nobody was working there.",
+  sol:"Las ventanas iluminadas formaban un corazón gigante: la empresa lo hace cada San Valentín.", wrong:["Se les olvidó apagarlas.","Había ladrones dentro."],
+  f:[{k:[["shape","heart","picture","message","pattern"]],a:"y",key:1,r:"Yes! The lights made a shape."},{k:[["valentine","valentine's","love","february"]],a:"y",key:1,r:"Yes! It was a special day."},{k:[["forgot","forget","mistake"]],a:"n",r:"No, it was on purpose."},{k:[["thieves","thief","burglar"]],a:"n",r:"No, nobody was inside."},{k:[["purpose","deliberately"]],a:"y",key:1,r:"Yes, it was deliberate."}]},
+ {id:"bikethief", lvl:3, t:"The polite thief", es:"El ladrón educado", story:"Someone stole Martin's bike. The next day, it was back outside his house with a note saying 'Sorry, and thank you'.",
+  sol:"El ladrón necesitaba llegar al hospital con urgencia porque su mujer estaba dando a luz. Luego la devolvió.", wrong:["La policía obligó al ladrón a devolverla.","La bici estaba rota y no le servía."],
+  f:[{k:[["emergency","hospital","urgent","hurry"]],a:"y",key:1,r:"Yes! It was an emergency."},{k:[["baby","wife","birth","pregnant"]],a:"y",key:1,r:"Yes! A baby was on the way."},{k:[["police"]],a:"n",r:"No, the police didn't catch him."},{k:[["broken"]],a:"n",r:"No, the bike was fine."},{k:[["note","sorry"]],a:"y",r:"Yes, he really was sorry."}]},
+ {id:"owngoal", lvl:4, t:"The silent goal", es:"El gol del silencio", story:"In the last minute, the striker scored the goal that won the match, and his own fans went completely silent.",
+  sol:"Marcó en propia puerta: el gol dio la victoria al equipo rival.", wrong:["Se lesionó al celebrarlo.","El estadio estaba vacío por la lluvia."],
+  f:[{k:[["own"]],a:"y",key:1,r:"Yes! His own goal."},{k:[["other","rival","opponent","opponents"]],a:"y",key:1,r:"Yes, the other team won."},{k:[["injured","hurt"]],a:"n",r:"No, nobody was hurt."},{k:[["empty","rain"]],a:"n",r:"No, the stadium was full."},{k:[["mistake","accident"]],a:"y",key:1,r:"Yes, it was a terrible mistake."}]},
+ {id:"cheapflight", lvl:3, t:"The cheap flight", es:"El vuelo barato", story:"Jenny bought the cheapest flight to Rome she could find, but the trip cost her a fortune.",
+  sol:"La aerolínea cobraba todo aparte (maleta, asiento, embarque) y el aeropuerto estaba lejísimos de la ciudad: el taxi costó más que el vuelo.", wrong:["Le cancelaron el vuelo y compró otro.","Le robaron la cartera en Roma."],
+  f:[{k:[["extra","bag","bags","luggage","suitcase","fees","seat"]],a:"y",key:1,r:"Yes! She had to pay extra."},{k:[["far","taxi","airport","distance"]],a:"y",key:1,r:"Yes! The airport was a problem."},{k:[["cancelled","canceled","delay"]],a:"n",r:"No, the flight was on time."},{k:[["stolen","stole","thief"]],a:"n",r:"No, nothing was stolen."},{k:[["expensive"]],a:"y",key:1,r:"Yes, the 'cheap' flight was really expensive."}]},
+ {id:"haircut", lvl:2, t:"The short hair", es:"El pelo corto", story:"Nora went to the hairdresser's with very long hair and came out with very short hair. She was very proud.",
+  sol:"Donó su pelo para hacer pelucas para niños que lo han perdido por una enfermedad.", wrong:["El peluquero se equivocó.","Le hacía mucho calor."],
+  f:[{k:[["donate","donated","gave","give","charity"]],a:"y",key:1,r:"Yes! She gave her hair away."},{k:[["wig","wigs","children","ill","illness"]],a:"y",key:1,r:"Yes, it helps other people."},{k:[["mistake","wrong"]],a:"n",r:"No, it wasn't a mistake."},{k:[["hot","summer"]],a:"n",r:"No, the weather isn't important."},{k:[["angry","sad"]],a:"n",r:"No, she was very happy."}]},
+ {id:"calls", lvl:3, t:"One hundred calls", es:"Cien llamadas", story:"Ben's phone rang one hundred times in one hour, and he was delighted.",
+  sol:"Había puesto a la venta su coche en internet a un precio muy bueno, y todo el mundo quería comprarlo.", wrong:["Era su cumpleaños.","Había ganado un concurso de la radio."],
+  f:[{k:[["sell","selling","sale","sold","advert","ad"]],a:"y",key:1,r:"Yes! He was selling something."},{k:[["internet","online","website"]],a:"y",key:1,r:"Yes, it was online."},{k:[["car"]],a:"y",key:1,r:"Yes, it's about his car."},{k:[["birthday"]],a:"n",r:"No, it wasn't his birthday."},{k:[["radio","competition","contest"]],a:"n",r:"No."}]},
+ {id:"filmdoctor", lvl:4, t:"The doctor who walked past", es:"La médica que pasó de largo", story:"A doctor walked past a man lying in the street and didn't help him, and nobody criticised her.",
+  sol:"Estaban rodando una película: el hombre era un actor y la médica pasaba por allí sabiendo que era una escena.", wrong:["Ella no estaba de servicio.","El hombre solo estaba durmiendo."],
+  f:[{k:[["film","movie","actor","camera","filming","scene"]],a:"y",key:1,r:"Yes! It was a film."},{k:[["real","injured","hurt","ill"]],a:"n",key:1,r:"No, the man wasn't really hurt."},{k:[["sleeping","asleep","drunk"]],a:"n",r:"No, he wasn't asleep."},{k:[["work","shift","duty"]],a:"n",r:"Her job isn't important here."},{k:[["knew","know"]],a:"y",key:1,r:"Yes, she knew what was happening."}]}
+];
+MYSTERIES.push(...MYSTERIES2);
+
+const AUX_START = /^(is|are|was|were|do|does|did|has|have|had|can|could|will|would|should|am|might|may)\b/;
+
+/* ================= CAZADOR DE ERRORES DE HISPANOHABLANTE (frases originales) =================
+   w: frase con error, ok: correcta, o: dos versiones incorrectas más, x: explicación */
+const SPANGLISH = [
+ ["I have 30 years.","I'm 30 years old.",["I have 30 years old.","I am 30 years."],"La edad se dice con be: «I'm 30» o «I'm 30 years old».",1],
+ ["People is very friendly here.","People are very friendly here.",["The people is very friendly here.","People are very friendly there is."],"«People» es plural en inglés: «people are».",1],
+ ["Explain me the problem, please.","Explain the problem to me, please.",["Explain to me me the problem.","Explain me to the problem."],"«Explain» no lleva la persona justo detrás: «explain something to someone».",2],
+ ["I'm agree with you.","I agree with you.",["I am agreeing with you.","I'm agreed with you."],"«Agree» es un verbo: «I agree», sin «am».",1],
+ ["She has 2 brothers and she is the most young.","She has 2 brothers and she is the youngest.",["She has 2 brothers and she is the more young.","She has 2 brothers and she is the most youngest."],"Los adjetivos cortos forman el superlativo con -est: «the youngest».",2],
+ ["I am married with a doctor.","I'm married to a doctor.",["I'm married of a doctor.","I am marry with a doctor."],"Se dice «married to someone».",2],
+ ["It depends of the weather.","It depends on the weather.",["It depends from the weather.","It's depends on the weather."],"«Depend» va con «on».",2],
+ ["I'm boring, let's do something.","I'm bored, let's do something.",["I'm bore, let's do something.","I'm boredom, let's do something."],"«Bored» = aburrido (cómo te sientes). «Boring» = aburrido (que aburre).",2],
+ ["Yesterday I go to the cinema.","Yesterday I went to the cinema.",["Yesterday I goed to the cinema.","Yesterday I have gone to the cinema."],"Con «yesterday» va pasado simple. Go es irregular: go – went – gone.",1],
+ ["I didn't went to work.","I didn't go to work.",["I didn't gone to work.","I not went to work."],"Después de «didn't» el verbo va en forma base.",1],
+ ["Do you can help me?","Can you help me?",["Do you could help me?","Can you to help me?"],"Con los modales no se usa «do»: «Can you…?».",1],
+ ["I live here since 2020.","I've lived here since 2020.",["I'm living here since 2020.","I lived here since 2020."],"Para algo que empezó y sigue, present perfect: «I've lived here since 2020».",3],
+ ["I'm waiting you since an hour.","I've been waiting for you for an hour.",["I wait you for an hour.","I'm waiting for you since one hour."],"«Wait for someone» y, para la duración, present perfect continuous + for.",3],
+ ["She is more tall than me.","She is taller than me.",["She is more taller than me.","She is tall than me."],"Comparativo de adjetivos cortos: -er + than.",1],
+ ["I want that you come.","I want you to come.",["I want you come.","I want that you to come."],"«Want» + persona + to + infinitivo.",3],
+ ["He said me the truth.","He told me the truth.",["He said to me the truth.","He talked me the truth."],"Con persona detrás se usa «tell»: «tell someone something».",2],
+ ["I have a doubt about the homework.","I have a question about the homework.",["I have a doubt of the homework.","I make a doubt about the homework."],"Para preguntar algo, en inglés se usa «a question». «Doubt» es más bien una sospecha o desconfianza.",3],
+ ["Can you borrow me your pen?","Can you lend me your pen?",["Can you borrow your pen to me?","Can you leave me your pen?"],"«Lend» = dejar algo a otro. «Borrow» = pedir prestado.",2],
+ ["I'm very excited, I'm embarrassed!","I'm very excited, I'm pregnant!",["I'm very excited, I'm embarrassing!","I'm very excited, I'm embarrass!"],"Falso amigo: «embarrassed» = avergonzado. Embarazada = «pregnant».",2],
+ ["Actually I work in a bank, but before I was a teacher.","Currently I work in a bank, but before I was a teacher.",["Actually I am working in a bank before.","Actual I work in a bank."],"Falso amigo: «actually» = en realidad. «Actualmente» = «currently» o «at the moment».",3],
+ ["I need to do a photo.","I need to take a photo.",["I need to make a photo.","I need do a photo."],"Las fotos se «take»: «take a photo».",2],
+ ["Let's make a party!","Let's have a party!",["Let's do a party!","Let's to have a party!"],"Se dice «have a party» o «throw a party».",2],
+ ["I'm going to do a mistake.","I'm going to make a mistake.",["I'm going to have a mistake.","I'm going to take a mistake."],"Los errores se «make»: «make a mistake».",2],
+ ["There are much people here.","There are a lot of people here.",["There is many people here.","There are much peoples here."],"«Much» es para incontables. Con «people» usa «a lot of» o «many».",2],
+ ["I have many informations.","I have a lot of information.",["I have much informations.","I have an information."],"«Information» es incontable: no lleva -s ni «an».",2],
+ ["Give me an advice.","Give me some advice.",["Give me advices.","Give me a advice."],"«Advice» es incontable: «some advice» o «a piece of advice».",2],
+ ["The news are good.","The news is good.",["The new is good.","The news are goods."],"«News» parece plural, pero va con verbo en singular.",3],
+ ["I'm used to get up early.","I'm used to getting up early.",["I use to getting up early.","I'm use to get up early."],"«Be used to» + -ing = estar acostumbrado.",4],
+ ["I look forward to see you.","I look forward to seeing you.",["I look forward see you.","I'm look forward to seeing you."],"«Look forward to» + -ing, porque aquí «to» es preposición.",3],
+ ["If I will have time, I will call you.","If I have time, I'll call you.",["If I would have time, I call you.","If I had time, I will call you."],"Primer condicional: después de «if» va presente, no «will».",3],
+ ["If I would know it, I would tell you.","If I knew it, I would tell you.",["If I know it, I would tell you.","If I would knew it, I tell you."],"Segundo condicional: if + pasado, nunca «if I would».",4],
+ ["My sister works in a hospital and she like it.","My sister works in a hospital and she likes it.",["My sister work in a hospital and she likes it.","My sister works in a hospital and she liking it."],"Con he/she/it, el presente simple añade -s: «she likes».",1],
+ ["Where you live?","Where do you live?",["Where you do live?","Where are you live?"],"En las preguntas de presente simple hace falta «do».",1],
+ ["What means this word?","What does this word mean?",["What does this word means?","What this word means?"],"Pregunta con «does» y el verbo en forma base: «What does it mean?».",2],
+ ["I don't know where is the station.","I don't know where the station is.",["I don't know where does the station is.","I don't know where is it the station."],"En las preguntas indirectas el verbo va al final, en orden normal.",3],
+ ["I have been in London last year.","I went to London last year.",["I have gone to London last year.","I was been in London last year."],"Con un momento concreto del pasado («last year») se usa pasado simple.",3],
+ ["She is a very sympathetic person, everybody likes her.","She is a very nice person, everybody likes her.",["She is a very sympathy person.","She is very sympathetical."],"Falso amigo: «sympathetic» = comprensivo. «Simpático» = «nice» o «friendly».",2],
+ ["I'm going to assist to the meeting.","I'm going to attend the meeting.",["I'm going to assist the meeting.","I'm going to attend to the meeting."],"Falso amigo: «assist» = ayudar. Asistir a una reunión = «attend a meeting».",3],
+ ["It's very funny to work here, I really enjoy it.","It's really fun to work here, I really enjoy it.",["It's very fun to work here.","It's funny to working here."],"«Funny» = gracioso; «fun» = divertido, que te lo pasas bien.",3],
+ ["I've realized the project in two weeks.","I've carried out the project in two weeks.",["I've realised of the project in two weeks.","I realized the project in two weeks ago."],"Falso amigo: «realize» = darse cuenta. Realizar un proyecto = «carry out» o «complete».",4],
+ ["We discussed about the budget.","We discussed the budget.",["We discussed of the budget.","We discuss about the budget yesterday."],"«Discuss» no lleva «about»: «discuss something».",4],
+ ["Please, call me when you will arrive.","Please call me when you arrive.",["Please call me when you are arriving will.","Please call me when you would arrive."],"Después de «when» con valor de futuro va el presente.",3],
+ ["He is the person which I told you about.","He is the person who I told you about.",["He is the person what I told you about.","He is the person whose I told you about."],"Para personas se usa «who» (o «that»), no «which».",3],
+ ["I prefer to stay at home that go out.","I prefer staying at home to going out.",["I prefer stay at home than go out.","I prefer to stay at home than going out."],"«Prefer» + -ing + to + -ing (o «I'd rather stay home than go out»).",4],
+ ["The meeting is in Monday at 10.","The meeting is on Monday at 10.",["The meeting is at Monday in 10.","The meeting is in Monday in 10."],"Días de la semana con «on»; horas con «at».",1],
+ ["I arrived to London yesterday.","I arrived in London yesterday.",["I arrived at London yesterday.","I arrived London yesterday."],"Con ciudades y países se usa «arrive in».",2],
+ ["She's working here during five years.","She's been working here for five years.",["She works here during five years.","She's working here since five years."],"Para la duración se usa «for», no «during».",3],
+ ["Is necessary to book a table.","It's necessary to book a table.",["Is it necessary book a table.","Necessary is to book a table."],"En inglés el sujeto no se omite: «It's necessary…».",1]
+];
+
+/* Cazador de errores: ampliación (frases originales) */
+SPANGLISH.push(
+ ["I have hungry.","I'm hungry.",["I have hunger.","I am hungry of food."],"El hambre, la sed, el frío o el calor se expresan con be: «I'm hungry», «I'm cold».",1],
+ ["I have cold, close the window.","I'm cold, close the window.",["I have a cold, close the window.","I am cold, close window."],"«I'm cold» = tengo frío. «I have a cold» = estoy resfriado.",1],
+ ["She has reason.","She's right.",["She has the reason.","She is reason."],"«Tener razón» se dice «be right».",1],
+ ["Is raining again.","It's raining again.",["Raining again.","Is it raining again."],"El tiempo atmosférico necesita el sujeto «it»: «It's raining».",1],
+ ["I like very much football.","I like football very much.",["I very much like the football.","I like much football."],"«Very much» va al final, detrás del complemento.",1],
+ ["I always am late.","I'm always late.",["I am late always.","Always I am late."],"Con «be», el adverbio de frecuencia va detrás: «I'm always late».",1],
+ ["We go to the beach the summer.","We go to the beach in summer.",["We go to the beach on summer.","We go at the beach in the summer."],"Con estaciones se usa «in»: «in summer».",1],
+ ["I go to home after work.","I go home after work.",["I go at home after work.","I go to the home after work."],"«Go home» no lleva «to».",1],
+ ["In the night I watch TV.","At night I watch TV.",["On the night I watch TV.","In night I watch TV."],"Se dice «at night», pero «in the morning» y «in the evening».",1],
+ ["He is engineer.","He's an engineer.",["He's a engineer.","He is the engineer of profession."],"Con profesiones se usa a/an, y «an» delante de sonido vocálico.",1],
+ ["I'm more happy now.","I'm happier now.",["I'm more happier now.","I'm happyer now."],"«Happy» forma el comparativo con -er: «happier».",2],
+ ["It's the more expensive restaurant of the city.","It's the most expensive restaurant in the city.",["It's the most expensive restaurant of the city.","It's the more expensive restaurant in the city."],"Superlativo con «the most», y lugar con «in».",2],
+ ["I have lived in London when I was a child.","I lived in London when I was a child.",["I was living in London when I have been a child.","I have been living in London when I was a child."],"Con «when I was a child» (pasado terminado) va pasado simple.",3],
+ ["How long time are you staying?","How long are you staying?",["How much time you are staying?","How many time are you staying?"],"Para preguntar la duración: «How long…?», sin «time».",2],
+ ["I didn't know nothing.","I didn't know anything.",["I don't knew nothing.","I didn't knew anything."],"En inglés no hay doble negación: «didn't… anything» o «knew nothing».",2],
+ ["Nobody didn't come to the party.","Nobody came to the party.",["Nobody not came to the party.","Anybody came to the party."],"«Nobody» ya es negativo; el verbo va en afirmativa.",2],
+ ["I'm going to the doctor's because I'm constipated, I can't stop sneezing.","I'm going to the doctor's because I have a cold, I can't stop sneezing.",["I'm going to the doctor's because I'm cold, I can't stop sneezing.","I'm going to the doctor's because I'm constipation."],"Falso amigo: «constipated» = estreñido. Resfriado = «have a cold».",2],
+ ["The film was a big exit.","The film was a big success.",["The film had a big exit.","The film was a big exito."],"Falso amigo: «exit» = salida. Éxito = «success».",2],
+ ["I'm going to the library to buy a novel.","I'm going to the bookshop to buy a novel.",["I'm going to the librery to buy a novel.","I'm going to the library for buy a novel."],"Falso amigo: «library» = biblioteca. Librería = «bookshop».",2],
+ ["The carpet with the documents is on my desk.","The folder with the documents is on my desk.",["The carpeta with the documents is on my desk.","The carpet of documents is on my desk."],"Falso amigo: «carpet» = alfombra. Carpeta = «folder».",2],
+ ["My parents are very educated, they always say please.","My parents are very polite, they always say please.",["My parents are very education, they always say please.","My parents are very well-educated, always say please."],"Falso amigo: «educated» = con estudios. Educado (amable) = «polite».",3],
+ ["Can you open the TV, please?","Can you turn on the TV, please?",["Can you put the TV, please?","Can you open on the TV, please?"],"Los aparatos se encienden con «turn on» o «switch on».",1],
+ ["I have been in Paris three times last year.","I went to Paris three times last year.",["I have gone to Paris three times last year.","I was been in Paris three times last year."],"Con «last year» va pasado simple.",3],
+ ["When I was young, I use to play football.","When I was young, I used to play football.",["When I was young, I was used to play football.","When I was young, I usually to play football."],"Para hábitos del pasado: «used to» + infinitivo.",3],
+ ["I must to go now.","I must go now.",["I must going now.","I musted go now."],"Los modales nunca llevan «to» detrás.",1],
+ ["You don't must smoke here.","You mustn't smoke here.",["You not must smoke here.","You don't have to smoke here."],"La prohibición es «mustn't». «Don't have to» significa «no hace falta».",2],
+ ["She can to swim very well.","She can swim very well.",["She cans swim very well.","She can swimming very well."],"«Can» va con el verbo sin «to» y sin -s.",1],
+ ["I'd like that you help me.","I'd like you to help me.",["I'd like you help me.","I'd like that you to help me."],"«Would like» + persona + to + infinitivo.",3],
+ ["The doctor suggested me to rest.","The doctor suggested that I rest.",["The doctor suggested me resting.","The doctor suggested to me rest."],"«Suggest» no va con «me to»: «suggested that I rest» o «suggested resting».",4],
+ ["I enjoy to read on the train.","I enjoy reading on the train.",["I enjoy read on the train.","I'm enjoy reading on the train."],"Después de «enjoy» va -ing.",2],
+ ["I'm thinking to change jobs.","I'm thinking about changing jobs.",["I'm thinking change jobs.","I'm thinking of change jobs."],"«Think about/of» + -ing.",3],
+ ["Thank you for help me.","Thank you for helping me.",["Thank you for to help me.","Thank you to help me."],"Después de una preposición («for») va -ing.",2],
+ ["I'm very interesting in history.","I'm very interested in history.",["I'm very interest in history.","I'm very interesting for history."],"«Interested» = interesado (lo que sientes). «Interesting» = interesante.",2],
+ ["Do you know where can I buy tickets?","Do you know where I can buy tickets?",["Do you know where can buy I tickets?","Do you know where I can to buy tickets?"],"En las preguntas indirectas el orden es normal: sujeto + verbo.",3],
+ ["Tell me what do you want.","Tell me what you want.",["Tell me what you do want.","Tell me what want you."],"Dentro de una frase, «what you want» va sin auxiliar.",3],
+ ["He's the person more intelligent that I know.","He's the most intelligent person I know.",["He's the more intelligent person I know.","He's the person most intelligent I know."],"El superlativo va delante del sustantivo: «the most intelligent person».",2],
+ ["I have finished the report yesterday.","I finished the report yesterday.",["I have finish the report yesterday.","I was finished the report yesterday."],"Con «yesterday» va pasado simple, no present perfect.",3],
+ ["Since how long do you study English?","How long have you been studying English?",["Since when you study English?","How long do you study English since?"],"La duración hasta ahora se pregunta con «How long have you been…?».",3],
+ ["I'm here since two hours.","I've been here for two hours.",["I'm here for two hours.","I've been here since two hours."],"Present perfect + «for» con una duración.",3],
+ ["It's two years that I don't see him.","I haven't seen him for two years.",["I don't see him since two years.","Two years ago I don't see him."],"«Hace dos años que no lo veo» = «I haven't seen him for two years».",4],
+ ["As soon as I will arrive, I'll call you.","As soon as I arrive, I'll call you.",["As soon as I would arrive, I'll call you.","As soon I arrive, I'll call you."],"Después de «as soon as» va presente aunque hablemos del futuro.",3],
+ ["If I would have known, I would have come.","If I had known, I would have come.",["If I knew, I would have come.","If I would know, I would have come."],"Tercer condicional: «if + had + participio».",4],
+ ["I wish I would be taller.","I wish I were taller.",["I wish I am taller.","I wish to be I taller."],"Para deseos sobre el presente: «wish + pasado» («I wish I were…»).",4],
+ ["It's time that we go home.","It's time we went home.",["It's time we go home.","It's time for go home."],"«It's time» + sujeto + pasado: «It's time we went».",5],
+ ["The police is coming.","The police are coming.",["The polices are coming.","The police is come."],"«Police» va siempre con verbo en plural.",3],
+ ["My hair are very long.","My hair is very long.",["My hairs is very long.","My hairs are very long."],"«Hair» (el pelo) es incontable: «my hair is».",2],
+ ["I bought new furnitures for the flat.","I bought some new furniture for the flat.",["I bought a new furniture for the flat.","I bought new furnitures to the flat."],"«Furniture» es incontable: no lleva -s.",2],
+ ["I can't go out, I have a lot of works.","I can't go out, I have a lot of work.",["I can't go out, I have many works.","I can't go out, I have much works."],"«Work» (trabajo) es incontable.",2],
+ ["I'm very exciting about the trip.","I'm very excited about the trip.",["I'm very excite about the trip.","I'm very exciting for the trip."],"«Excited» = ilusionado. «Exciting» = emocionante.",2],
+ ["I feel me tired today.","I feel tired today.",["I feel myself tired today.","I me feel tired today."],"«Feel» no lleva pronombre reflexivo: «I feel tired».",2],
+ ["Can I make you a question?","Can I ask you a question?",["Can I do you a question?","Can I question you a question?"],"Las preguntas se «ask».",1],
+ ["I lost the bus and arrived late.","I missed the bus and arrived late.",["I lost to the bus and arrived late.","I failed the bus and arrived late."],"Perder un transporte = «miss». «Lose» es perder algo que no encuentras.",2],
+ ["Remember me to call my mum.","Remind me to call my mum.",["Remember to me call my mum.","Remind to me to call my mum."],"«Remind» = recordar a otra persona. «Remember» = acordarse tú.",3],
+ ["Listen me, please!","Listen to me, please!",["Hear me, please!","Listen at me, please!"],"«Listen» lleva «to» delante de la persona o cosa.",1],
+ ["This is the girl who her father is a pilot.","This is the girl whose father is a pilot.",["This is the girl that her father is a pilot.","This is the girl who's father is a pilot."],"Para posesión se usa «whose».",4],
+ ["I have a car red.","I have a red car.",["I have a car of red.","I have red a car."],"El adjetivo va delante del sustantivo.",1],
+ ["Is the first time that I come here.","It's the first time I've been here.",["Is the first time I come here.","It's the first time I come here."],"«It's the first time» + present perfect.",5],
+ ["I'll wait you at the station.","I'll wait for you at the station.",["I'll wait to you at the station.","I'll expect you at the station."],"«Wait» lleva «for» delante de la persona.",2]
+);
+
+/* ================= VIAJE: una ciudad por nivel, postales al avanzar (cada 25 %) ================= */
+const JOURNEY = [
+ {lvl:1, city:"Londres", en:"London", flag:"🇬🇧", x:62, y:56, cards:[
+  ["El primer paso","En Londres casi nadie dice «Good afternoon»: lo normal es «Hiya» o «Alright?». Y «Alright?» no pregunta si estás bien: es un saludo. Responde «Yeah, you?»."],
+  ["Mind the gap","En el metro de Londres oirás «Mind the gap»: cuidado con el hueco entre el tren y el andén. «Mind» aquí es «tener cuidado con»."],
+  ["Una taza de té","En Reino Unido «Fancy a cuppa?» significa «¿Te apetece un té?». «Fancy» = apetecer, «cuppa» = una taza de té."],
+  ["¡A Dublín!","Has completado A1. En Londres has aprendido a presentarte, a pedir y a preguntar lo básico. ¡Ya puedes viajar a Dublín!"]]},
+ {lvl:2, city:"Dublín", en:"Dublin", flag:"🇮🇪", x:42, y:44, cards:[
+  ["Craic","En Irlanda la palabra estrella es «craic» (se pronuncia «crack»): diversión, buen ambiente. «What's the craic?» = «¿Qué tal?, ¿qué se cuenta?»."],
+  ["Grand","En Dublín «I'm grand» no significa «soy grande», sino «estoy bien». Lo oirás a todas horas."],
+  ["Thanks a million","Los irlandeses no dan las gracias: dan un millón. «Thanks a million» = «muchísimas gracias»."],
+  ["¡A Edimburgo!","Has completado A2: ya te defiendes en el día a día. Próxima parada: Edimburgo."]]},
+ {lvl:3, city:"Edimburgo", en:"Edinburgh", flag:"🏴", x:60, y:24, cards:[
+  ["Wee","En Escocia todo es «wee»: pequeño. «A wee bit» = un poquito. «Just a wee coffee, please»."],
+  ["Aye","«Aye» significa «sí». «Aye, nae bother» = «sí, sin problema»."],
+  ["Dreich","Un día gris, frío y lluvioso en Escocia es «dreich». Es una palabra tan útil que los escoceses la votaron como su favorita."],
+  ["¡A Nueva York!","Has completado B1: ya mantienes conversaciones. Cruza el Atlántico: siguiente parada, Nueva York."]]},
+ {lvl:4, city:"Nueva York", en:"New York", flag:"🇺🇸", x:24, y:42, cards:[
+  ["Grab a coffee","En EE. UU. no «tomas» un café: lo «grabs». «Let's grab a coffee» = «vamos a por un café rápido»."],
+  ["The check, please","En un restaurante de Nueva York se pide «the check», no «the bill» como en Londres. Y la propina, entre el 18 y el 20 %."],
+  ["Subway, not Tube","En Nueva York el metro es «the subway». Y la planta baja es «the first floor»: cuidado al subir en ascensor."],
+  ["¡A Sídney!","Has completado B2: hablas con soltura. Último gran viaje: Sídney."]]},
+ {lvl:5, city:"Sídney", en:"Sydney", flag:"🇦🇺", x:84, y:78, cards:[
+  ["G'day","En Australia se saluda con «G'day, mate!». «Mate» = colega, y se usa con todo el mundo."],
+  ["No worries","«No worries» es la respuesta australiana para casi todo: de nada, no pasa nada, sin problema."],
+  ["Arvo","A los australianos les encanta acortar palabras: «arvo» = afternoon, «brekkie» = breakfast, «sunnies» = sunglasses."],
+  ["Fluidez","Has completado C1. Has dado la vuelta al mundo en inglés. ¡Enhorabuena!"]]}
+];
+
+/* ================= MEDALLAS (individuales) ================= */
+const MEDALS = [
+ ["first","🌱","Primer reto","Completa tu primer reto diario", s=>!!S.lastDaily],
+ ["streak7","🔥","Una semana seguida","Racha de 7 días", s=>S.best>=7],
+ ["streak30","🌋","Un mes seguido","Racha de 30 días", s=>S.best>=30],
+ ["ex100","💯","100 ejercicios","Haz 100 ejercicios", s=>totalEx()>=100],
+ ["ex1000","🏛️","1000 ejercicios","Haz 1000 ejercicios", s=>totalEx()>=1000],
+ ["lvl2","🛫","Despegue","Llega a A2", s=>S.level>=2],
+ ["lvl3","✈️","Crucero","Llega a B1", s=>S.level>=3],
+ ["lvl4","🌍","Cruzando el charco","Llega a B2", s=>S.level>=4],
+ ["lvl5","🏆","Vuelta al mundo","Llega a C1", s=>S.level>=5],
+ ["series3","📺","Enganchada","Mira 3 capítulos de la serie", s=>(S.series&&S.series.done||[]).length>=3],
+ ["series10","🎬","Fin de temporada","Termina la primera temporada", s=>(S.series&&S.series.done||[]).length>=SERIES.length],
+ ["myst1","🕵️","Detective","Resuelve tu primer misterio", s=>(S.myst&&S.myst.solved||[]).length>=1],
+ ["myst6","🔎","Sherlock","Resuelve todos los misterios", s=>(S.myst&&S.myst.solved||[]).length>=MYSTERIES.length],
+ ["hunt20","🎯","Cazaerrores","Acierta 20 errores de hispanohablante", s=>((S.stats.spanglish||{}).c||0)>=20],
+ ["phr10","⭐","Coleccionista","Guarda 10 frases", s=>(S.phrases||[]).length>=10],
+ ["capsule","⏳","Cápsula del tiempo","Graba tu primera cápsula", s=>(S.capsules||[]).length>=1],
+ ["capsule2","🎧","Mira cómo has cambiado","Graba dos cápsulas", s=>(S.capsules||[]).length>=2],
+ ["scene10","🎬","Cinéfila","Haz 10 ejercicios de escenas de películas", s=>((S.stats.scene||{}).t||0)>=10],
+ ["shadow10","🎭","Actor de doblaje","Haz 10 ejercicios de modo sombra", s=>((S.stats.shadow||{}).t||0)>=10],
+ ["silver","🥈","Liga de plata","Consigue una semana de liga de plata", s=>bestWeekXP()>=150],
+ ["gold","🥇","Liga de oro","Consigue una semana de liga de oro", s=>bestWeekXP()>=400],
+ ["diamond","💎","Liga de diamante","Consigue una semana de liga de diamante", s=>bestWeekXP()>=800]
+];
+
+
+/* ================= NUEVOS TEMAS: cazador de errores, modo sombra, mis frases ================= */
+TOPICS.spanglish = {name:"Errores de hispanohablante", icon:"🎯"};
+TOPICS.shadow = {name:"Modo sombra", icon:"🎭"};
+TOPICS.mine = {name:"Mis frases", icon:"⭐"};
+SPANGLISH.forEach((d,i) => addItem("spanglish","e",d[4],d,i));
+if(MEDIA_ON) SCENE_DATA.filter(d => !d.dlg && d.en.split(" ").length>=3 && !(S.clipOff && S.clipOff[d.id])).forEach(d => addItem("shadow","s",Math.max(3,d.lvl||3),d,d.id));
+(S.phrases||[]).forEach(p => addItem("mine","p",1,p,p.id));
+Object.keys(S.review||{}).forEach(id => { if(!ITEM[id]) delete S.review[id]; });
+if(S.daily && S.daily.ids && S.daily.ids.some(id => !ITEM[id])){ if(S.daily.done) S.daily.ids = S.daily.ids.filter(id => ITEM[id]); else { S.daily = null; S.dailyRun = null; } }
+if(S.recentDaily) S.recentDaily.forEach(x => { if(x && x.ids) x.ids = x.ids.filter(id => ITEM[id]); });
+function totalEx(){ return Object.values(S.stats||{}).reduce((t,s) => t + (s && s.t || 0), 0); }
+function weekStart(k){ const d = new Date(k+"T12:00:00"); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function weekXPMap(){ const m = {}; Object.entries(S.xpLog||{}).forEach(([k,v]) => { const w = weekStart(k); m[w] = (m[w]||0) + v; }); return m; }
+function bestWeekXP(){ return Math.max(0, ...Object.values(weekXPMap())); }
+function makeSpanglishEx(it, r){
+  const d = it.d;
+  return {it, type:"mcq", title:"Encuentra el error: ¿cómo se dice bien?", titleH:titleHTML("Encuentra el error: ¿cómo se dice bien?","Spot the mistake: which one is correct?"),
+    sentence:`<span class="wrong-line">❌ ${esc(d[0])}</span>`, opts:shuffle([d[1], ...d[2]], r), answer:d[1], x:d[3], sol:d[1], full:d[1]};
+}
+function makeShadowEx(it, r){
+  const d = it.d, film = d.film==="tos" ? "Tears of Steel (2012)" : "Sintel (2010)";
+  const pad = (S.clipFix && S.clipFix[d.id] && S.clipFix[d.id].pad) || 0, yt = {id:d.yt, s:Math.max(0, Math.floor(d.s-0.7-pad)), e:Math.ceil(d.e+0.7+pad)};
+  if(micBlocked) return Object.assign(makeSceneEx(it, r), {title:"Mira la escena y completa lo que dicen"});
+  return {it, type:"speak", mode:"rep", yt, sub:film, title:"Modo sombra: mira la escena y repite la frase", titleH:titleHTML("Modo sombra: mira la escena y repite la frase","Shadowing: watch the scene and repeat the line"),
+    big:d.en, text:d.en, meaning:d.es||null, accepted:[d.en], sol:d.en, full:d.en, pron:true,
+    extraFB:`<p class="small muted" style="margin-top:8px">🎬 ${film} · © Blender Foundation · licencia CC BY 3.0</p>`};
+}
+function makeMineEx(it, r){
+  const p = it.d;
+  if(p.es && !micBlocked && r()<0.5) return {it, type:"speak", mode:"say", title:TT.sayAloud[0], titleH:tt("sayAloud"), big:p.es, accepted:[p.en], sol:p.en, full:p.en};
+  return {it, type:"listen", title:TT.listen[0], titleH:tt("listen"), text:p.en, accepted:[p.en], meaning:p.es||"", sol:p.en, full:p.en};
 }
 
 const app = $("#app"), tabs = $("#tabs");
@@ -4486,6 +5046,7 @@ function renderHome(){
   }
   const r = rng(hashStr("home"+todayKey()));
   const scs = SCENARIOS.filter(s=>s.l<=S.level && s.l>=S.level-1), sc = scs[Math.floor(r()*scs.length)] || SCENARIOS[0];
+  if(typeof homeExtras==="function") h += homeExtras();
   if(typeof pushHomeCard==="function") h += pushHomeCard();
   h += `<div class="panel sec talk-card"><p class="muted small">Conversación sugerida</p>
     <div class="row" style="margin:8px 0 12px"><span class="gi" style="background:#FFE3D6" aria-hidden="true">${sc.icon}</span><div><h3>${esc(sc.title)}</h3><p class="small muted">${sc.turns.length} intervenciones, nivel ${LEVELS[sc.l-1].code}</p></div></div>
@@ -4639,6 +5200,7 @@ function fbHTML(ex, st){
     if(r.score!=null) h += `<p class="small">${fb("match")}: ${Math.round(r.score*100)} %</p>`;
     if(ex.type!=="speak" || ex.mode!=="rep") h += whyHTML(ex, ["input","speak"].includes(ex.type) && ex.mode!=="ans" && ex.it.topic!=="verbs" ? sol : null);
     if(ex.extraFB) h += ex.extraFB;
+    if(typeof saveBtnHTML==="function") h += saveBtnHTML(ex);
     if(ex.type==="speak" && !st.typing && st.heard){
       if(ex.mode==="ans"){ if(!ok) h += keywordPronHTML(norm(ex.keywords[0]).split(" ")); }
       else h += pronHTML(ex.mode==="rep" ? ex.text : sol, st.heard);
@@ -4774,7 +5336,7 @@ function answerRow(x, withMark){
   const right = x.ok && !x.model ? "" : `<br><span class="small">${x.model ? "Respuesta modelo" : "Correcta"}:</span> <b style="white-space:pre-line">${esc(cut(x.a, 600))}</b> ${x.say && !x.model ? spk(x.say) : ""}`;
   return `<div>${mark}<span class="small muted">${esc(x.q)}</span><br>${yours}${right}</div>`;
 }
-function renderSummary(){
+function renderSummary(){ if(typeof checkMedals==="function") checkMedals(); if(typeof applyClipFixes==="function") applyClipFixes(); if(typeof backupSoon==="function") backupSoon();
   const m = summ, st = curStreak();
   let h = `<div class="wrap summary"><h1 style="margin-top:8px">${esc(m.title)}</h1><p class="muted" style="margin:6px 0 16px">${esc(m.sub)}</p>${progressCard(m.xp0)}`;
   h += `<div class="panel sec kpis"><div class="kpi"><b>${m.correct}/${m.total}</b><span>aciertos</span></div><div class="kpi"><b>+${fmt(Math.max(0,S.xp-m.xp0))}</b><span>XP ganados</span></div><div class="kpi"><b>${st}</b><span>días de racha</span></div></div>`;
@@ -5199,6 +5761,7 @@ function renderRadio(){
       <p class="note">Se abre en el navegador: no hace falta instalar nada y la web es gratis. Lo que hagas allí no cuenta para tus puntos ni tu racha de Lift, porque es otra web.</p></div></div>`;
 }
 function openGame(id){
+  if(typeof EXTRA_GAME==="function" && EXTRA_GAME(id)) return;
   if(id==="flash"){ deckMode="flash"; view="deck"; return render(); }
   if(id==="quiz"){ deckMode="quiz"; view="deck"; return render(); }
   if(id==="memory"){ newMemory(); view="memory"; return render(); }
@@ -5355,6 +5918,7 @@ function renderProgress(){
   const w = weakest();
   const tot = Object.values(S.stats).reduce((a,s)=>a+s.t,0), ok = Object.values(S.stats).reduce((a,s)=>a+s.c,0);
   let h = `<div class="wrap">${topBar()}<h1 style="margin-bottom:14px">Progreso</h1>${progressCard()}`;
+  if(typeof progressExtras==="function") h += progressExtras();
   h += `<div class="panel sec"><h2>Cambiar de nivel</h2><p class="muted small" style="margin:6px 0 12px">Si el nivel te resulta demasiado difícil, baja uno para afianzar la base. Para subir, haz el examen de nivel cuando tengas los puntos, o repite la prueba inicial.</p>
     <div class="row" style="gap:10px;flex-wrap:wrap">${S.level>1?`<button class="btn sm ghost" data-act="lvldown">Bajar a ${LEVELS[S.level-2].code}</button>`:""}<button class="btn sm ghost" data-act="placement">Repetir la prueba de nivel</button></div></div>`;
   h += `<div class="panel sec"><h2>Racha</h2><div class="kpis" style="margin-top:12px"><div class="kpi"><b>${st}</b><span>días seguidos</span></div><div class="kpi"><b>${S.best}</b><span>mejor racha</span></div><div class="kpi"><b>${daysN}</b><span>días de reto</span></div></div>
@@ -5388,7 +5952,7 @@ const TAB_VIEWS = ["home","talk","games","progress"];
 function render(){
   applyTheme();
   const R = {onboard:renderOnboard, home:renderHome, talk:renderTalk, games:renderGames, progress:renderProgress, session:renderSession, summary:renderSummary,
-    deck:renderDeck, flash:renderFlash, memory:renderMemory, timed:renderTimed, radio:renderRadio, chat:renderChat, ivintro:renderIvIntro, interview:renderInterview, writer:renderWriter};
+    deck:renderDeck, flash:renderFlash, memory:renderMemory, timed:renderTimed, radio:renderRadio, chat:renderChat, ivintro:renderIvIntro, interview:renderInterview, writer:renderWriter, ...(typeof EXTRA_VIEWS!=="undefined"?EXTRA_VIEWS:{})};
   app.innerHTML = (R[view]||renderHome)();
   tabs.hidden = !TAB_VIEWS.includes(view);
   tabs.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===view));
@@ -5529,7 +6093,7 @@ function pushConfig(){
   if(typeof fetch!=="function"){ PUSH.checked = true; return Promise.resolve(null); }
   if(!PUSH.loading) PUSH.loading = fetch("./avisos.json", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
       if(j && /^(https:\/\/|http:\/\/localhost)/.test(j.url||"")) PUSH.url = String(j.url).trim().replace(/\/+$/,"");
-    }).catch(function(){}).then(function(){ PUSH.checked = true; if(view==="progress"||view==="home") render(); return PUSH.url; });
+    }).catch(function(){}).then(function(){ PUSH.checked = true; pushWriteState(); if(view==="progress"||view==="home") render(); return PUSH.url; });
   return PUSH.loading;
 }
 function pushPost(path, body){
@@ -5550,7 +6114,7 @@ async function pushSubscribe(){
   p.on = true; p.synced = todayKey(); save(); pushWriteState();
 }
 function pushWriteState(){
-  try{ caches.open("lift-state").then(function(c){ return c.put("./state.json", new Response(JSON.stringify({lastDaily:S.lastDaily||null, streak:curStreak()}), {headers:{"Content-Type":"application/json"}})); }).catch(function(){}); }catch(e){}
+  try{ caches.open("lift-state").then(function(c){ return c.put("./state.json", new Response(JSON.stringify({lastDaily:S.lastDaily||null, streak:curStreak(), url:(PUSH&&PUSH.url)||null, id:(S.push&&S.push.id)||null}), {headers:{"Content-Type":"application/json"}})); }).catch(function(){}); }catch(e){}
 }
 function pushDone(){
   setTimeout(function(){
@@ -5651,14 +6215,434 @@ Object.assign(ACT, {
   clipslow: () => { const ex = cur(); if(ex && ex.clip) Clip.play(ex.clip, 0.75); },
   clipstop: () => Clip.stop(),
   ytreplay: () => { const f = document.getElementById("ytframe"); if(f){ const s = f.src; f.src = "about:blank"; setTimeout(() => { f.src = s.replace(/&autoplay=1/,"") + "&autoplay=1"; }, 50); } },
-  flagclip: b => { S.clipFlags = S.clipFlags || {}; const id = b.dataset.id; if(S.clipFlags[id]) delete S.clipFlags[id]; else S.clipFlags[id] = todayKey(); save(); toast(S.clipFlags[id] ? "Anotado. Dímelo cuando quieras y corrijo ese fragmento." : "Quitado."); render(); }
+  flagclip: b => { S.clipFlags = S.clipFlags || {}; const id = b.dataset.id; if(S.clipFlags[id]) delete S.clipFlags[id]; else S.clipFlags[id] = todayKey(); save(); toast(S.clipFlags[id] ? "Anotado. Lo corrijo en cuanto termines." : "Quitado."); render(); }
 });
 if(MEDIA_ON){
   const iPron = GAMES.findIndex(g => g.id==="pron");
   GAMES.splice(iPron>=0 ? iPron+1 : GAMES.length, 0,
-    {id:"song", icon:"🎵", bg:"#FFE3EE", t:"Canciones", d:`${SONG_DATA.length} estrofas reales de ${new Set(SONG_DATA.map(s=>s.t)).size} canciones para escuchar y completar.`},
     {id:"scene", icon:"🎬", bg:"#E3EEFF", t:"Escenas de películas", d:`${SCENE_DATA.filter(x=>!x.dlg).length} escenas y ${SCENE_DATA.filter(x=>x.dlg).length} diálogos de Tears of Steel y Sintel para completar y entender.`});
 }
+
+
+/* ================= SERIE, MISTERIO, VIAJE, RANKING, MEDALLAS, MIS FRASES, CÁPSULA Y SALA ================= */
+var backBtn = (to) => `<button class="icon-btn" data-act="xback" data-to="${to||"games"}" aria-label="Volver">←</button>`;
+var pageHead = (title, to) => `<div class="row" style="gap:10px;align-items:center;margin-bottom:14px">${backBtn(to)}<h1 style="margin:0;font-size:1.35rem">${title}</h1></div>`;
+
+/* ---------- voces de los personajes ---------- */
+function enVoices(){ try{ return speechSynthesis.getVoices().filter(v => /^en(-|_|$)/i.test(v.lang)); }catch(e){ return []; } }
+function speakAs(text, who, onend){
+  try{
+    const c = SERIES_CAST[who] || SERIES_CAST.narrator, u = new SpeechSynthesisUtterance(text), vs = enVoices();
+    if(vs.length) u.voice = vs[c.voice % vs.length];
+    u.lang = (u.voice && u.voice.lang) || S.settings.accent; u.pitch = c.pitch; u.rate = c.rate * (S.settings.rate||1);
+    if(onend) u.onend = onend;
+    speechSynthesis.speak(u);
+  }catch(e){ if(onend) onend(); }
+}
+
+/* ---------- serie ---------- */
+var sv = null;
+function serState(){ if(!S.series) S.series = {done:[], at:{}, pick:{}}; return S.series; }
+function chapterOpen(n){ const st = serState(); if(n===1) return true; const prev = st.at[n-1]; return !!prev && (prev < todayKey() || st.done.includes(n)); }
+function nextChapter(){ const st = serState(); return SERIES.find(c => !st.done.includes(c.n)); }
+function renderSeriesList(){
+  const st = serState();
+  const rows = SERIES.map(c => { const open = chapterOpen(c.n), done = st.done.includes(c.n);
+    return `<button class="list-row" data-act="${open?"serplay":"serlocked"}" data-n="${c.n}"><span class="ic">${done?"✅":open?"▶️":"🔒"}</span><span style="flex:1;text-align:left"><b>${c.n}. ${esc(c.t)}</b><br><span class="small muted">${esc(c.es)} · ${LEVELS[c.lvl-1].code}</span></span></button>`; }).join("");
+  const cast = Object.entries(SERIES_CAST).filter(([k])=>k!=="narrator").map(([k,c]) => `<span class="chip">${c.icon} ${c.name}</span>`).join(" ");
+  return `<div class="wrap">${pageHead("📺 Flat 4B")}<div class="panel"><p>Lucía, una ingeniera española, se muda a un piso compartido en Londres. Cada día se desbloquea un capítulo nuevo.</p><p class="sec">${cast}</p></div>
+    <div class="panel sec stack">${rows}</div><p class="note">Los capítulos se escuchan con una voz distinta para cada personaje. Toca una frase para ver su traducción.</p></div>`;
+}
+function renderChapter(){
+  const c = SERIES.find(x => x.n===sv.n), L = S.level, showAll = L<=2;
+  let h = `<div class="wrap">${pageHead(`📺 ${c.n}. ${esc(c.t)}`, "series")}`;
+  const shown = c.lines.slice(0, sv.i+1);
+  h += `<div class="stack">` + shown.map((ln,i) => { const p = SERIES_CAST[ln[0]], tr_ = showAll || sv.es.has(i);
+    return `<div class="ser-line ${ln[0]==="narrator"?"narr":""}"><div class="ser-who">${p.icon} ${p.name}</div>
+      <div class="ser-txt" data-act="sertr" data-i="${i}">${esc(ln[1])}${tr_?`<div class="small muted" style="margin-top:4px">${esc(ln[2])}</div>`:""}</div>
+      <div class="row" style="gap:6px"><button class="icon-btn sm" data-act="sersay" data-i="${i}" aria-label="Escuchar">🔊</button>${ln[0]!=="narrator"?`<button class="icon-btn sm" data-act="savephr" data-en="${esc(ln[1])}" data-es="${esc(ln[2])}" data-src="Flat 4B" aria-label="Guardar frase">⭐</button>`:""}</div></div>`; }).join("") + `</div>`;
+  if(sv.phase==="lines"){
+    h += `<div class="row sec" style="gap:10px;flex-wrap:wrap">${sv.i < c.lines.length-1 ? `<button class="btn" data-act="sernext">Siguiente ▸</button><button class="btn ghost" data-act="serauto">▶️ Escuchar seguido</button>` : `<button class="btn" data-act="serchoice">Continuar ▸</button>`}</div>`;
+  } else if(sv.phase==="choice"){
+    h += `<div class="panel sec"><h3>🤔 ${esc(c.choice.q)}</h3><div class="opts" style="margin-top:10px">${c.choice.o.map((o,i) => `<button class="opt ${sv.pick===i?(o[1]?"ok":"bad"):""}" data-act="serpick" data-i="${i}">${esc(o[0])}</button>`).join("")}</div>
+      ${sv.pick!=null ? `<p class="sec">${c.choice.o[sv.pick][1]?"✅":"💡"} ${esc(c.choice.o[sv.pick][2])}</p>${c.choice.o[sv.pick][1]?`<button class="btn sec" data-act="serquiz">Continuar ▸</button>`:""}` : ""}</div>`;
+  } else if(sv.phase==="quiz"){
+    const q = c.quiz[sv.qi];
+    h += `<div class="panel sec"><h3>❓ ${esc(q[0])}</h3><div class="opts" style="margin-top:10px">${sv.qorder.map(i => `<button class="opt ${sv.qa!=null ? (i===q[2]?"ok":(i===sv.qa?"bad":"")) : ""}" data-act="serq" data-i="${i}" ${sv.qa!=null?"disabled":""}>${esc(q[1][i])}</button>`).join("")}</div>
+      ${sv.qa!=null ? `<button class="btn sec" data-act="serqnext">${sv.qi < c.quiz.length-1 ? "Siguiente pregunta ▸" : "Terminar el capítulo"}</button>` : ""}</div>`;
+  } else {
+    const nx = SERIES.find(x => x.n===c.n+1);
+    h += `<div class="panel sec"><h2>🎬 ¡Capítulo terminado!</h2><p class="muted" style="margin:6px 0 12px">Has acertado ${sv.ok} de ${c.quiz.length} preguntas.${sv.xp?` +${sv.xp} XP.`:""}</p>
+      ${nx ? `<p>${chapterOpen(nx.n)?`El capítulo ${nx.n} ya está disponible.`:`El capítulo ${nx.n}, «${esc(nx.t)}», se desbloquea mañana.`}</p>` : `<p>Has terminado la primera temporada. 🎉</p>`}
+      <div class="row sec" style="gap:10px"><button class="btn" data-act="xback" data-to="series">Ver capítulos</button></div></div>`;
+  }
+  return h + `</div>`;
+}
+function serStart(n){ sv = {n, i:0, phase:"lines", es:new Set(), pick:null, qi:0, qa:null, ok:0, xp:0}; view = "chapter"; render(); scrollTo(0,0); const c = SERIES.find(x=>x.n===n); speakAs(c.lines[0][1], c.lines[0][0]); }
+function serQuizSetup(){ const c = SERIES.find(x=>x.n===sv.n); sv.qorder = shuffle([0,1,2], rng(hashStr(c.t+sv.qi))); sv.qa = null; }
+function serFinish(){
+  const st = serState(), c = SERIES.find(x=>x.n===sv.n);
+  if(!st.done.includes(c.n)){ st.done.push(c.n); st.at[c.n] = todayKey(); sv.xp = 15 + 5*sv.ok; addXP(sv.xp); }
+  sv.phase = "end"; save(); checkMedals(); render();
+}
+
+/* ---------- misterio ---------- */
+var mv = null;
+function mystState(){ if(!S.myst) S.myst = {solved:[]}; return S.myst; }
+function renderMysteryList(){
+  const st = mystState();
+  return `<div class="wrap">${pageHead("🕵️ Misterios")}<div class="panel"><p>Lee el caso y averigua qué pasó haciendo preguntas de <b>sí o no</b> en inglés: <i>Was…? Did…? Is…? Can…?</i></p><p class="small muted" style="margin-top:6px">Cuando creas que lo sabes, pulsa «Resolver».</p></div>
+    <div class="panel sec stack">${MYSTERIES.map(m => `<button class="list-row" data-act="myplay" data-id="${m.id}"><span class="ic">${st.solved.includes(m.id)?"✅":"🔍"}</span><span style="flex:1;text-align:left"><b>${esc(m.t)}</b><br><span class="small muted">${esc(m.es)} · ${LEVELS[m.lvl-1].code}</span></span></button>`).join("")}</div></div>`;
+}
+function mAnswer(q, m){
+  const s = " " + norm(q) + " ";
+  if(!AUX_START.test(norm(q))) return {a:"?", r:"Ask me a yes/no question!", tip:"Haz preguntas de sí o no: empieza por Is, Was, Did, Does, Can… Por ejemplo: «Was it a party?»."};
+  const facts = m.f.slice().sort((a,b) => b.k.length - a.k.length);
+  const f = facts.find(f => f.k.every(g => g.some(w => s.includes(" "+w+" ") || s.includes(" "+w+"s ") || s.includes(" "+w+"ed "))));
+  let tip = null; const n = norm(q);
+  if(/^did\b/.test(n) && / (went|saw|took|came|made|broke|bought|stole|found|gave|left|ran|ate|drank|knew)\b|\b[a-z]{3,}ed\b/.test(n.replace(/^did /,""))) tip = "Después de «did», el verbo va en forma base: «Did he break…?», no «Did he broke…?».";
+  if(!f) return {a:"–", r:"That isn't important.", tip};
+  return {a:f.a, r:f.r, key:f.key ? m.f.indexOf(f) : null, tip};
+}
+function renderCase(){
+  const m = MYSTERIES.find(x => x.id===mv.id), keys = m.f.map((f,i)=>f.key?i:-1).filter(i=>i>=0), found = keys.filter(i => mv.found.has(i)).length;
+  let h = `<div class="wrap">${pageHead("🕵️ "+esc(m.t), "mystery")}<div class="panel"><p class="small muted">${esc(m.es)} · ${LEVELS[m.lvl-1].code}</p><p style="font-size:1.08rem;margin-top:6px"><b>${esc(m.story)}</b> ${spk(m.story)}</p>
+    <p class="small sec">Pistas clave descubiertas: <b>${found} de ${keys.length}</b></p><div class="bar"><i style="width:${Math.round(100*found/keys.length)}%"></i></div></div>`;
+  if(mv.solved){ h += `<div class="panel sec"><h2>🎉 ¡Caso resuelto!</h2><p style="margin-top:6px">${esc(m.sol)}</p><p class="small muted sec">Lo has resuelto con ${mv.log.length} preguntas.${mv.xp?` +${mv.xp} XP.`:""}</p><button class="btn sec" data-act="xback" data-to="mystery">Ver otros casos</button></div></div>`; return h; }
+  h += `<div class="panel sec"><div class="row" style="gap:8px"><input id="myq" class="inp" placeholder="Was it…? Did she…? Is there…?" autocomplete="off" autocapitalize="sentences" lang="en" value="${esc(mv.draft||"")}" style="flex:1">${SRC && !micBlocked ? `<button class="icon-btn" data-act="mymic" aria-label="Dictar">${mv.listening?"⏺️":"🎙️"}</button>` : ""}</div>
+    <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap"><button class="btn" data-act="myask">Preguntar</button><button class="btn ghost" data-act="mysolve">Resolver</button>${mv.log.length>=5?`<button class="btn ghost" data-act="myhint">💡 Pista</button>`:""}</div></div>`;
+  if(mv.solving){
+    h += `<div class="panel sec"><h3>¿Qué pasó?</h3><div class="opts" style="margin-top:10px">${mv.opts.map((o,i) => `<button class="opt ${mv.wrongPick===i?"bad":""}" data-act="mypick" data-i="${i}">${esc(o)}</button>`).join("")}</div>${mv.wrongPick!=null?`<p class="sec">No es eso. Sigue preguntando para descubrir más pistas.</p>`:""}</div>`;
+  }
+  h += `<div class="stack sec">` + mv.log.slice().reverse().map(x => `<div class="my-q"><div class="small">🙋 ${esc(x.q)}</div><div><span class="my-a ${x.a}">${x.a==="y"?"Sí":x.a==="n"?"No":x.a==="?"?"¿?":"Da igual"}</span> ${esc(x.r)}</div>${x.tip?`<div class="small muted">💡 ${esc(x.tip)}</div>`:""}</div>`).join("") + `</div>`;
+  return h + `</div>`;
+}
+function myAsk(){
+  const inp = document.getElementById("myq"), q = (inp ? inp.value : mv.draft || "").trim(); if(!q) return;
+  const m = MYSTERIES.find(x => x.id===mv.id), res = mAnswer(q, m);
+  if(res.key!=null) mv.found.add(res.key);
+  mv.log.push({q, a:res.a, r:res.r, tip:res.tip}); mv.draft = ""; speakAs(res.r, "narrator"); render();
+  setTimeout(()=>{ const i = document.getElementById("myq"); if(i) i.focus(); }, 50);
+}
+
+/* ---------- viaje y postales ---------- */
+function levelFrac(){ const lo = LEVELS[S.level-1].xp, hi = S.level<LEVELS.length ? LEVELS[S.level].xp : (typeof TOP_XP!=="undefined" ? TOP_XP : lo+1500); return Math.max(0, Math.min(1, (S.xp-lo)/Math.max(1,hi-lo))); }
+function cardOpen(lvl, k){ if(S.level>lvl) return true; if(S.level<lvl) return false; return k<3 ? levelFrac() >= (k+1)*0.25 : false; }
+function journeySVG(){
+  const pts = JOURNEY.map(j => [j.x*3.2, j.y*1.8]), cur = Math.min(S.level, JOURNEY.length)-1, f = levelFrac();
+  const nxt = pts[Math.min(cur+1, pts.length-1)], p0 = pts[cur];
+  const plane = cur < pts.length-1 ? [p0[0]+(nxt[0]-p0[0])*f, p0[1]+(nxt[1]-p0[1])*f] : p0;
+  const path = pts.map((p,i) => (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  return `<svg viewBox="0 0 320 180" class="journey" role="img" aria-label="Mapa del viaje">
+    <rect x="0" y="0" width="320" height="180" rx="16" fill="var(--chip)"/>
+    <path d="M40 60 q30 -30 70 -10 t60 20 q-20 30 -60 30 t-70 -40z M150 40 q40 -20 70 0 q10 30 -20 40 q-40 0 -50 -40z M230 120 q30 -10 50 10 q0 25 -30 25 q-25 0 -20 -35z" fill="var(--surface)" opacity=".9"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="5 6" stroke-linecap="round"/>
+    ${pts.map((p,i) => `<g><circle cx="${p[0]}" cy="${p[1]}" r="${i<=cur?7:5}" fill="${i<cur?"var(--accent)":i===cur?"#fff":"var(--surface)"}" stroke="var(--accent)" stroke-width="2.5"/><text x="${p[0]}" y="${p[1]-11}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">${JOURNEY[i].flag} ${JOURNEY[i].city}</text></g>`).join("")}
+    <text x="${plane[0]}" y="${plane[1]+5}" text-anchor="middle" font-size="16">✈️</text></svg>`;
+}
+function journeyHTML(full){
+  const j = JOURNEY[Math.min(S.level, JOURNEY.length)-1], nx = JOURNEY[S.level] || null, got = JOURNEY.reduce((t,c) => t + c.cards.filter((_,k)=>cardOpen(c.lvl,k)).length, 0);
+  let h = `<div class="panel sec"><h2>🗺️ Tu viaje</h2><p class="muted small" style="margin:4px 0 10px">Estás en <b>${j.flag} ${j.city}</b> (${LEVELS[S.level-1].code})${nx?`, camino de ${nx.flag} ${nx.city}`:""}. Postales: ${got} de ${JOURNEY.length*4}.</p>${journeySVG()}
+    ${full ? "" : `<button class="btn sm ghost sec" data-act="xgo" data-to="journey">Ver postales</button>`}</div>`;
+  if(full) h += JOURNEY.map(c => `<div class="panel sec"><h3>${c.flag} ${c.city} · ${LEVELS[c.lvl-1].code}</h3><div class="stack" style="margin-top:8px">${c.cards.map((cd,k) => cardOpen(c.lvl,k)
+      ? `<div class="postcard"><b>✉️ ${esc(cd[0])}</b><p class="small" style="margin-top:4px">${esc(cd[1])}</p></div>`
+      : `<div class="postcard locked"><b>🔒 Postal ${k+1}</b><p class="small muted">${k<3?`Llega al ${(k+1)*25} % de ${LEVELS[c.lvl-1].code}`:`Supera el examen de ${LEVELS[c.lvl-1].code}`}</p></div>`).join("")}</div></div>`).join("");
+  return h;
+}
+function renderJourney(){ return `<div class="wrap">${pageHead("🗺️ Tu viaje", "progress")}${journeyHTML(true)}</div>`; }
+
+/* ---------- ranking semanal y medallas (individual) ---------- */
+var LEAGUES = [[0,"Bronce","🥉"],[150,"Plata","🥈"],[400,"Oro","🥇"],[800,"Diamante","💎"]];
+function leagueOf(x){ let l = LEAGUES[0]; LEAGUES.forEach(g => { if(x>=g[0]) l = g; }); return l; }
+function rankingHTML(){
+  const m = weekXPMap(), wk = weekStart(todayKey()), cur = m[wk]||0, lg = leagueOf(cur), nxt = LEAGUES.find(g => g[0]>cur);
+  const best = Object.entries(m).filter(([w]) => w!==wk).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const fmtW = w => { const d = new Date(w+"T12:00:00"); return d.toLocaleDateString("es-ES",{day:"numeric",month:"short"}); };
+  const recordWeek = best.length ? best[0][1] : 0;
+  return `<div class="panel sec"><h2>🏁 Tu semana</h2><p style="margin-top:6px"><b>${lg[2]} Liga ${lg[1]}</b> · ${cur} XP esta semana</p>
+    ${nxt ? `<p class="small muted">Te faltan ${nxt[0]-cur} XP para la liga ${nxt[1]} ${nxt[2]}.</p><div class="bar"><i style="width:${Math.round(100*(cur-lg[0])/(nxt[0]-lg[0]))}%"></i></div>` : `<p class="small muted">¡Estás en la liga más alta!</p>`}
+    ${recordWeek ? `<p class="small sec">${cur>recordWeek?"🎉 ¡Esta es tu mejor semana!":`Tu récord es de ${recordWeek} XP en una semana.`}</p>` : ""}
+    ${best.length ? `<h3 class="sec" style="font-size:1rem">Tus mejores semanas</h3><div class="stack" style="margin-top:6px">${best.map(([w,x],i) => `<div class="row between small"><span>${["🥇","🥈","🥉","4.º","5.º"][i]} Semana del ${fmtW(w)}</span><b>${x} XP</b></div>`).join("")}</div>` : `<p class="small muted sec">Tu ranking de semanas empieza a contar desde hoy.</p>`}
+    <p class="note">La semana empieza el lunes. Compites solo contigo: cada semana intentas superar tus récords.</p></div>`;
+}
+function checkMedals(){
+  S.medals = S.medals || {}; const fresh = [];
+  MEDALS.forEach(md => { if(!S.medals[md[0]]){ let ok = false; try{ ok = md[4](S); }catch(e){} if(ok){ S.medals[md[0]] = todayKey(); fresh.push(md); } } });
+  if(fresh.length){ save(); toast(fresh.length===1 ? `🏅 Nueva medalla: ${fresh[0][1]} ${fresh[0][2]}` : `🏅 ${fresh.length} medallas nuevas`); }
+}
+function medalsHTML(){
+  const got = MEDALS.filter(m => S.medals && S.medals[m[0]]).length;
+  return `<div class="panel sec"><h2>🏅 Medallas</h2><p class="small muted" style="margin:4px 0 10px">${got} de ${MEDALS.length}</p><div class="medals">${MEDALS.map(m => { const on = S.medals && S.medals[m[0]];
+    return `<div class="medal ${on?"on":""}" title="${esc(m[3])}"><span>${on?m[1]:"🔒"}</span><b>${esc(m[2])}</b><small>${esc(m[3])}</small></div>`; }).join("")}</div></div>`;
+}
+function progressExtras(){ checkMedals(); return journeyHTML(false) + rankingHTML() + medalsHTML() + (typeof backupHTML==="function" ? backupHTML() : ""); }
+
+/* ---------- mis frases ---------- */
+function phrasesList(){ return S.phrases = S.phrases || []; }
+function isSaved(en){ const n = norm(en); return phrasesList().some(p => norm(p.en)===n); }
+function saveBtnHTML(ex){
+  const en = String(ex.full || "").trim(); if(!en || en.split(" ").length<2 || !/[a-z]/i.test(en) || ex.it.topic==="mine") return "";
+  const es = ex.meaning || (ex.type==="speak" && ex.mode==="say" ? ex.big : "") || (ex.it.topic==="write" ? ex.big : "") || "";
+  return isSaved(en) ? `<p class="small muted" style="margin-top:8px">⭐ Guardada en Mis frases</p>` : `<button class="link small" style="margin-top:8px" data-act="savephr" data-en="${esc(en)}" data-es="${esc(es)}" data-src="${esc(TOPICS[ex.it.topic] ? TOPICS[ex.it.topic].name : "")}">⭐ Guardar en Mis frases</button>`;
+}
+function renderPhrases(){
+  const ps = phrasesList();
+  return `<div class="wrap">${pageHead("⭐ Mis frases")}<div class="panel"><p>Guarda frases desde cualquier ejercicio, la serie o la sala de chat con el botón ⭐. Vuelven en tus repasos del reto diario.</p>
+    ${ps.length>=1 ? `<button class="btn sec" data-act="phrpractice">Practicar mis frases (${ps.length})</button>` : `<p class="small muted sec">Todavía no has guardado ninguna.</p>`}</div>
+    <div class="stack sec">${ps.slice().reverse().map(p => `<div class="panel"><div class="row between" style="gap:8px;align-items:flex-start"><div><b lang="en">${esc(p.en)}</b> ${spk(p.en)}${p.es?`<div class="small muted">${esc(p.es)}</div>`:""}<div class="small muted">${esc(p.src||"")} · ${esc(p.d||"")}</div></div><button class="icon-btn sm" data-act="phrdel" data-id="${p.id}" aria-label="Borrar">🗑️</button></div></div>`).join("")}</div></div>`;
+}
+
+/* ---------- cápsula del tiempo de tu voz (cada 2 meses) ---------- */
+var CAP_Q = ["Tell me about yourself: who you are and what your typical week is like.","Describe your home and the place where you live.","What are your plans and dreams for the next few months?"];
+var CAP_DAYS = 60;
+var cv = null;
+function capList(){ return S.capsules = S.capsules || []; }
+function capDue(){ const c = capList(); if(!c.length) return true; return addDays(c[c.length-1].date, CAP_DAYS) <= todayKey(); }
+function capNext(){ const c = capList(); return c.length ? addDays(c[c.length-1].date, CAP_DAYS) : todayKey(); }
+function idb(){ return new Promise((ok, ko) => { const r = indexedDB.open("lift-capsule", 1); r.onupgradeneeded = () => r.result.createObjectStore("rec"); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
+async function idbPut(k, v){ const db = await idb(); return new Promise((ok, ko) => { const t = db.transaction("rec","readwrite"); t.objectStore("rec").put(v, k); t.oncomplete = ok; t.onerror = () => ko(t.error); }); }
+async function idbGet(k){ const db = await idb(); return new Promise((ok, ko) => { const r = db.transaction("rec").objectStore("rec").get(k); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
+async function analyzeBlob(blob){
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC(), buf = await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close && ctx.close();
+    const x = buf.getChannelData(0), sr = buf.sampleRate, hop = Math.round(sr*0.02), db = [];
+    for(let i=0;i+hop<=x.length;i+=hop){ let e = 0; for(let k=i;k<i+hop;k++) e += x[k]*x[k]; db.push(10*Math.log10(e/hop+1e-12)); }
+    const sorted = db.slice().sort((a,b)=>a-b), thr = sorted[Math.floor(sorted.length*0.9)] - 22;
+    let speak = 0, pauses = 0, run = 0, started = false;
+    db.forEach(v => { if(v>=thr){ speak++; if(started && run*0.02>=1.0) pauses++; run = 0; started = true; } else run++; });
+    return {dur:Math.round(buf.duration), speak:Math.round(speak*0.02), pauses};
+  }catch(e){ return {dur:0, speak:0, pauses:0}; }
+}
+function renderCapsule(){
+  const c = capList();
+  let h = `<div class="wrap">${pageHead("⏳ Cápsula del tiempo")}`;
+  if(cv && cv.rec){
+    h += `<div class="panel"><p class="small muted">Pregunta ${cv.qi+1} de ${CAP_Q.length}</p><h2 style="margin-top:6px" lang="en">${esc(CAP_Q[cv.qi])}</h2> ${spk(CAP_Q[cv.qi])}
+      <p class="sec">${cv.recording ? `⏺️ Grabando… ${cv.sec}s (máximo 90 s)` : "Habla un minuto, más o menos. No tiene que ser perfecto."}</p>
+      <button class="btn full sec" data-act="${cv.recording?"capstop":"caprec"}">${cv.recording?"■ Parar y seguir":"● Empezar a grabar"}</button></div></div>`;
+    return h;
+  }
+  h += `<div class="panel"><p>Cada dos meses grabas las mismas tres preguntas. Así, con el tiempo, puedes escuchar tu voz de antes junto a la de ahora y comprobar cuánto has mejorado.</p>
+    ${capDue() ? `<button class="btn full sec" data-act="capstart">🎙️ Grabar ${c.length?"una nueva cápsula":"mi primera cápsula"}</button>` : `<p class="sec">La próxima cápsula se abre el <b>${new Date(capNext()+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}</b>.</p>`}</div>`;
+  if(c.length){
+    h += CAP_Q.map((q,qi) => `<div class="panel sec"><h3 lang="en">${esc(q)}</h3><div class="stack" style="margin-top:8px">${c.map((cap,ci) => { const it = cap.items[qi] || {};
+      return `<div class="row between" style="gap:8px;flex-wrap:wrap"><span class="small"><b>${new Date(cap.date+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"})}</b> · ${it.speak||0} s hablando de ${it.dur||0} s · ${it.pauses||0} pausas largas</span><button class="btn sm ghost" data-act="capplay" data-k="${cap.id}:${qi}">▶️ Escuchar</button></div>`; }).join("")}</div></div>`).join("");
+    if(c.length>=2){ const a = c[0], b = c[c.length-1], tot = cap => cap.items.reduce((t,i)=>t+(i.speak||0),0), pz = cap => cap.items.reduce((t,i)=>t+(i.pauses||0),0);
+      h += `<div class="panel sec"><h3>📈 De tu primera cápsula a la última</h3><p class="small" style="margin-top:6px">Tiempo hablando: ${tot(a)} s → <b>${tot(b)} s</b><br>Pausas largas: ${pz(a)} → <b>${pz(b)}</b></p><p class="note">Más tiempo hablando y menos pausas largas suelen indicar más fluidez.</p></div>`; }
+  }
+  return h + `</div>`;
+}
+async function capStartRec(){
+  try{
+    if(typeof Mic!=="undefined") Mic.abort();
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr = new MediaRecorder(stream), chunks = [];
+    mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => { stream.getTracks().forEach(t=>t.stop()); clearInterval(cv.timer); const blob = new Blob(chunks, {type: mr.mimeType || "audio/webm"});
+      const k = cv.id+":"+cv.qi; await idbPut(k, blob); const m = await analyzeBlob(blob); cv.items[cv.qi] = m; cv.recording = false;
+      if(cv.qi < CAP_Q.length-1){ cv.qi++; render(); }
+      else { capList().push({id:cv.id, date:todayKey(), items:cv.items}); addXP(30); cv = null; save(); checkMedals(); toast("⏳ Cápsula guardada. Te avisaremos dentro de dos meses."); if(typeof backupSoon==="function") backupSoon(); render(); } };
+    cv.mr = mr; cv.recording = true; cv.sec = 0; mr.start();
+    cv.timer = setInterval(() => { if(!cv) return; cv.sec++; if(cv.sec>=90) capStopRec(); else if(view==="capsule"){ const p = app.querySelector(".panel .sec"); if(p) p.textContent = `⏺️ Grabando… ${cv.sec}s (máximo 90 s)`; } }, 1000);
+    render();
+  }catch(e){ toast("No se ha podido usar el micrófono. Revisa el permiso del micrófono para Lift."); }
+}
+function capStopRec(){ if(cv && cv.mr && cv.mr.state!=="inactive") cv.mr.stop(); }
+
+/* ---------- sala: chat, palabras y juegos cooperativos (usa el servicio de Cloudflare) ---------- */
+var rv = null;
+function roomURL(){ return typeof PUSH!=="undefined" && PUSH && PUSH.url ? PUSH.url : null; }
+function roomUser(){ return typeof pushId==="function" ? pushId() : (S.uid = S.uid || "u"+Date.now().toString(36)); }
+async function roomCall(path, body){
+  const u = roomURL(); if(!u) throw new Error("noconfig");
+  const r = await fetch(u+path, body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {});
+  const j = await r.json(); if(!r.ok) throw new Error(j.error||"error"); return j;
+}
+function roomPoll(){
+  if(!rv || !S.room || view!=="room") return;
+  roomCall(`/room/get?code=${encodeURIComponent(S.room.code)}&since=${rv.since||0}`).then(j => {
+    if(j.msgs && j.msgs.length){ rv.msgs = (rv.msgs||[]).concat(j.msgs).slice(-200); rv.since = j.msgs[j.msgs.length-1].t; rv.members = j.members || rv.members; render(); const l = document.getElementById("roomlog"); if(l) l.scrollTop = l.scrollHeight; }
+    else if(j.members) rv.members = j.members;
+  }).catch(()=>{}).finally(() => { if(rv && view==="room") rv.timer = setTimeout(roomPoll, 4000); });
+}
+function roomOpen(){ if(!rv) rv = {tab:"chat", msgs:[], since:0}; view = "room"; render(); clearTimeout(rv.timer); roomPoll(); }
+var wordOK = w => !!(PRON[w] || CORE_RANK[w]!=null);
+function chainState(){ const ws = (rv.msgs||[]).filter(m => m.type==="chain"); return {ws, last: ws.length ? ws[ws.length-1].text : null}; }
+function renderRoom(){
+  if(!roomURL()) return `<div class="wrap">${pageHead("💬 Sala")}<div class="panel"><p>La sala usa el mismo servicio de Cloudflare que los avisos. Primero hay que activarlo: configura el archivo <b>avisos.json</b> de tu repositorio.</p></div></div>`;
+  if(!S.room) return `<div class="wrap">${pageHead("💬 Sala")}<div class="panel"><p>Crea una sala y pásale el código a tu alumno (o a quien quieras). Desde ahí podéis chatear, enviaros palabras y jugar juntos.</p>
+    <label class="stack sec"><span class="small">Tu nombre</span><input id="rmname" class="inp" value="${esc(S.myName||"")}" placeholder="Por ejemplo, Sandra"></label>
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="rmcreate">Crear sala</button></div>
+    <label class="stack sec"><span class="small">¿Te han pasado un código?</span><div class="row" style="gap:8px"><input id="rmcode" class="inp" placeholder="ABC123" style="flex:1;text-transform:uppercase"><button class="btn ghost" data-act="rmjoin">Entrar</button></div></label></div></div>`;
+  const me = roomUser(), tab = rv.tab, msgs = rv.msgs || [];
+  const mem = (rv.members||[]).map(m => esc(m.name)).join(", ");
+  let h = `<div class="wrap">${pageHead("💬 Sala "+esc(S.room.code))}<p class="small muted" style="margin:-6px 0 10px">Código para entrar: <b>${esc(S.room.code)}</b>${mem?` · En la sala: ${mem}`:""}</p>
+    <div class="row" style="gap:6px;margin-bottom:10px;flex-wrap:wrap">${[["chat","💬 Chat"],["chain","🔗 Cadena de palabras"],["story","📖 Historia entre dos"]].map(([k,n]) => `<button class="btn sm ${tab===k?"":"ghost"}" data-act="rmtab" data-t="${k}">${n}</button>`).join("")}</div>`;
+  if(tab==="chat"){
+    const shown = msgs.filter(m => m.type==="text" || m.type==="word");
+    h += `<div id="roomlog" class="room-log">${shown.map(m => `<div class="room-msg ${m.id===me?"me":""}"><small>${esc(m.name)}</small>${m.type==="word" ? `<div class="room-word"><b lang="en">${esc(m.text)}</b> ${spk(m.text)}${m.es?`<div class="small">${esc(m.es)}</div>`:""}${m.id!==me && !isSaved(m.text)?`<button class="link small" data-act="savephr" data-en="${esc(m.text)}" data-es="${esc(m.es||"")}" data-src="Sala">⭐ Guardar</button>`:""}</div>` : esc(m.text)}</div>`).join("") || `<p class="small muted">Todavía no hay mensajes. ¡Escribe el primero en inglés!</p>`}</div>
+      <div class="row" style="gap:8px;margin-top:10px"><input id="rmtext" class="inp" placeholder="Escribe en inglés…" style="flex:1" lang="en"><button class="btn" data-act="rmsend">Enviar</button></div>
+      <details class="sec"><summary class="small">📩 Enviar una palabra o frase con su traducción</summary><div class="stack" style="margin-top:8px"><input id="rmwen" class="inp" placeholder="En inglés" lang="en"><input id="rmwes" class="inp" placeholder="En español (opcional)"><button class="btn sm" data-act="rmword">Enviar tarjeta</button></div></details>`;
+  } else if(tab==="chain"){
+    const {ws, last} = chainState(), best = Math.max(S.room.best||0, ws.length);
+    h += `<div class="panel"><p>Por turnos, escribid una palabra en inglés que empiece por la <b>última letra</b> de la anterior. Sin repetir. ¡A ver hasta dónde llegáis juntos!</p>
+      <p class="sec">${last ? `Última palabra: <b>${esc(last)}</b> → ahora empieza por <b class="big-letter">${esc(last.slice(-1).toUpperCase())}</b>` : "Empieza con cualquier palabra."}</p>
+      <p class="small muted">Cadena actual: ${ws.length} palabras · Récord de la sala: ${best}</p>
+      <div class="row sec" style="gap:8px"><input id="rmchain" class="inp" placeholder="word" style="flex:1" lang="en" autocapitalize="none"><button class="btn" data-act="rmchain">Añadir</button></div>
+      <p class="small sec" style="line-height:1.9">${ws.map(m => `<span class="chip" title="${esc(m.name)}">${esc(m.text)}</span>`).join(" → ")}</p>
+      ${ws.length ? `<button class="link small" data-act="rmchainreset">Empezar una cadena nueva</button>` : ""}</div>`;
+  } else {
+    const ss = msgs.filter(m => m.type==="story");
+    h += `<div class="panel"><p>Escribid una historia en inglés entre los dos: cada uno añade una frase por turno.</p>
+      <div class="story sec">${ss.map(m => `<span class="${m.id===me?"me":""}" title="${esc(m.name)}">${esc(m.text)}</span>`).join(" ") || `<span class="muted">Empieza con «Once upon a time…» o con lo que quieras.</span>`}</div>
+      <div class="row sec" style="gap:8px"><input id="rmstory" class="inp" placeholder="Next sentence…" style="flex:1" lang="en"><button class="btn" data-act="rmstory">Añadir</button></div></div>`;
+  }
+  return h + `<p class="note">Los mensajes se actualizan solos cada pocos segundos mientras tienes la sala abierta.</p><button class="link small" data-act="rmleave">Salir de la sala</button></div>`;
+}
+async function roomSend(type, text, es){
+  text = String(text||"").trim(); if(!text) return;
+  try{ const j = await roomCall("/room/send", {code:S.room.code, id:roomUser(), name:S.myName||"Yo", type, text, es:es||""}); if(j.msg){ rv.msgs.push(j.msg); rv.since = j.msg.t; } render(); const l = document.getElementById("roomlog"); if(l) l.scrollTop = l.scrollHeight; }
+  catch(e){ toast("No se ha podido enviar. Comprueba tu conexión."); }
+}
+
+/* ---------- inicio: tarjetas de la serie y la cápsula ---------- */
+function homeExtras(){
+  let h = "", c = nextChapter();
+  if(c && chapterOpen(c.n)) h += `<div class="panel sec"><p class="muted small">📺 Flat 4B · capítulo ${c.n}</p><h3 style="margin:4px 0 6px">${esc(c.t)}</h3><p class="muted small" style="margin-bottom:10px">${esc(c.es)} · ${LEVELS[c.lvl-1].code}</p><button class="btn sm" data-act="serplay" data-n="${c.n}">Ver el capítulo</button></div>`;
+  if(capDue() && capList().length) h += `<div class="panel sec"><h3>⏳ Tu cápsula del tiempo está lista</h3><p class="muted small" style="margin:4px 0 10px">Han pasado dos meses desde la última. Graba la nueva y escucha cuánto has cambiado.</p><button class="btn sm" data-act="xgo" data-to="capsule">Grabar ahora</button></div>`;
+  return h;
+}
+
+/* ---------- acciones y juegos ---------- */
+var EXTRA_VIEWS = {series:renderSeriesList, chapter:renderChapter, mystery:renderMysteryList, mcase:renderCase, journey:renderJourney, phrases:renderPhrases, capsule:renderCapsule, room:renderRoom};
+Object.assign(ACT, {
+  xback: b => { if(view==="room" && rv) clearTimeout(rv.timer); speechSynthesis.cancel && speechSynthesis.cancel(); view = b.dataset.to || "games"; render(); scrollTo(0,0); },
+  xgo: b => { view = b.dataset.to; render(); scrollTo(0,0); },
+  serplay: b => serStart(+b.dataset.n),
+  serlocked: () => toast("Este capítulo se desbloquea al día siguiente de terminar el anterior."),
+  sertr: b => { const i = +b.dataset.i; sv.es.has(i) ? sv.es.delete(i) : sv.es.add(i); render(); },
+  sersay: b => { const c = SERIES.find(x=>x.n===sv.n), ln = c.lines[+b.dataset.i]; speechSynthesis.cancel(); speakAs(ln[1], ln[0]); },
+  sernext: () => { const c = SERIES.find(x=>x.n===sv.n); sv.i = Math.min(c.lines.length-1, sv.i+1); render(); speakAs(c.lines[sv.i][1], c.lines[sv.i][0]); window.scrollTo(0, document.body.scrollHeight); },
+  serauto: () => { const c = SERIES.find(x=>x.n===sv.n); speechSynthesis.cancel(); const step = () => { if(!sv || view!=="chapter" || sv.i>=c.lines.length-1) return; sv.i++; render(); window.scrollTo(0, document.body.scrollHeight); speakAs(c.lines[sv.i][1], c.lines[sv.i][0], () => setTimeout(step, 350)); }; step(); },
+  serchoice: () => { speechSynthesis.cancel(); sv.phase = "choice"; render(); window.scrollTo(0, document.body.scrollHeight); },
+  serpick: b => { const c = SERIES.find(x=>x.n===sv.n); sv.pick = +b.dataset.i; serState().pick[c.n] = sv.pick; speakAs(c.choice.o[sv.pick][0], "lucia"); render(); },
+  serquiz: () => { sv.phase = "quiz"; sv.qi = 0; serQuizSetup(); render(); },
+  serq: b => { const c = SERIES.find(x=>x.n===sv.n); sv.qa = +b.dataset.i; if(sv.qa===c.quiz[sv.qi][2]) sv.ok++; render(); },
+  serqnext: () => { const c = SERIES.find(x=>x.n===sv.n); if(sv.qi < c.quiz.length-1){ sv.qi++; serQuizSetup(); render(); } else serFinish(); },
+  myplay: b => { mv = {id:b.dataset.id, log:[], found:new Set(), solving:false, wrongPick:null, solved:false, xp:0}; view = "mcase"; render(); scrollTo(0,0); },
+  myask: () => myAsk(),
+  mymic: () => { if(mv.listening){ Mic.stop(); return; } mv.listening = true; render();
+    Mic.start({long:false, onResult: alts => { mv.draft = alts[0]; }, onError: () => {}, onEnd: () => { mv.listening = false; render(); const i = document.getElementById("myq"); if(i){ i.value = mv.draft||""; i.focus(); } }}); },
+  mysolve: () => { const m = MYSTERIES.find(x=>x.id===mv.id); mv.solving = true; mv.wrongPick = null; mv.opts = mv.opts || shuffle([m.sol, ...m.wrong], rng(hashStr(m.id))); render(); },
+  mypick: b => { const m = MYSTERIES.find(x=>x.id===mv.id), o = mv.opts[+b.dataset.i];
+    if(o===m.sol){ mv.solved = true; const st = mystState(); if(!st.solved.includes(m.id)){ st.solved.push(m.id); mv.xp = Math.max(10, 40 - 2*mv.log.length); addXP(mv.xp); } save(); checkMedals(); }
+    else mv.wrongPick = +b.dataset.i; render(); },
+  myhint: () => { const m = MYSTERIES.find(x=>x.id===mv.id), i = m.f.findIndex((f,k) => f.key && !mv.found.has(k)); if(i<0) return toast("Ya tienes todas las pistas clave. ¡Prueba a resolverlo!"); const f = m.f[i]; mv.found.add(i); mv.log.push({q:"💡 Pista", a:f.a, r:f.r + " (" + f.k[0][0] + ")", tip:null}); render(); },
+  savephr: b => { const en = b.dataset.en; if(!en || isSaved(en)) return; const p = {id:"p"+Date.now().toString(36), en, es:b.dataset.es||"", src:b.dataset.src||"", d:todayKey()}; phrasesList().push(p); addItem("mine","p",1,p,p.id); save(); checkMedals(); toast("⭐ Guardada en Mis frases"); render(); },
+  phrdel: b => { S.phrases = phrasesList().filter(p => p.id!==b.dataset.id); save(); render(); },
+  phrpractice: () => { const items = shuffle(POOL.mine||[], rng(Date.now())).filter(it => phrasesList().some(p=>p.id===it.d.id)).slice(0,8); if(items.length) startSession({kind:"practice", items}); },
+  capstart: () => { cv = {rec:true, qi:0, id:"c"+Date.now().toString(36), items:[]}; render(); },
+  caprec: () => capStartRec(),
+  capstop: () => capStopRec(),
+  capplay: async b => { try{ const blob = await idbGet(b.dataset.k); if(!blob) return toast("No encuentro esa grabación en este móvil."); const a = new Audio(URL.createObjectURL(blob)); a.play(); }catch(e){ toast("No se ha podido reproducir."); } },
+  rmcreate: async () => { const n = (document.getElementById("rmname")||{}).value || ""; if(!n.trim()) return toast("Escribe tu nombre."); S.myName = n.trim(); if(typeof pushWriteState==="function") pushWriteState();
+    try{ const j = await roomCall("/room/create", {id:roomUser(), name:S.myName}); S.room = {code:j.code, best:0}; save(); if(typeof pushWriteState==="function") pushWriteState(); rv = null; roomOpen(); }catch(e){ toast(e.message==="noconfig" ? "La sala necesita el servicio de avisos configurado." : "No se ha podido crear la sala. ¿Has actualizado el servicio de Cloudflare?"); } },
+  rmjoin: async () => { const n = (document.getElementById("rmname")||{}).value || "", c = ((document.getElementById("rmcode")||{}).value || "").trim().toUpperCase(); if(!n.trim()) return toast("Escribe tu nombre."); if(!c) return toast("Escribe el código.");
+    S.myName = n.trim(); try{ await roomCall("/room/join", {code:c, id:roomUser(), name:S.myName}); S.room = {code:c, best:0}; save(); if(typeof pushWriteState==="function") pushWriteState(); rv = null; roomOpen(); }catch(e){ toast("No existe ninguna sala con ese código."); } },
+  rmtab: b => { rv.tab = b.dataset.t; render(); },
+  rmsend: () => { const i = document.getElementById("rmtext"); if(i){ roomSend("text", i.value); i.value = ""; } },
+  rmword: () => { const en = document.getElementById("rmwen"), es = document.getElementById("rmwes"); if(en && en.value.trim()){ roomSend("word", en.value, es ? es.value : ""); en.value = ""; if(es) es.value = ""; } },
+  rmchain: () => { const i = document.getElementById("rmchain"); if(!i) return; const w = i.value.trim().toLowerCase().replace(/[^a-z']/g,""); const {ws, last} = chainState();
+    if(!w) return; if(!wordOK(w)) return toast(`«${w}» no está en el diccionario de la app. Prueba con otra palabra.`);
+    if(last && w[0]!==last.slice(-1)) return toast(`Tiene que empezar por «${last.slice(-1).toUpperCase()}».`);
+    if(ws.some(m => m.text===w)) return toast("Esa palabra ya está en la cadena.");
+    S.room.best = Math.max(S.room.best||0, ws.length+1); save(); roomSend("chain", w); i.value = ""; },
+  rmchainreset: () => { if(confirm("¿Empezar una cadena nueva? Se guarda el récord.")){ const {ws} = chainState(); S.room.best = Math.max(S.room.best||0, ws.length); save(); rv.msgs = rv.msgs.filter(m => m.type!=="chain"); roomSend("chainreset", "·"); } },
+  rmstory: () => { const i = document.getElementById("rmstory"); if(!i) return; const t = i.value.trim(); if(t.split(" ").length<3) return toast("Escribe una frase completa, de al menos tres palabras."); roomSend("story", t); i.value = ""; },
+  rmleave: () => { if(confirm("¿Salir de la sala? Podrás volver a entrar con el código.")){ if(rv) clearTimeout(rv.timer); S.room = null; rv = null; save(); render(); } }
+});
+app.addEventListener("keydown", e => { const t = e.target; if(e.key!=="Enter") return;
+  if(t.id==="myq"){ e.preventDefault(); myAsk(); } else if(t.id==="rmtext"){ e.preventDefault(); ACT.rmsend(); } else if(t.id==="rmchain"){ e.preventDefault(); ACT.rmchain(); } else if(t.id==="rmstory"){ e.preventDefault(); ACT.rmstory(); } });
+function EXTRA_GAME(id){
+  const map = {series:()=>{ view="series"; render(); }, mystery:()=>{ view="mystery"; render(); }, phrases:()=>{ view="phrases"; render(); }, capsule:()=>{ view="capsule"; render(); }, room:()=>roomOpen(),
+    spanglish:()=>startPractice("spanglish", 8, {kind:"game"}), shadow:()=>startPractice("shadow", 6, {kind:"game"})};
+  if(!map[id]) return false; map[id](); scrollTo(0,0); return true;
+}
+GAMES.unshift(
+  {id:"series", icon:"📺", bg:"#FFE9D6", t:"Flat 4B: la serie", d:"Una historia original por capítulos: Lucía se muda a Londres. Un capítulo nuevo cada día."},
+  {id:"mystery", icon:"🕵️", bg:"#E6E0FF", t:"Misterios", d:"Haz preguntas de sí o no en inglés hasta descubrir qué pasó."});
+GAMES.push(
+  {id:"spanglish", icon:"🎯", bg:"#FFE3E3", t:"Cazador de errores", d:"Los fallos típicos de un hispanohablante: encuentra la forma correcta, sin prisas."},
+  ...(MEDIA_ON ? [{id:"shadow", icon:"🎭", bg:"#E0F2FF", t:"Modo sombra", d:"Mira una escena de película y repite la frase. Te corrige la pronunciación."}] : []),
+  {id:"phrases", icon:"⭐", bg:"#FFF6CC", t:"Mis frases", d:"Las frases que has guardado, para repasarlas."},
+  {id:"capsule", icon:"⏳", bg:"#E8F5E9", t:"Cápsula del tiempo", d:"Graba tu voz cada dos meses y escucha cuánto has mejorado."},
+  ...(STANDALONE ? [{id:"room", icon:"💬", bg:"#E3F2FD", t:"Sala con tu grupo", d:"Chat, palabras y juegos cooperativos con tu alumno o tus amigos."}] : []));
+
+
+/* ================= CORRECCIÓN AUTOMÁTICA DE ESCENAS, COPIAS DE SEGURIDAD Y AVISOS DEL CHAT ================= */
+/* escenas marcadas como «no coincide»: al terminar el reto se amplía el margen; si vuelve a fallar, se retira */
+function applyClipFixes(){
+  const fl = S.clipFlags || {}, ids = Object.keys(fl); if(!ids.length) return;
+  S.clipFix = S.clipFix || {}; S.clipOff = S.clipOff || {}; let fixed = 0, off = 0;
+  ids.forEach(id => { const fx = S.clipFix[id] || {n:0, pad:0}; fx.n++;
+    if(fx.n>=2){ S.clipOff[id] = todayKey(); off++; } else { fx.pad += 1.5; fixed++; }
+    S.clipFix[id] = fx; delete fl[id]; });
+  S.clipFlags = {}; save();
+  setTimeout(() => toast(`🔧 ${fixed ? `He corregido ${fixed} ${fixed===1?"escena":"escenas"} que marcaste` : ""}${fixed && off ? " y " : ""}${off ? `he retirado ${off} que seguía${off===1?"":"n"} sin coincidir` : ""}.`), 900);
+}
+/* ---------- copias de seguridad en tu servicio de Cloudflare ---------- */
+function bkState(){ if(!S.backup) S.backup = {code:null, last:0, recs:{}}; return S.backup; }
+function newBkCode(){ const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c = ""; for(let i=0;i<12;i++){ c += a[Math.floor(Math.random()*a.length)]; if(i===3||i===7) c += "-"; } return c; }
+function blobToB64(blob){ return new Promise(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.readAsDataURL(blob); }); }
+function b64ToBlob(b, type){ const s = atob(b), u = new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i] = s.charCodeAt(i); return new Blob([u], {type: type||"audio/webm"}); }
+var bkBusy = false, bkTimer = null;
+async function backupNow(silent){
+  if(bkBusy || !roomURL()) return; bkBusy = true;
+  try{
+    const b = bkState(); if(!b.code) b.code = newBkCode();
+    b.last = Date.now(); save();
+    await roomCall("/backup/save", {code:b.code, data: JSON.stringify(S)});
+    for(const cap of capList()) for(let qi=0; qi<cap.items.length; qi++){ const k = cap.id+":"+qi; if(b.recs[k]) continue;
+      const blob = await idbGet(k).catch(()=>null); if(!blob) continue;
+      await roomCall("/backup/rec", {code:b.code, key:k, type:blob.type||"audio/webm", data: await blobToB64(blob)}); b.recs[k] = 1; }
+    save(); if(!silent) toast("☁️ Copia de seguridad hecha."); if(view==="progress") render();
+  }catch(e){ if(!silent) toast("No se ha podido hacer la copia. Comprueba tu conexión."); }
+  bkBusy = false;
+}
+function backupSoon(){ clearTimeout(bkTimer); bkTimer = setTimeout(() => backupNow(true), 4000); }
+async function restoreFrom(code){
+  code = String(code||"").trim().toUpperCase();
+  if(!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) return toast("El código tiene este formato: ABCD-EFGH-JKLM.");
+  try{
+    const j = await roomCall("/backup/get?code="+encodeURIComponent(code));
+    if(!j.data) return toast("No hay ninguna copia con ese código.");
+    if(!confirm(`Copia del ${new Date(j.t).toLocaleString("es-ES")}. ¿Recuperarla? Se sustituirá lo que haya ahora en este móvil.`)) return;
+    const st = JSON.parse(j.data);
+    for(const cap of (st.capsules||[])) for(let qi=0; qi<cap.items.length; qi++){ const k = cap.id+":"+qi;
+      try{ const r = await roomCall("/backup/rec?code="+encodeURIComponent(code)+"&key="+encodeURIComponent(k)); if(r.data) await idbPut(k, b64ToBlob(r.data, r.type)); }catch(e){} }
+    st.backup = Object.assign({}, st.backup||{}, {code});
+    localStorage.setItem(STORE_KEY, JSON.stringify(st));
+    toast("✅ Copia recuperada. Reiniciando…"); setTimeout(() => location.reload(), 900);
+  }catch(e){ toast("No se ha podido recuperar. Revisa el código y tu conexión."); }
+}
+function backupHTML(){
+  if(!roomURL()) return "";
+  const b = bkState(), last = b.last ? new Date(b.last).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : null;
+  return `<div class="panel sec"><h2>☁️ Copia de seguridad</h2><p class="muted small" style="margin:4px 0 10px">La app guarda una copia de todo (progreso, frases, serie, misterios, medallas y grabaciones de la cápsula) en tu servicio de Cloudflare cada vez que terminas una sesión.</p>
+    <p class="small">${last ? `Última copia: <b>${last}</b> ✓` : "Todavía no se ha hecho ninguna copia."}</p>
+    ${b.code ? `<p class="small sec">Tu código para recuperarla en otro móvil: <b class="bk-code">${esc(b.code)}</b></p><p class="note">Apúntalo en un lugar seguro: es la llave de tu copia.</p>` : ""}
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="bknow">Hacer copia ahora</button></div>
+    <details class="sec"><summary class="small">Recuperar una copia en este móvil</summary><div class="row" style="gap:8px;margin-top:8px"><input id="bkcode" class="inp" placeholder="ABCD-EFGH-JKLM" style="flex:1;text-transform:uppercase"><button class="btn sm ghost" data-act="bkrestore">Recuperar</button></div></details></div>`;
+}
+Object.assign(ACT, {
+  bknow: () => backupNow(false),
+  bkrestore: () => restoreFrom((document.getElementById("bkcode")||{}).value)
+});
+/* ---------- abrir la sala al tocar una notificación del chat ---------- */
+try{ if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", e => { if(e.data && e.data.go==="room" && S.room) roomOpen(); }); }catch(e){}
+if(location.hash==="#room"){ setTimeout(() => { if(S.room){ history.replaceState(null, "", location.pathname); roomOpen(); } }, 600); }
+/* copia automática al abrir la app si han pasado más de 6 horas */
+setTimeout(() => { if(typeof pushConfig==="function") pushConfig().then(() => { if(roomURL() && Date.now() - (bkState().last||0) > 6*3600*1000) backupNow(true); }); }, 2500);
 
 </script>
 </body>

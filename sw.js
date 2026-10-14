@@ -1,5 +1,5 @@
 /* Lift: funcionamiento sin conexión. Cambia VERSION cada vez que subas cambios. */
-const VERSION = "lift-3.13.0";
+const VERSION = "lift-4.1.0";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {
@@ -41,6 +41,13 @@ self.addEventListener("push", e => {
     try { const c = await caches.open("lift-state"); const r = await c.match("./state.json"); if (r) st = await r.json(); } catch (err) {}
     const now = new Date();
     const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    if (st.url && st.id) {
+      try {
+        const r = await fetch(st.url + "/notif?id=" + encodeURIComponent(st.id), { cache: "no-store" });
+        const j = await r.json();
+        if (j && j.title) { await self.registration.showNotification(j.title, { body: j.body || "", icon: "./icon-192.png", tag: "lift-chat", renotify: true, data: { url: "./#room", go: "room" } }); return; }
+      } catch (err) {}
+    }
     const streak = st.streak || 0;
     let title, body;
     if (st.lastDaily === today) { title = "Reto de hoy completado ✓"; body = "¡Bien hecho! Mañana tendrás un reto nuevo."; }
@@ -51,8 +58,9 @@ self.addEventListener("push", e => {
 });
 self.addEventListener("notificationclick", e => {
   e.notification.close();
+  const d = e.notification.data || {};
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
-    for (const c of list) { if ("focus" in c) return c.focus(); }
-    return self.clients.openWindow("./");
+    for (const c of list) { if ("focus" in c) { if (d.go) c.postMessage({ go: d.go }); return c.focus(); } }
+    return self.clients.openWindow(d.url || "./");
   }));
 });
