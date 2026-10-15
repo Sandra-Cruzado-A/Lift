@@ -353,6 +353,19 @@ a.btn.full{display:flex}
 .cap-modal{position:fixed;inset:0;z-index:50;background:rgba(10,20,40,.55);display:grid;place-items:center;padding:20px}
 .cap-box{background:var(--surface);color:var(--text);border-radius:20px;padding:24px 20px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 .back-card .why{margin-top:12px} .tag-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.wd-grid{display:grid;gap:6px;justify-content:center} .wd-row{display:flex;gap:6px}
+.wd-c{width:46px;height:46px;border:2px solid var(--line);border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:1.3rem}
+.wd-g{background:#4caf50;border-color:#4caf50;color:#fff} .wd-y{background:#f2c037;border-color:#f2c037;color:#222} .wd-x{background:#9aa0a6;border-color:#9aa0a6;color:#fff}
+.wd-kb{display:flex;gap:4px;justify-content:center;margin-top:6px} .wd-k{min-width:26px;padding:8px 4px;border-radius:6px;background:var(--chip);text-align:center;font-size:.8rem;font-weight:700}
+.wd-k.wd-g{background:#4caf50;color:#fff} .wd-k.wd-y{background:#f2c037;color:#222} .wd-k.wd-x{background:#9aa0a6;color:#fff}
+.cw-wrap{overflow-x:auto;margin-top:12px} .cw{border-collapse:collapse;margin:0 auto}
+.cw td{width:30px;height:30px;border:1px solid var(--muted);position:relative;padding:0;background:var(--surface)} .cw td.cw-x{background:transparent;border:none}
+.cw td small{position:absolute;top:1px;left:2px;font-size:.55rem;color:var(--muted)} .cw input{width:100%;height:100%;border:0;background:transparent;text-align:center;font-weight:800;font-size:1rem;text-transform:uppercase;color:var(--text)}
+.cw td.cw-ok{background:#d9f5d9} .cw td.cw-bad{background:#fbdcdc} .cw-clues{padding-left:18px;margin-top:6px;display:grid;gap:4px;font-size:.92rem}
+.esc-clue{border-left:4px solid var(--accent)} .call-screen .call-top{text-align:center;padding:14px 0} .call-av{font-size:3.2rem} .call-time{font-size:1.4rem;font-weight:800;margin-top:4px}
+.call-hang{background:#e53935;color:#fff;border-color:#e53935} .call-tr{padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)} .center{text-align:center}
+.gs-bar{position:fixed;left:12px;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:45;border:0;border-radius:14px;padding:13px 16px;background:var(--accent);color:#fff;font:inherit;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.game-step h2{margin-top:6px}
 </style>
 </head>
 <body>
@@ -3659,7 +3672,7 @@ function acc(topic){ const s=S.stats[topic]; if(!s||!s.r.length) return null; re
 function topicOpen(k){ return !(TOPICS[k].min && S.level<TOPICS[k].min) && !(k==="tech" && S.settings.tech==="never"); }
 function weakest(){
   let w=null, wa=2;
-  for(const k in TOPICS){ if(!topicOpen(k)) continue; const s=S.stats[k]; if(!s||s.r.length<3) continue; const a=acc(k); if(a<wa){ wa=a; w=k; } }
+  for(const k in TOPICS){ if(k==="game" || k==="reading" || !topicOpen(k)) continue; const s=S.stats[k]; if(!s||s.r.length<3) continue; const a=acc(k); if(a<wa){ wa=a; w=k; } }
   return wa<0.75 ? w : null;
 }
 function curStreak(){ if(!S.lastDaily) return 0; return dayDiff(S.lastDaily,todayKey())<=1 ? S.streak : 0; }
@@ -3790,6 +3803,10 @@ function makeEx(it, r, opt={}){
     case "shadow": return makeShadowEx(it, r);
     case "mine": return makeMineEx(it, r);
     case "ivocab": return makeIvocabEx(it, r);
+    case "culture": return makeCultureEx(it, r);
+    case "proverb": return makeProverbEx(it, r);
+    case "twister": return makeTwisterEx(it, r);
+    case "game": return makeGameEx(it, r);
     case "conv":
       if(r()<0.25){ const others = shuffle(POOL.conv.filter(x => x.d.sc!==d.sc && Math.abs(x.lvl-it.lvl)<=1), r).slice(0,2).map(x=>x.d.t.m);
         if(others.length===2) return {it,type:"mcq",title:"¿Qué responderías?",titleH:titleHTML("¿Qué responderías?","What would you reply?"),sub:d.sc.title,
@@ -3808,7 +3825,7 @@ function phrasesUsed(text, phrases){
 }
 
 /* ---------- reto diario ---------- */
-const DAILY_V = 4;
+const DAILY_V = 5;
 /* Tipos de reto: cada día toca uno distinto para que no sea siempre igual */
 const DAILY_PLANS = {
   mix:{name:"Reto variado", icon:"🎲", d:"Un poco de todo"},
@@ -3845,7 +3862,7 @@ function spreadOrder(ids, r){
 }
 function buildDaily(){
   const key = todayKey();
-  if(S.daily && S.daily.date===key && (S.daily.done || S.daily.v===DAILY_V)) return S.daily;
+  if(S.daily && S.daily.date===key && (S.daily.done || S.daily.v===DAILY_V || (S.dailyRun && S.dailyRun.date===key))) return S.daily;
   const r = rng(hashStr(key+"|"+S.level)), L=S.level, used=new Set(), ids=[];
   /* tipo de reto de hoy: distinto al de ayer */
   const plans = Object.keys(DAILY_PLANS).filter(p => p!=="work" || offerOn() || L>=2);
@@ -3858,12 +3875,14 @@ function buildDaily(){
   if(MEDIA_ON && r()<0.3) base.splice(Math.min(5, base.length), 0, "scene");
   if(r()<0.35) base.splice(Math.min(3, base.length), 0, "spanglish");
   if((S.phrases||[]).length>=3 && r()<0.3) base.push("mine");
+  if(r()<0.35) base.push("culture");
+  if(r()<0.2) base.splice(Math.min(4, base.length), 0, "proverb");
   if(typeof myInterests==="function" && myInterests().length && r()<0.6){ const mi = myInterests(); base.splice(Math.min(2, base.length), 0, "ivocab:"+mi[Math.floor(r()*mi.length)]); }
   if(S.settings.tech==="daily" || (S.settings.tech==="some" && r()<0.3)) base.splice(5,0,"tech");
   if(plan!=="work"){ if(offerOn() && r()<0.12) base.splice(2,0,"interview:w"); else if(L>=2 && r()<0.1) base.splice(2,0,"interview:v"); }
   const due = dueReview().slice(0, REVIEW_CAP);
   due.forEach(id=>used.add(id));
-  const w = weakest();
+  let w = weakest(); if(w==="game") w = null;
   if(w && !due.length && r()<0.6) base.splice(4,0,w);
   /* evita repetir lo que salió en los últimos retos si hay alternativas */
   const recent = new Set((S.recentDaily||[]).flatMap(x => (x && x.ids) || []));
@@ -3875,8 +3894,17 @@ function buildDaily(){
     if(it){ used.add(it.id); ids.push(it.id); } });
   const order = spreadOrder(ids, r);
   [2,6,10].forEach((pos,k) => { if(due[k]) order.splice(Math.min(pos, order.length), 0, due[k]); });
+  /* duración parecida cada día (~15 min): más ejercicios si son cortos, menos si son largos; y un juego distinto cada día */
+  const game = typeof dailyGamePick==="function" ? dailyGamePick(key, rng(hashStr("juego|"+key+"|"+L))) : null, BUDGET = 900 - (game ? game.sec : 0), keep = []; let secs = 0;
+  for(const id of order){ const sec = itemSec(ITEM[id]); if(keep.length>=4 && secs+sec > BUDGET+45 && !due.includes(id)) continue; keep.push(id); secs += sec; }
+  const FILL = ["vocab:c","verbs","conn","culture","phrasal","expr","ask","order","listen","spanglish","proverb"]; let guard = 0;
+  while(secs < BUDGET-60 && guard++ < 25){ const spec = FILL[Math.floor(r()*FILL.length)], it = pickItems(spec,L,1,r,new Set([...used, ...recent]))[0] || pickItems(spec,L,1,r,used)[0];
+    if(!it) continue; used.add(it.id); keep.splice(1 + Math.floor(r()*keep.length), 0, it.id); secs += itemSec(it); }
+  if(game && ITEM["game:g"+game.gid]) keep.splice(r()<0.5 ? Math.ceil(keep.length/2) : keep.length, 0, "game:g"+game.gid);
+  order.length = 0; keep.forEach(x => order.push(x));
+  const dailyMins = Math.round((secs + (game ? game.sec : 0))/60);
   S.recentDaily = [...(S.recentDaily||[]).filter(x => x && x.d && x.d!==key), {d:key, ids:order.slice()}].slice(-3);
-  S.daily = {date:key, v:DAILY_V, plan, ids:order, review:due, done:false, score:null, fact:null};
+  S.daily = {date:key, v:DAILY_V, plan, ids:order, review:due, done:false, score:null, fact:null, mins:dailyMins, game:game ? game.gid : null};
   if(S.dailyRun && S.dailyRun.date!==key) S.dailyRun = null;
   save();
   return S.daily;
@@ -5439,6 +5467,237 @@ TOPICS.reading = {name:"Lecturas", icon:"📖"};
 TOPICS.ivocab = {name:"Vocabulario de tus intereses", icon:"❤️"};
 Object.entries(INTERESTS).forEach(([k,v]) => v.w.forEach((w,i) => addItem("ivocab", k, w[3], {w:w[0], es:w[1], ex:w[2], int:k}, i)));
 
+/* ================= CHOQUE CULTURAL: datos curiosos de países de habla inglesa =================
+   [pregunta, opciones, correcta, explicación (dato curioso), bandera, nivel] */
+var CULTURE = [
+ ["En Reino Unido alguien te saluda con «You alright?». ¿Qué te está preguntando?",["Nada: es un saludo, como «¿qué tal?»","Si te encuentras mal","Si necesitas ayuda"],0,"«You alright?» es un saludo informal. Basta con responder «Yeah, you?». Si contestas contando cómo estás de salud, se sorprenderán.","🇬🇧",1],
+ ["En un pub británico, ¿cómo se pide normalmente?",["Se va a la barra a pedir y pagar","Se espera a que venga un camarero","Se pide con una app obligatoria"],0,"En los pubs tradicionales no hay servicio de mesa: pides y pagas en la barra. Esperar sentado a que te atiendan puede hacer que no te atienda nadie.","🇬🇧",1],
+ ["Estás en un pub con amigos británicos y uno paga bebidas para todos. ¿Qué se espera de ti?",["Que pagues la siguiente ronda","Que le devuelvas el dinero","Nada, es un regalo"],0,"Es el sistema de «rounds»: cada uno paga una ronda para todo el grupo por turnos. Irse sin pagar tu ronda está muy mal visto.","🇬🇧",2],
+ ["¿Cuál es el tema estrella de conversación para romper el hielo en Reino Unido?",["El tiempo","La política","El sueldo"],0,"Hablar del tiempo es casi un ritual: «Lovely day, isn't it?». No es aburrimiento, es una forma segura y amable de empezar a hablar.","🇬🇧",1],
+ ["¿Qué es «Big Ben»?",["La campana grande de la torre","La torre del reloj","El reloj entero"],0,"Big Ben es el nombre de la campana. La torre se llama Elizabeth Tower desde 2012; antes se la conocía como Clock Tower.","🇬🇧",2],
+ ["El metro de Londres, «the Tube», es…",["El más antiguo del mundo (1863)","El más largo del mundo","El único gratis de Europa"],0,"El primer tramo se inauguró en 1863, con trenes de vapor. Hoy mueve millones de viajeros al día.","🇬🇧",2],
+ ["¿Qué se celebra en Reino Unido el 5 de noviembre?",["Bonfire Night, con hogueras y fuegos artificiales","El cumpleaños del rey","El fin del verano"],0,"Recuerda el fallido intento de Guy Fawkes de volar el Parlamento en 1605. Se celebra con hogueras y fuegos artificiales.","🇬🇧",2],
+ ["En Reino Unido, si un amigo te dice que tu idea es «quite good», probablemente piensa que…",["Está bien, pero no le entusiasma","Es buenísima","Es malísima"],0,"Es el famoso «understatement» británico: se suaviza todo. «Quite good» suele ser «está bien, sin más», y «not bad» puede ser un gran elogio.","🇬🇧",3],
+ ["Si alguien en Reino Unido empieza diciendo «With all due respect…», lo más probable es que…",["Vaya a llevarte la contraria","Vaya a felicitarte","Vaya a despedirse"],0,"Es una forma educada de anunciar un desacuerdo. Cuanto más educada suena la frase, más fuerte puede ser la crítica.","🇬🇧",3],
+ ["¿Por qué los británicos dicen tanto «sorry»?",["Lo usan para todo: pedir paso, interrumpir o incluso cuando les empujan","Porque siempre se sienten culpables","Porque es obligatorio por ley"],0,"«Sorry» sirve para pedir paso, para no haber oído algo («Sorry?») y hasta cuando otra persona te pisa. Es puro hábito de cortesía.","🇬🇧",1],
+ ["En Gales, las señales de tráfico están…",["En galés y en inglés","Solo en inglés","Solo en galés"],0,"El galés es lengua oficial en Gales junto al inglés, y muchos niños estudian en galés en el colegio.","🏴",2],
+ ["En Escocia, los billetes de libra…",["Los emiten también bancos escoceses, con diseños propios","Son iguales que en Inglaterra","No existen: usan euros"],0,"Tres bancos escoceses imprimen sus propios billetes. Son libras de curso legal, aunque en algunas tiendas inglesas te los miran dos veces.","🏴",3],
+ ["¿Qué es el «Pancake Day» en Reino Unido?",["El martes de Carnaval, cuando se comen tortitas","Un día de dieta","El cumpleaños de la reina Victoria"],0,"Es el martes antes de la Cuaresma (Shrove Tuesday). Se comen tortitas y en algunos pueblos se hacen carreras dándoles la vuelta en la sartén.","🇬🇧",2],
+ ["¿Qué es «Boxing Day»?",["El 26 de diciembre, día festivo","Un día de combates de boxeo","El día de hacer mudanzas"],0,"Es festivo en Reino Unido y otros países de la Commonwealth. Hoy es famoso por las rebajas y los partidos de fútbol.","🇬🇧",2],
+ ["En un restaurante de EE. UU., ¿cuánta propina se espera?",["Entre el 15 y el 20 %","Nada, va incluida","Un euro por persona"],0,"Los camareros dependen en gran parte de las propinas. Dejar menos del 15 % se interpreta como una queja por el servicio.","🇺🇸",1],
+ ["En una tienda de EE. UU., el precio de la etiqueta…",["Normalmente no incluye el impuesto, que se suma al pagar","Siempre incluye todos los impuestos","Es negociable"],0,"El impuesto sobre las ventas cambia según el estado y se añade en caja. Por eso pagas más de lo que ponía en la etiqueta.","🇺🇸",2],
+ ["En EE. UU. te preguntan «How are you?» al entrar en una tienda. ¿Qué respondes?",["«Good, thanks! How are you?»","Le cuentas cómo te va la semana","Nada, no hace falta responder"],0,"Es un saludo, no una pregunta real. Se responde algo breve y positivo y se devuelve la pregunta.","🇺🇸",1],
+ ["¿Cuándo se celebra Thanksgiving en EE. UU.?",["El cuarto jueves de noviembre","El 4 de julio","El último domingo de octubre"],0,"Es una de las fiestas más importantes: cena familiar con pavo y millones de personas viajando para reunirse.","🇺🇸",2],
+ ["En EE. UU., la fecha 03/04/2027 significa…",["4 de marzo de 2027","3 de abril de 2027","3 de marzo de 2027"],0,"En EE. UU. se escribe primero el mes y luego el día. En Reino Unido, como en España, primero el día.","🇺🇸",2],
+ ["Si en EE. UU. el tiempo dice 100 °F, hace…",["Muchísimo calor (unos 38 °C)","Un frío terrible","Una temperatura agradable"],0,"0 °C son 32 °F y 100 °F son unos 38 °C. Truco rápido: resta 30 y divide entre 2.","🇺🇸",2],
+ ["En EE. UU., ¿cómo se pregunta por el baño en un restaurante?",["«Where's the restroom?»","«Where's the WC?»","«Where's the toilet room?»"],0,"«Restroom» o «bathroom» suenan naturales. «Toilet» se entiende, pero allí suena demasiado directo.","🇺🇸",1],
+ ["En la mayoría de los estados de EE. UU., con el semáforo en rojo…",["Se puede girar a la derecha tras detenerse, salvo señal","Nunca se puede avanzar","Se puede seguir recto si no viene nadie"],0,"«Right turn on red»: después de parar del todo, puedes girar a la derecha si no viene nadie y no hay una señal que lo prohíba.","🇺🇸",3],
+ ["En muchos restaurantes de EE. UU., los refrescos…",["Se rellenan gratis («free refills»)","Se cobran por cada vaso","Solo se sirven con la comida"],0,"Es muy común pedir un refresco y que te lo rellenen sin coste. En Europa suele sorprender.","🇺🇸",1],
+ ["En un instituto de EE. UU., un «sophomore» es…",["Un estudiante de segundo curso","Un profesor sustituto","El mejor alumno de la clase"],0,"Los cuatro cursos son freshman, sophomore, junior y senior. Los mismos nombres se usan en la universidad.","🇺🇸",3],
+ ["En EE. UU. dicen «first floor». ¿Qué planta es?",["La planta baja","El primer piso, encima de la planta baja","El sótano"],0,"En EE. UU. la planta baja es el «first floor». En Reino Unido es el «ground floor», y el «first floor» es el primer piso.","🇺🇸",2],
+ ["En Reino Unido, si dices que te has manchado los «pants»…",["Estás hablando de tu ropa interior","Estás hablando de tus pantalones","Estás hablando de tus zapatos"],0,"En Reino Unido «pants» es ropa interior y los pantalones son «trousers». En EE. UU., «pants» sí son pantalones.","🇬🇧",2],
+ ["¿Qué se celebra el 17 de marzo en Irlanda?",["San Patricio, el día nacional","El día de la independencia","El fin del invierno"],0,"Hay desfiles, música y mucho verde en todo el mundo. En Irlanda es festivo nacional.","🇮🇪",1],
+ ["¿Cuál es la primera lengua oficial de Irlanda según su Constitución?",["El irlandés (gaélico)","El inglés","Las dos por igual, sin orden"],0,"El irlandés es la primera lengua oficial y el inglés la segunda, aunque en la vida diaria la mayoría habla inglés.","🇮🇪",3],
+ ["¿Qué moneda se usa en la República de Irlanda?",["El euro","La libra esterlina","La libra irlandesa"],0,"Irlanda usa el euro, pero Irlanda del Norte forma parte de Reino Unido y usa la libra. Al cruzar la frontera cambia la moneda.","🇮🇪",2],
+ ["En Australia, la Navidad es…",["En verano: barbacoas y playa","En invierno, con nieve","En primavera"],0,"Al estar en el hemisferio sur, diciembre es pleno verano. Es típico celebrarla con barbacoa o en la playa.","🇦🇺",1],
+ ["¿Cuál es la capital de Australia?",["Canberra","Sídney","Melbourne"],0,"Sídney y Melbourne competían por ser la capital, y en 1908 se eligió construir una ciudad nueva entre las dos: Canberra.","🇦🇺",2],
+ ["Un australiano dice que va al «servo». ¿Adónde va?",["A la gasolinera","Al médico","Al supermercado"],0,"«Servo» viene de «service station». Los australianos acortan casi todo: «Maccas» es McDonald's y «brekkie», el desayuno.","🇦🇺",3],
+ ["En Australia, unas «thongs» son…",["Chanclas","Ropa interior","Gafas de sol"],0,"En Australia «thongs» son las chanclas. En Reino Unido o EE. UU. significa tanga: cuidado con el contexto.","🇦🇺",3],
+ ["La palabra «kiwi» en Nueva Zelanda se refiere a…",["Un pájaro nacional y a los propios neozelandeses","Solo a la fruta","A un deporte"],0,"El kiwi es un pájaro que no vuela y símbolo nacional. «Kiwis» es también como se llama a los neozelandeses.","🇳🇿",2],
+ ["¿Cuántas lenguas oficiales tiene Canadá a nivel federal?",["Dos: inglés y francés","Una: inglés","Tres: inglés, francés y español"],0,"Los productos llevan las etiquetas en inglés y en francés, y en Quebec la lengua principal es el francés.","🇨🇦",2],
+ ["¿Cuál es la capital de Canadá?",["Ottawa","Toronto","Vancouver"],0,"Toronto es la ciudad más grande, pero la capital es Ottawa, en la frontera entre Ontario y Quebec.","🇨🇦",2],
+ ["¿Qué es lo primero que hace mucha gente al entrar en una casa de Canadá?",["Quitarse los zapatos","Dar dos besos","Abrir la nevera"],0,"Con la nieve y la lluvia, quitarse los zapatos al entrar es muy habitual. Si dudas, mira si los demás lo hacen.","🇨🇦",2],
+ ["¿Cuántos besos se dan para saludar a alguien que acabas de conocer en Reino Unido o EE. UU.?",["Normalmente ninguno: se da la mano o solo se dice hola","Dos, como en España","Tres"],0,"Los dos besos españoles pueden pillar por sorpresa. Lo seguro es un apretón de manos o un saludo sin contacto.","🇬🇧",1],
+ ["¿De qué NO conviene hablar con alguien que acabas de conocer en un país anglosajón?",["Del sueldo","Del tiempo","De viajes"],0,"Preguntar cuánto gana alguien, su edad o su peso se considera muy personal. El tiempo, los viajes o las series son temas seguros.","🇬🇧",2],
+ ["Un compañero estadounidense te dice «We should have lunch sometime!». Probablemente…",["Es una frase amable, no una invitación concreta","Quiere quedar esta semana sin falta","Espera que le invites tú hoy"],0,"Es una fórmula de cortesía. Si de verdad quiere quedar, propondrá un día concreto.","🇺🇸",3],
+ ["Te invitan a una fiesta en Reino Unido y pone «BYOB». ¿Qué significa?",["Que lleves tu propia bebida","Que lleves un regalo","Que vayas bien vestido"],0,"BYOB es «Bring Your Own Bottle» (o Beer). Es muy normal llevar algo de beber a una fiesta en casa.","🇬🇧",2],
+ ["En comparación con España, en Reino Unido y EE. UU. se cena…",["Mucho antes: sobre las 18:00-19:00","Más tarde: sobre las 23:00","A la misma hora"],0,"Cenar a las 21:30 puede parecer tardísimo allí. En algunos sitios, la cocina de los restaurantes cierra pronto.","🇬🇧",1],
+ ["En el norte de Inglaterra, si te invitan a «tea» a las seis de la tarde, te están invitando a…",["Cenar","Tomar solo un té","Un desayuno tardío"],0,"En partes del norte de Inglaterra «tea» es la comida de la tarde-noche. En el sur suele llamarse «dinner».","🇬🇧",3],
+ ["En una reunión de trabajo en Reino Unido o EE. UU., llegar 10 minutos tarde…",["Se considera poco profesional","Es lo normal","Es señal de importancia"],0,"La puntualidad en el trabajo es muy importante. En cambio, a una fiesta en casa llegar 10 o 15 minutos tarde suele estar bien.","🇬🇧",1],
+ ["¿Por qué un hispanohablante puede sonar brusco en inglés sin querer?",["Porque en inglés se usan mucho más «please», «could you…?» y «thanks»","Porque habla demasiado bajo","Porque usa palabras largas"],0,"«Dame un café» suena normal en España, pero «Give me a coffee» suena seco en inglés. Mejor: «Could I have a coffee, please?».","🇬🇧",1],
+ ["La palabra «goodbye» viene de…",["«God be with ye» (Dios esté contigo)","«Good buy» (buena compra)","«Go by» (pasar de largo)"],0,"Con los siglos, «God be with ye» se fue acortando hasta convertirse en «goodbye».","🌍",3],
+ ["¿Qué letra es la más frecuente en inglés?",["La E","La A","La S"],0,"La E es la letra más usada en inglés escrito. Por eso, en muchos juegos de palabras, conviene probarla pronto.","🌍",1],
+ ["¿Cómo se pronuncia «colonel» (coronel)?",["Como «kernel»","Como se escribe: «co-lo-nel»","Como «colonial»"],0,"Su ortografía viene del italiano, pero la pronunciación del francés antiguo. Es uno de los casos más raros del inglés.","🌍",4],
+ ["«Queue» (cola) tiene cinco letras. ¿Cuántas se pronuncian?",["Solo suena como la letra Q","Todas","Tres"],0,"«Queue» suena exactamente como la letra Q: cuatro letras mudas seguidas.","🌍",2],
+ ["¿Tiene el inglés una academia oficial como la RAE?",["No: los diccionarios recogen el uso, pero nadie lo regula","Sí, en Londres","Sí, en Washington"],0,"No existe ningún organismo oficial que fije las normas. Diccionarios como el Oxford o el Merriam-Webster describen cómo se usa la lengua.","🌍",3],
+ ["¿Por qué «knife» y «knight» se escriben con K si no suena?",["Porque antiguamente sí se pronunciaba","Por error de un impresor","Para diferenciarlas de otras palabras"],0,"En inglés antiguo la K inicial se pronunciaba. La pronunciación cambió, pero la ortografía se quedó como estaba.","🌍",3],
+ ["En inglés, los días de la semana, los meses y los idiomas se escriben…",["Con mayúscula: Monday, May, Spanish","Con minúscula, como en español","Con mayúscula solo los meses"],0,"Es uno de los errores más típicos de los hispanohablantes: «on monday» debería ser «on Monday».","🌍",1],
+ ["¿Qué palabra de 9 letras tiene una sola vocal?",["Strengths","Rhythm","Twelfths"],0,"«Strengths» (puntos fuertes) solo tiene una «e». «Rhythm», por cierto, no tiene ninguna de las cinco vocales.","🌍",4],
+ ["¿Qué hay que hacer al subir a un autobús de Londres?",["Pagar con tarjeta sin contacto o Oyster: no aceptan efectivo","Pagar en efectivo al conductor","Comprar el billete a bordo a un revisor"],0,"Los autobuses de Londres no aceptan efectivo desde 2014. Se paga con tarjeta sin contacto, el móvil o la tarjeta Oyster.","🇬🇧",2],
+ ["En las escaleras mecánicas del metro de Londres…",["Te quedas a la derecha y dejas libre la izquierda","Te quedas a la izquierda","Da igual, cada uno va donde quiere"],0,"«Stand on the right». Bloquear el lado izquierdo en hora punta es de lo que más molesta a los londinenses.","🇬🇧",2],
+ ["¿En qué lado de la carretera se conduce en Reino Unido, Irlanda, Australia y Nueva Zelanda?",["A la izquierda","A la derecha","Depende de la ciudad"],0,"Como peatón, mira primero a la derecha antes de cruzar. En Londres lo pone pintado en el suelo: «Look right».","🇬🇧",1],
+ ["En EE. UU., una «block party» es…",["Una fiesta en la calle con los vecinos del barrio","Una fiesta de empresa","Un concierto en un estadio"],0,"Se corta la calle y los vecinos sacan comida, música y juegos. Es muy típica en verano y en fiestas como el 4 de julio.","🇺🇸",3],
+ ["En Halloween, en EE. UU., los niños dicen «Trick or treat!». ¿Qué significa?",["«¿Truco o trato?»: o les das caramelos o te gastan una broma","«¡Feliz Halloween!»","«¡Qué miedo!»"],0,"Van de puerta en puerta disfrazados pidiendo caramelos. Las casas que participan suelen dejar una luz o una calabaza encendida.","🇺🇸",1],
+ ["En Reino Unido, la expresión «I'll bear it in mind» en una reunión suele significar…",["Que probablemente no lo hará","Que lo hará enseguida","Que está muy de acuerdo"],0,"Es una frase educada para no decir que no directamente. Otro clásico: «That's an interesting idea» puede significar «no me convence».","🇬🇧",4],
+ ["¿Qué significa el gesto de levantar el pulgar en Reino Unido o EE. UU.?",["Que todo va bien","Que necesitas que te lleven","Un insulto"],0,"Significa «OK» o «bien hecho», igual que en España. En cambio, hacer la V con el dorso de la mano hacia fuera es un insulto en Reino Unido.","🇬🇧",3],
+ ["En EE. UU., «football» se refiere normalmente a…",["El fútbol americano","El fútbol que conocemos","El rugby"],0,"Nuestro fútbol allí es «soccer». La Super Bowl, la final del fútbol americano, es el evento televisivo más visto del año en EE. UU.","🇺🇸",1],
+ ["¿Qué es «afternoon tea»?",["Una merienda con té, sándwiches pequeños, scones y pasteles","Un té rápido en el trabajo","La comida principal del día"],0,"Se popularizó en el siglo XIX y hoy es casi una experiencia especial: té servido con pisos de bandejas llenas de dulces y salados.","🇬🇧",2],
+ ["Para un británico, ¿cómo se toma el «scone»?",["Con nata espesa y mermelada… y discutiendo el orden","Con aceite y sal","Mojado en café"],0,"En Cornualles se pone primero la mermelada y luego la nata; en Devon, al revés. Es una rivalidad muy seria… medio en broma.","🇬🇧",3]
+];
+
+/* ================= REFRANES CRUZADOS: refrán español y su equivalente en inglés ================= */
+var PROVERBS = [
+ ["A quien madruga, Dios le ayuda","The early bird catches the worm","El pájaro madrugador atrapa el gusano.",2],
+ ["Más vale tarde que nunca","Better late than never","Literal: más vale tarde que nunca.",1],
+ ["No hay mal que por bien no venga","Every cloud has a silver lining","Cada nube tiene un borde plateado.",3],
+ ["Dime con quién andas y te diré quién eres","Birds of a feather flock together","Los pájaros de la misma pluma vuelan juntos.",3],
+ ["Ojos que no ven, corazón que no siente","Out of sight, out of mind","Fuera de la vista, fuera de la mente.",3],
+ ["Más vale pájaro en mano que ciento volando","A bird in the hand is worth two in the bush","Un pájaro en mano vale más que dos en el arbusto.",3],
+ ["Perro ladrador, poco mordedor","His bark is worse than his bite","Su ladrido es peor que su mordisco.",3],
+ ["A caballo regalado no le mires el diente","Don't look a gift horse in the mouth","No mires la boca a un caballo regalado.",3],
+ ["Del dicho al hecho hay mucho trecho","Easier said than done","Más fácil decirlo que hacerlo.",2],
+ ["Al mal tiempo, buena cara","Look on the bright side","Mira el lado bueno.",2],
+ ["Matar dos pájaros de un tiro","Kill two birds with one stone","Matar dos pájaros con una piedra.",2],
+ ["Estar en las nubes","To have your head in the clouds","Tener la cabeza en las nubes.",2],
+ ["Costar un ojo de la cara","To cost an arm and a leg","Costar un brazo y una pierna.",2],
+ ["Llover a cántaros","It's raining cats and dogs","Llueven gatos y perros.",2],
+ ["No es oro todo lo que reluce","All that glitters is not gold","No todo lo que brilla es oro.",3],
+ ["La práctica hace al maestro","Practice makes perfect","La práctica lo hace perfecto.",1],
+ ["Cuando el río suena, agua lleva","There's no smoke without fire","No hay humo sin fuego.",3],
+ ["No vendas la piel del oso antes de cazarlo","Don't count your chickens before they hatch","No cuentes los pollos antes de que nazcan.",4],
+ ["Ser pan comido","To be a piece of cake","Ser un trozo de pastel.",2],
+ ["Tirar la toalla","To throw in the towel","Literal: tirar la toalla, como en el boxeo.",2],
+ ["Meter la pata","To put your foot in it","Meter el pie dentro.",3],
+ ["Estar como pez en el agua","To be in your element","Estar en tu elemento.",3],
+ ["Dar en el clavo","To hit the nail on the head","Dar al clavo en la cabeza.",3],
+ ["Hablando del rey de Roma…","Speak of the devil…","Hablando del diablo…",3],
+ ["Ir al grano","To cut to the chase","Ir directamente a la persecución (como en las películas).",4],
+ ["Echar una mano","To give someone a hand","Dar una mano a alguien.",1],
+ ["Quien no arriesga, no gana","Nothing ventured, nothing gained","Nada arriesgado, nada ganado.",4],
+ ["A otro perro con ese hueso","Pull the other one!","¡Tira de la otra (pierna)!",5],
+ ["Dijo la sartén al cazo","The pot calling the kettle black","La olla llamando negra a la tetera.",4],
+ ["Empezar la casa por el tejado","To put the cart before the horse","Poner el carro delante del caballo.",4],
+ ["Ser la gota que colma el vaso","To be the last straw","Ser la última paja (que rompe la espalda del camello).",3],
+ ["Estar entre la espada y la pared","To be between a rock and a hard place","Estar entre una roca y un lugar duro.",4]
+];
+
+/* ================= TRABALENGUAS: [texto, sonido que se trabaja, nivel] (tradicionales o propios) ================= */
+var TWISTERS = [
+ ["She sells seashells by the seashore.","«sh» frente a «s»",1],
+ ["Red lorry, yellow lorry.","la «r» inglesa y la «l»",1],
+ ["Three free throws.","«th» frente a «f» y «r»",1],
+ ["Which witch is which?","la «w» y la «wh»",1],
+ ["Toy boat, toy boat, toy boat.","el diptongo «oi» y «ou»",1],
+ ["Unique New York, you know you need unique New York.","«you» y la «n»",2],
+ ["A big black bug bit a big black bear.","la «b» explosiva",1],
+ ["Very well, very well, Vicky visits Valencia.","la «v» con los labios y los dientes",1],
+ ["Harry's happy horse hurried home.","la «h» aspirada, suave",1],
+ ["Spanish students study in Spain.","«sp» y «st» sin añadir «e» delante",1],
+ ["Sheep sleep on the ship, but the ship's sheep are cheap.","vocal larga «ee» frente a corta «i»",2],
+ ["Peter Piper picked a peck of pickled peppers.","la «p» con aire",2],
+ ["How much wood would a woodchuck chuck if a woodchuck could chuck wood?","«w» y «ch»",2],
+ ["I scream, you scream, we all scream for ice cream.","«scr» y el enlace entre palabras",2],
+ ["Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair.","la «z» sonora",2],
+ ["Good blood, bad blood.","la «u» corta de «blood» frente a «good»",2],
+ ["I thought a thought, but the thought I thought wasn't the thought I thought I thought.","la «th» sorda",3],
+ ["The thirty-three thieves thought that they thrilled the throne throughout Thursday.","«th» sorda y sonora",3],
+ ["Six sleek swans swam swiftly southwards.","«s», «sw» y «sl»",3],
+ ["Vincent's very valuable violin was very, very old.","la «v» en todas las posiciones",2],
+ ["Thirty thousand thrifty thinkers think things through.","«th» seguida de «r»",4],
+ ["Eleven benevolent elephants.","la «v» entre vocales y las sílabas átonas",3]
+];
+/* ================= ESCAPE ROOM: una sala nueva cada semana (originales) =================
+   p: [pista en inglés, qué hay que averiguar, respuestas válidas, ayuda] */
+var ESCAPES = [
+ {id:"e1", lvl:1, t:"The locked kitchen", es:"La cocina cerrada", intro:"You wake up in a strange kitchen. The door is locked. There are three clues on the table. Read them carefully to get out.",
+  p:[["A note on the fridge says: 'I have two eggs, three apples and one banana. How many pieces of fruit do I have?'","Escribe el número (en cifra o en inglés).",["4","four"],"Las manzanas y el plátano son fruta; los huevos no."],
+     ["A calendar shows: 'My birthday is the day after Monday.' A drawer has a lock with a day of the week.","¿Qué día abre el cajón?",["tuesday"],"«The day after» = el día siguiente."],
+     ["Inside the drawer: 'The key is not under the table. It is not in the cup. It is in the thing you use to cook pasta.'","¿Dónde está la llave? (una palabra en inglés)",["pot","saucepan","pan"],"Para cocer pasta usas una olla: a pot o a saucepan."]]},
+ {id:"e2", lvl:2, t:"The hotel room 404", es:"La habitación 404", intro:"You are trapped in room 404 of an old hotel. The receptionist left you a message, but some words are mixed up.",
+  p:[["The message says: 'The code is the year I was born. I was born thirty years before 2020.'","¿Cuál es el código?",["1990"],"2020 − 30."],
+     ["A map on the wall: 'The exit is next to the lift, opposite the stairs, but not on the ground floor. It is one floor above it.' In British English, what floor is that?","Escribe en inglés el nombre de esa planta (dos palabras).",["first floor","the first floor"],"En inglés británico, la planta encima de la «ground floor» es la «first floor»."],
+     ["The last door has a riddle: 'I have keys but open no locks. I have space but no room. You can enter, but you can't go inside.'","¿Qué es? (una palabra)",["keyboard","a keyboard"],"Tiene «keys» (teclas), «space» (espaciador) y «enter»."]]},
+ {id:"e3", lvl:2, t:"The museum at night", es:"El museo de noche", intro:"You fell asleep in a museum and now it's closed. The security guard left clues to get out before the alarm goes off at midnight.",
+  p:[["Clue 1: 'Go to the room with the oldest object. The Egyptian mask is 3,000 years old, the Roman coin is 2,000 and the Viking sword is 1,200.'","¿Qué objeto es el más antiguo? (dos palabras en inglés)",["egyptian mask","the egyptian mask","mask"],"Compara los años: 3.000 es el número más alto."],
+     ["Clue 2: 'The code is how many legs a spider has, multiplied by the number of wheels on a bicycle.'","Escribe el número.",["16","sixteen"],"Una araña tiene 8 patas y una bici 2 ruedas."],
+     ["Clue 3: 'Say the opposite of each word: dark, closed, last.' The answer opens the exit door.","Escribe las tres palabras en orden, separadas por espacios.",["light open first","bright open first"],"Lo contrario de dark, closed y last."]]},
+ {id:"e4", lvl:3, t:"The spaceship", es:"La nave espacial", intro:"You are on a spaceship and the computer has locked the control room. It only obeys passengers who understand its messages.",
+  p:[["Computer: 'If I had been switched off, you wouldn't be reading this. Am I switched on or off?'","Responde «on» u «off».",["on","switched on"],"Si te habla, está encendido: es un tercer condicional imaginario."],
+     ["Computer: 'The password is a word that means \"to stop doing something you planned\" and rhymes with \"bancel\".'","¿Cuál es la contraseña?",["cancel"],"«Bancel» no existe: rima con una palabra muy común sobre anular planes."],
+     ["Computer: 'Final question. Rearrange these letters to find where we are going: T-H-E-R-A.'","¿Adónde vais? (una palabra)",["earth"],"Es un planeta que conoces muy bien."]]},
+ {id:"e5", lvl:3, t:"The detective's office", es:"La oficina del detective", intro:"A famous detective has locked you in her office as a test. If you're clever enough, she'll hire you.",
+  p:[["A newspaper: 'The thief left at 9 p.m. The guard said he had seen him two hours earlier.' What time did the guard see him?","Escribe la hora en inglés (por ejemplo, «8 pm»).",["7 pm","7pm","7 p.m.","seven pm","seven","7"],"Dos horas antes de las nueve."],
+     ["A letter: 'The person you're looking for is neither the tallest nor the shortest. Anna is taller than Ben. Ben is taller than Carl.'","¿Quién es? (un nombre)",["ben"],"Ordena de más alto a más bajo."],
+     ["A safe with a note: 'The code is the number of letters in the word that means \"the opposite of always\".'","Escribe el número.",["5","five"],"Lo contrario de «always» es «never»."]]},
+ {id:"e6", lvl:4, t:"The haunted castle", es:"El castillo encantado", intro:"You are spending the night in a Scottish castle. At midnight, all the doors lock and a ghost starts leaving notes.",
+  p:[["Ghost: 'I was built before the clocks, I have a face but no eyes, and I tell you when to go to sleep. What am I?' (Hint: think of what the sun does.)","¿Qué es? (una palabra)",["sundial","a sundial"],"Un reloj que funciona con la sombra del sol."],
+     ["Ghost: 'Had you arrived an hour earlier, you would have met me alive.' How many hours late were you?","Escribe el número.",["1","one","an hour"],"«Had you arrived an hour earlier» = si hubieras llegado una hora antes."],
+     ["Ghost: 'The door opens with a word that is spelled the same forwards and backwards, and it's what you do with your eyes.'","¿Cuál es la palabra?",["peep"],"Es un palíndromo de cuatro letras: mirar a escondidas."]]},
+ {id:"e7", lvl:4, t:"The film studio", es:"El estudio de cine", intro:"You are on a film set and someone has locked all the doors. The director has left clues in the script.",
+  p:[["Script: 'The scene takes place the day before yesterday. Today is Thursday.' What day does the scene take place?","¿Qué día es? (en inglés)",["tuesday"],"«The day before yesterday» = anteayer."],
+     ["Script: 'The actor who plays the villain is the one who isn't afraid of heights and doesn't wear glasses. Sam wears glasses. Lee is afraid of heights. Max is neither.'","¿Quién hace de villano?",["max"],"«Neither» = ninguna de las dos cosas."],
+     ["Script: 'To open the exit, say what the director shouts to start filming.'","Escribe la palabra.",["action","action!"],"Lo que se grita para empezar a rodar."]]},
+ {id:"e8", lvl:5, t:"The library of secrets", es:"La biblioteca de los secretos", intro:"In an old library, the librarian has hidden the exit behind a series of puzzles that only a skilled reader can solve.",
+  p:[["Puzzle 1: 'I am a word that becomes shorter when you add two letters to it.'","¿Qué palabra es?",["short"],"Añádele «er»."],
+     ["Puzzle 2: 'Not only did the author never publish it, but she also burnt every copy but one.' How many copies survived?","Escribe el número.",["1","one"],"«Every copy but one» = todas menos una."],
+     ["Puzzle 3: 'The exit code is the number of the only month whose name in English has no letter \"r\" and starts with the letter that ends the word \"psalm\".'","Escribe el número del mes.",["5","five","may"],"La palabra «psalm» termina en «m». ¿Qué mes empieza por M y no tiene «r»?"]]}
+];
+
+/* ================= DEBATE DE UN MINUTO ================= */
+var DEBATES = [
+ [1,"Cats are better pets than dogs.","Los gatos son mejores mascotas que los perros."],[1,"Summer is the best season.","El verano es la mejor estación."],[1,"Breakfast is the most important meal.","El desayuno es la comida más importante."],[1,"It's better to live in a city than in a village.","Es mejor vivir en una ciudad que en un pueblo."],[1,"Weekends should be three days long.","Los fines de semana deberían durar tres días."],
+ [2,"Children should learn to cook at school.","Los niños deberían aprender a cocinar en el colegio."],[2,"Travelling alone is better than travelling with friends.","Viajar solo es mejor que viajar con amigos."],[2,"Mobile phones should be banned in restaurants.","Deberían prohibirse los móviles en los restaurantes."],[2,"Books are better than films.","Los libros son mejores que las películas."],[2,"Everyone should do some sport every day.","Todo el mundo debería hacer deporte a diario."],
+ [3,"Working from home is better than working in an office.","Trabajar desde casa es mejor que trabajar en una oficina."],[3,"Tourism does more harm than good to cities.","El turismo hace más mal que bien a las ciudades."],[3,"Social media makes people less happy.","Las redes sociales hacen a la gente menos feliz."],[3,"Learning a language is easier as a child.","Aprender idiomas es más fácil de niño."],[3,"Public transport should be free.","El transporte público debería ser gratis."],[3,"It's better to rent a home than to buy one.","Es mejor alquilar una casa que comprarla."],
+ [4,"Robots will take most of our jobs.","Los robots nos quitarán la mayoría de trabajos."],[4,"Fast fashion should be more heavily taxed.","La moda rápida debería pagar más impuestos."],[4,"Exams are not a good way to measure intelligence.","Los exámenes no son una buena forma de medir la inteligencia."],[4,"Celebrities have a responsibility to be role models.","Los famosos tienen la responsabilidad de ser un ejemplo."],[4,"A four-day working week would make us more productive.","Una semana laboral de cuatro días nos haría más productivos."],[4,"Cars should be banned from city centres.","Deberían prohibirse los coches en los centros urbanos."],
+ [5,"Artificial intelligence should be allowed to mark exams.","Debería permitirse que la IA corrija exámenes."],[5,"Space exploration is a waste of money.","La exploración espacial es un despilfarro."],[5,"Privacy is no longer possible in the digital age.","La privacidad ya no es posible en la era digital."],[5,"Governments should regulate what people eat.","Los gobiernos deberían regular lo que come la gente."],[5,"Success depends more on luck than on talent.","El éxito depende más de la suerte que del talento."],[5,"University education should be free for everyone.","La universidad debería ser gratis para todos."]
+];
+var CONNECTORS = ["because","so","but","however","although","also","moreover","furthermore","in addition","on the other hand","for example","for instance","firstly","first of all","secondly","finally","in my opinion","i think","i believe","as a result","therefore","whereas","while","in conclusion","to sum up","what's more","not only","despite","even though","personally"];
+
+/* ================= MIS ANÉCDOTAS: cinco historias para tener preparadas ================= */
+var ANECDOTES = [
+ {id:"work", t:"Tu trabajo o tus estudios", q:"What do you do, and what's the most interesting part of it?", tips:"Cuenta a qué te dedicas, qué haces en un día normal y una situación concreta que te guste o te sorprendiera.", keys:["I work","I study","every day","the best part","once"]},
+ {id:"trip", t:"Un viaje que no olvidas", q:"Tell me about a trip you'll never forget.", tips:"Dónde fuiste, con quién, qué pasó y por qué no lo olvidas. Usa el pasado.", keys:["went","when","then","the best","I'll never forget"]},
+ {id:"funny", t:"Algo gracioso que te pasó", q:"What's the funniest thing that has ever happened to you?", tips:"Prepara bien el final: es lo que hace reír. Usa conectores como «suddenly», «then» o «in the end».", keys:["suddenly","then","in the end","we laughed","it was"]},
+ {id:"challenge", t:"Un reto que superaste", q:"Tell me about a difficult moment and how you dealt with it.", tips:"Explica el problema, qué hiciste y qué aprendiste. Ideal también para entrevistas de trabajo.", keys:["difficult","I decided","I learnt","in the end","because"]},
+ {id:"person", t:"Una persona importante para ti", q:"Who is someone who has had a big influence on you?", tips:"Describe a la persona, una anécdota concreta con ella y por qué es importante para ti.", keys:["she","he","taught me","I admire","because"]}
+];
+
+TOPICS.culture = {name:"Choque cultural", icon:"🌍"};
+TOPICS.proverb = {name:"Refranes cruzados", icon:"🔁"};
+TOPICS.twister = {name:"Trabalenguas", icon:"👅"};
+CULTURE.forEach((d,i) => addItem("culture","q",d[5],d,i));
+PROVERBS.forEach((d,i) => addItem("proverb","r",d[3],d,i));
+TWISTERS.forEach((d,i) => addItem("twister","t",d[2],d,i));
+
+
+/* ================= JUEGO DEL DÍA DENTRO DEL RETO Y DURACIÓN EQUILIBRADA ================= */
+var DAILY_GAMES = [
+ {gid:"wordle", n:"Adivina la palabra", i:"🟩", sec:180, w:1.2, d:"Adivina la palabra inglesa de cinco letras en seis intentos."},
+ {gid:"reading", n:"Lectura graduada", i:"📖", sec:240, w:1.2, d:"Un texto corto de tu nivel con tres preguntas de comprensión."},
+ {gid:"call", n:"Llamada sin texto", i:"📞", sec:240, w:1, d:"Una llamada de teléfono: solo oyes a la otra persona y respondes."},
+ {gid:"debate", n:"Debate de un minuto", i:"⏱️", sec:150, w:1, d:"Defiende o rebate un tema durante un minuto."},
+ {gid:"anecdote", n:"Mis anécdotas", i:"📝", sec:200, w:0.8, d:"Escribe o cuenta sin mirar una de tus historias personales."},
+ {gid:"journal", n:"Diario en inglés", i:"📓", sec:240, w:0.9, d:"Escribe unas frases sobre la pregunta del día."},
+ {gid:"series", n:"Flat 4B", i:"📺", sec:300, w:1, d:"El siguiente capítulo de la serie, con su decisión y sus preguntas."},
+ {gid:"mystery", n:"Misterio del día", i:"🕵️", sec:300, w:0.9, d:"Haz preguntas de sí o no hasta resolver el caso."},
+ {gid:"escape", n:"Escape room", i:"🔐", sec:360, w:0.7, d:"Resuelve los acertijos en inglés para salir de la sala."},
+ {gid:"crossword", n:"Crucigrama semanal", i:"🧩", sec:420, w:0.4, d:"Completa el crucigrama con las palabras de la semana."}
+];
+TOPICS.game = {name:"Juego del día", icon:"🎲"};
+DAILY_GAMES.forEach(g => addItem("game","g",1,g,g.gid));
+/* tiempo estimado de cada ejercicio, en segundos */
+function itemSec(it){
+  if(!it) return 30; const t = it.topic, k = it.kind;
+  if(t==="game") return it.d.sec;
+  if(t==="write") return k==="c" ? 180 : 60;
+  if(t==="interview") return (k==="q" || k==="o") ? 150 : 25;
+  return ({vocab:20, ivocab:20, verbs:30, conn:25, phrasal:25, expr:25, ask:40, order:40, listen:40, speak:40, conv:45, pron:35, scene:45, shadow:45, spanglish:30, culture:30, proverb:25, twister:40, mine:35, tech:35})[t] || 35;
+}
+function dailyGameOK(g){
+  if(g.gid==="series"){ const c = typeof nextChapter==="function" ? nextChapter() : null; return !!(c && chapterOpen(c.n)); }
+  if(g.gid==="mystery") return MYSTERIES.some(m => !((S.myst||{}).solved||[]).includes(m.id));
+  if(g.gid==="escape"){ if(!S.escStart) return true; const n = Math.min(ESCAPES.length, 1 + Math.floor(dayDiff(S.escStart, todayKey())/7)); return ESCAPES.slice(0, n).some(e => !(S.esc||{})[e.id]); }
+  return true;
+}
+function dailyGamePick(key, r){
+  const prev = S.gameLog && S.gameLog.date!==key ? S.gameLog.g : (S.gameLog && S.gameLog.prev);
+  const avail = DAILY_GAMES.filter(g => g.gid!==prev && dailyGameOK(g));
+  let roll = r()*avail.reduce((t,g)=>t+g.w,0), pick = avail[avail.length-1];
+  for(const g of avail){ roll -= g.w; if(roll<=0){ pick = g; break; } }
+  S.gameLog = {date:key, g:pick.gid, prev};
+  return pick;
+}
+
 SPANGLISH.forEach((d,i) => addItem("spanglish","e",d[4],d,i));
 if(MEDIA_ON) SCENE_DATA.filter(d => !d.dlg && d.en.split(" ").length>=3 && !(S.clipOff && S.clipOff[d.id])).forEach(d => addItem("shadow","s",Math.max(3,d.lvl||3),d,d.id));
 (S.phrases||[]).forEach(p => addItem("mine","p",1,p,p.id));
@@ -5560,6 +5819,7 @@ function micBlock(st, long){
 }
 function renderSession(){
   if(sess.back!=null && typeof renderBackView==="function") return renderBackView();
+  if(cur() && cur().type==="game" && typeof renderGameStep==="function") return renderGameStep(cur());
   const ex = cur(), st = sess.st, n = sess.exs.length, T = TOPICS[ex.it.topic];
   const segs = sess.exs.map((_,i)=>{ const r=sess.res[i]; return `<i class="${r ? (r.skip?"":(r.ok?"done":"miss")) : (i===sess.i?"cur":"")}"></i>`; }).join("");
   let tag = `<span>${T.icon} ${T.name}</span>`;
@@ -6745,7 +7005,7 @@ function serQuizSetup(){ const c = SERIES.find(x=>x.n===sv.n); sv.qorder = shuff
 function serFinish(){
   const st = serState(), c = SERIES.find(x=>x.n===sv.n);
   if(!st.done.includes(c.n)){ st.done.push(c.n); st.at[c.n] = todayKey(); sv.xp = 10*sv.ok; addXP(sv.xp); }
-  sv.phase = "end"; save(); checkMedals(); if(typeof taskHook==="function") taskHook("series", c.n); render();
+  sv.phase = "end"; save(); checkMedals(); if(typeof taskHook==="function") taskHook("series", c.n); if(typeof gameStepDone==="function") gameStepDone("series", true); render();
 }
 
 /* ---------- misterio ---------- */
@@ -6997,7 +7257,7 @@ Object.assign(ACT, {
     Mic.start({long:false, onResult: alts => { mv.draft = alts[0]; }, onError: () => {}, onEnd: () => { mv.listening = false; render(); const i = document.getElementById("myq"); if(i){ i.value = mv.draft||""; i.focus(); } }}); },
   mysolve: () => { const m = MYSTERIES.find(x=>x.id===mv.id); mv.solving = true; mv.wrongPick = null; mv.opts = mv.opts || shuffle([m.sol, ...m.wrong], rng(hashStr(m.id))); render(); },
   mypick: b => { const m = MYSTERIES.find(x=>x.id===mv.id), o = mv.opts[+b.dataset.i];
-    if(o===m.sol){ mv.solved = true; if(typeof taskHook==="function") taskHook("mystery", m.id); const st = mystState(); if(!st.solved.includes(m.id)){ st.solved.push(m.id); mv.xp = Math.max(10, 40 - 2*mv.log.length); addXP(mv.xp); } save(); checkMedals(); }
+    if(o===m.sol){ mv.solved = true; if(typeof taskHook==="function") taskHook("mystery", m.id); if(typeof gameStepDone==="function") gameStepDone("mystery", true); const st = mystState(); if(!st.solved.includes(m.id)){ st.solved.push(m.id); mv.xp = Math.max(10, 40 - 2*mv.log.length); addXP(mv.xp); } save(); checkMedals(); }
     else mv.wrongPick = +b.dataset.i; render(); },
   myhint: () => { const m = MYSTERIES.find(x=>x.id===mv.id), i = m.f.findIndex((f,k) => f.key && !mv.found.has(k)); if(i<0) return toast("Ya tienes todas las pistas clave. ¡Prueba a resolverlo!"); const f = m.f[i]; mv.found.add(i); mv.log.push({q:"💡 Pista", a:f.a, r:f.r + " (" + f.k[0][0] + ")", tip:null}); render(); },
   savephr: b => { const en = b.dataset.en; if(!en || isSaved(en)) return; const p = {id:"p"+Date.now().toString(36), en, es:b.dataset.es||"", src:b.dataset.src||"", d:todayKey()}; phrasesList().push(p); addItem("mine","p",1,p,p.id); save(); checkMedals(); toast("⭐ Guardada en Mis frases"); render(); },
@@ -7214,7 +7474,7 @@ function renderHome(){
     const plan = DAILY_PLANS[d.plan] || DAILY_PLANS.mix, run = dailyRunFor(d);
     h += `<div class="panel daily sec"><p class="muted small">${dateStr}</p><h2 style="margin-top:4px">Reto de hoy</h2>
       <p style="margin-top:6px"><b>${plan.icon} ${plan.name}</b> · ${plan.d.toLowerCase()}.</p>
-      <p class="muted" style="margin-top:6px">${run ? `Llevas ${run.i} de ${d.ids.length} ejercicios. Puedes seguir donde lo dejaste.` : `${d.ids.length} ejercicios, unos ${Math.round(d.ids.length*1.2)} minutos. Si aciertas al menos el 60 %, ganas un bonus de hasta 60 XP y mantienes la racha.`}</p>
+      <p class="muted" style="margin-top:6px">${run ? `Llevas ${run.i} de ${d.ids.length} ejercicios. Puedes seguir donde lo dejaste.` : `${d.ids.filter(id=>!id.startsWith("game:")).length} ejercicios${d.game ? ` y un juego (${(DAILY_GAMES.find(g=>g.gid===d.game)||{}).i||"🎲"} ${esc((DAILY_GAMES.find(g=>g.gid===d.game)||{}).n||"")})` : ""}, unos ${d.mins || Math.round(d.ids.length*1.2)} minutos. Si aciertas al menos el 60 %, ganas un bonus de hasta 60 XP y mantienes la racha.`}</p>
       ${run ? `<div class="bar" style="margin-top:10px"><i style="width:${Math.round(100*run.i/d.ids.length)}%"></i></div>` : ""}
       <div class="chips">${topics.slice(0,5).map(t=>`<span class="chip">${TOPICS[t].icon} ${TOPICS[t].name}</span>`).join("")}${topics.length>5?`<span class="chip">y ${topics.length-5} más</span>`:""}</div>
       <button class="btn full" data-act="daily">${run ? "Continuar el reto" : "Empezar el reto"}</button>
@@ -7581,7 +7841,7 @@ Object.assign(ACT, {
   rdlisten: () => { const x = READINGS.find(r => r.id===rd.id); speechSynthesis.cancel(); x.text.split(/(?<=[.!?])\s+/).forEach(s => speakAs(s, "narrator")); },
   rdstop: () => { try{ speechSynthesis.cancel(); }catch(e){} },
   rdans: b => { const x = READINGS.find(r => r.id===rd.id), qi = +b.dataset.q; if(rd.ans[qi]!=null) return; rd.ans[qi] = +b.dataset.i; const ok = rd.ans[qi]===x.q[qi][2]; record("reading", ok);
-    if(Object.keys(rd.ans).length===x.q.length){ const n = x.q.filter((q,i) => rd.ans[i]===q[2]).length; S.readDone = S.readDone || {}; const first = S.readDone[x.id]==null; S.readDone[x.id] = Math.max(S.readDone[x.id]||0, n); if(first){ rd.xp = Math.round(8*n*diffFactor({lvl:x.lvl})); addXP(rd.xp); } save(); checkMedals(); }
+    if(Object.keys(rd.ans).length===x.q.length){ const n = x.q.filter((q,i) => rd.ans[i]===q[2]).length; S.readDone = S.readDone || {}; const first = S.readDone[x.id]==null; S.readDone[x.id] = Math.max(S.readDone[x.id]||0, n); if(first){ rd.xp = Math.round(8*n*diffFactor({lvl:x.lvl})); addXP(rd.xp); } save(); checkMedals(); gameStepDone("reading", n>=2); }
     render(); },
   xmopen: b => { const e = EXAMS.find(x => x.id===b.dataset.id), r = rng(Date.now()); xm = {id:e.id, step:0, a:{reading:{}, use:{}, listening:{}}, ord:{reading:e.reading.q.map(()=>shuffle([0,1,2],r)), listening:e.listening.q.map(()=>shuffle([0,1,2],r)), use:e.use.g.map(()=>shuffle([0,1,2],r))}, plays:0, writing:"", speakSelf:0, end:Date.now()+e.mins*60000}; view = "exam"; render(); scrollTo(0,0); },
   xmans: b => { xm.a[b.dataset.p][+b.dataset.q] = +b.dataset.v; render(); },
@@ -7596,7 +7856,7 @@ Object.assign(ACT, {
   jsave: () => { const t = (document.getElementById("jtext")||{}).value || ""; jv.draft = t; const wc = (t.match(/[A-Za-z']+/g)||[]).length; if(wc<3) return toast("Escribe al menos una frase.");
     S.journal = S.journal || []; const p = todayPrompt(), ex = S.journal.find(j => j.d===todayKey());
     if(ex){ ex.text = t; ex.p = p[1]; } else { S.journal.push({d:todayKey(), p:p[1], text:t}); if(wc>=journalMin()) addXP(10); }
-    jv.tips = journalCheck(t); save(); checkMedals(); toast("📓 Guardado en tu diario"); render(); },
+    jv.tips = journalCheck(t); save(); checkMedals(); toast("📓 Guardado en tu diario"); gameStepDone("journal", wc>=journalMin()); render(); },
   jai: async () => { const t = (document.getElementById("jtext")||{}).value || ""; if(!t.trim()) return; jv.draft = t; jv.busy = true; render();
     try{ const j = await aiJSON(`You are an English teacher for a Spanish-speaking learner at CEFR level ${LEVELS[S.level-1].code}. Correct this short diary entry. Reply only with JSON: {"corrected":"the corrected text in English","notes":["up to 4 short explanations in Spanish of the main mistakes"]}.\n\nText:\n${t}`, "default"); jv.ai = j; }catch(e){ toast("No se ha podido corregir ahora."); }
     jv.busy = false; render(); },
@@ -7670,6 +7930,350 @@ function capPromptCheck(){
 }
 setTimeout(capPromptCheck, 1500);
 document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible") setTimeout(capPromptCheck, 800); });
+
+
+/* ================= JUEGOS Y RETOS NUEVOS: palabra del día, crucigrama, escape room, debate, anécdotas y llamada ================= */
+function makeCultureEx(it, r){
+  const d = it.d, opts = shuffle(d[1].slice(), r);
+  return {it, type:"mcq", sub:d[4], title:"¿Qué crees que pasa?", titleH:titleHTML("¿Qué crees que pasa?","What do you think?"), sentence:`<b>${esc(d[0])}</b>`, opts, answer:d[1][d[2]], x:"💡 "+d[3], sol:d[1][d[2]], full:""};
+}
+function makeProverbEx(it, r){
+  const d = it.d, others = shuffle(PROVERBS.filter(p => p!==d), r).slice(0,3), rev = S.level>=3 && r()<0.4;
+  if(rev) return {it, type:"mcq", sub:"🔁 Refranes cruzados", title:"¿Qué refrán español equivale a este?", titleH:titleHTML("¿Qué refrán español equivale a este?","Which Spanish saying matches this one?"), sentence:`<b lang="en">${esc(d[1])}</b>`, opts:shuffle([d[0], ...others.map(p=>p[0])], r), answer:d[0], x:`Literalmente: «${d[2]}»`, sol:`${d[1]} = ${d[0]}`, full:d[1]};
+  return {it, type:"mcq", sub:"🔁 Refranes cruzados", title:"¿Cómo se dice en inglés?", titleH:titleHTML("¿Cómo se dice en inglés?","How do you say it in English?"), sentence:`<b>${esc(d[0])}</b>`, opts:shuffle([d[1], ...others.map(p=>p[1])], r), answer:d[1], x:`Literalmente: «${d[2]}»`, sol:`${d[0]} = ${d[1]}`, full:d[1], meaning:d[0]};
+}
+function makeTwisterEx(it, r){
+  const d = it.d;
+  if(SRC && !micBlocked) return {it, type:"speak", mode:"rep", sub:`👅 ${d[1]}`, title:"Trabalenguas: escúchalo y dilo en voz alta", titleH:titleHTML("Trabalenguas: escúchalo y dilo en voz alta","Tongue twister: listen and say it"), big:d[0], text:d[0], accepted:[d[0]], sol:d[0], full:d[0], pron:true};
+  return {it, type:"listen", sub:`👅 ${d[1]}`, title:TT.listen[0], titleH:tt("listen"), text:d[0], accepted:[d[0]], meaning:"", sol:d[0], full:d[0]};
+}
+
+/* ---------- adivina la palabra del día ---------- */
+function wordleDict(){ if(!wordleDict.s){ const s = new Set(); Object.keys(PRON||{}).forEach(w => { if(/^[a-z]{5}$/.test(w)) s.add(w); }); CORE.forEach(c => { const w = String(c[0]).toLowerCase(); if(/^[a-z]{5}$/.test(w)) s.add(w); }); wordleDict.s = s; } return wordleDict.s; }
+function wordleAnswer(){
+  const maxB = Math.min(5, S.level+1), pool = CORE.map(c => String(c[0]).toLowerCase()).filter((w,i,a) => /^[a-z]{5}$/.test(w) && a.indexOf(w)===i && CORE_ES[w] && wordBand(w)<=maxB && wordBand(w)>=Math.max(1,S.level-1));
+  return pool[hashStr("palabra"+todayKey()) % pool.length] || "house";
+}
+function wordleMarks(g, a){
+  const res = Array(5).fill("x"), left = {};
+  for(let i=0;i<5;i++){ if(g[i]===a[i]) res[i] = "g"; else left[a[i]] = (left[a[i]]||0)+1; }
+  for(let i=0;i<5;i++){ if(res[i]!=="g" && left[g[i]]){ res[i] = "y"; left[g[i]]--; } }
+  return res;
+}
+function wordleState(){ const w = S.wordle = S.wordle || {}; if(w.d!==todayKey()){ w.d = todayKey(); w.g = []; w.done = false; w.won = false; } return w; }
+function renderWordle(){
+  const st = wordleState(), a = wordleAnswer(), rows = [];
+  for(let i=0;i<6;i++){ const g = st.g[i], m = g ? wordleMarks(g, a) : null;
+    rows.push(`<div class="wd-row">${[0,1,2,3,4].map(j => `<span class="wd-c ${m?("wd-"+m[j]):""}">${g?esc(g[j].toUpperCase()):""}</span>`).join("")}</div>`); }
+  const keyState = {}; st.g.forEach(g => wordleMarks(g, a).forEach((m,j) => { const k = g[j], o = keyState[k]; if(m==="g" || (m==="y" && o!=="g") || (!o)) keyState[k] = m==="x" && o ? o : m; }));
+  const kb = ["qwertyuiop","asdfghjkl","zxcvbnm"].map(r => `<div class="wd-kb">${r.split("").map(k => `<span class="wd-k ${keyState[k]?("wd-"+keyState[k]):""}">${k.toUpperCase()}</span>`).join("")}</div>`).join("");
+  let h = `<div class="wrap">${pageHead("🟩 Adivina la palabra")}<div class="panel"><p class="small">Adivina la palabra inglesa de cinco letras en seis intentos. 🟩 letra en su sitio · 🟨 está, pero en otro sitio · ⬜ no está.</p><div class="wd-grid sec">${rows.join("")}</div>`;
+  if(st.done){ h += `<div class="sec center"><h2>${st.won?"🎉 ¡Acertaste!":"La palabra era…"}</h2><p style="font-size:1.3rem;margin-top:6px"><b lang="en">${a.toUpperCase()}</b> = ${esc(CORE_ES[a]||"")} ${spk(a)}</p>${typeof ipa==="function" && ipa(a)?`<p class="ipa">${esc(ipa(a))}</p>`:""}
+      ${isSaved(a) ? "" : `<button class="link small" data-act="savephr" data-en="${a}" data-es="${esc(CORE_ES[a]||"")}" data-src="Palabra del día">⭐ Guardar en Mis frases</button>`}<p class="small muted sec">Mañana habrá una palabra nueva.</p></div>`; }
+  else h += `<div class="row sec" style="gap:8px"><input id="wdin" class="inp" maxlength="5" autocomplete="off" autocapitalize="none" lang="en" placeholder="palabra" style="flex:1;text-transform:uppercase;letter-spacing:.2em"><button class="btn" data-act="wdtry">Probar</button></div>`;
+  return h + `${kb}</div><p class="note">Racha de palabras acertadas: ${(S.wordleStats||{}).streak||0} · total: ${(S.wordleStats||{}).wins||0}</p></div>`;
+}
+
+/* ---------- crucigrama semanal ---------- */
+function cwWords(){
+  const wk = weekStart(todayKey()), seen = Object.entries(S.seen||{}).filter(([id,d]) => d>=wk).map(([id]) => ITEM[id]).filter(Boolean), out = [], has = new Set();
+  const push = (w, clue) => { w = String(w||"").toLowerCase(); if(!/^[a-z]{3,9}$/.test(w) || has.has(w) || !clue) return; has.add(w); out.push({w, clue}); };
+  seen.forEach(it => { if(it.topic==="ivocab") push(it.d.w, it.d.es); else if(it.topic==="vocab" && Array.isArray(it.d)) push(it.d[0], it.d[1]); });
+  const r = rng(hashStr("cw"+wk+S.level)), pool = shuffle(CORE.filter(c => /^[a-z]{4,8}$/i.test(c[0]) && CORE_ES[String(c[0]).toLowerCase()] && Math.abs(wordBand(String(c[0]).toLowerCase())-S.level)<=1), r);
+  myInterests().forEach(k => shuffle(INTERESTS[k].w, r).slice(0,3).forEach(w => push(w[0], w[1])));
+  for(const c of pool){ if(out.length>=16) break; push(c[0], CORE_ES[String(c[0]).toLowerCase()]); }
+  return out.slice(0, 16);
+}
+function cwBuild(words){
+  const N = 15, grid = Array.from({length:N}, () => Array(N).fill(null)), placed = [];
+  const fits = (w, r0, c0, dir) => { let cross = 0;
+    for(let i=0;i<w.length;i++){ const r = r0 + (dir?i:0), c = c0 + (dir?0:i); if(r<0||c<0||r>=N||c>=N) return -1; const g = grid[r][c];
+      if(g!==null && g!==w[i]) return -1; if(g===w[i]){ cross++; continue; }
+      const n1 = dir ? [r, c-1] : [r-1, c], n2 = dir ? [r, c+1] : [r+1, c];
+      for(const [a,b] of [n1,n2]) if(a>=0&&b>=0&&a<N&&b<N && grid[a][b]!==null) return -1; }
+    const before = dir ? [r0-1, c0] : [r0, c0-1], after = dir ? [r0+w.length, c0] : [r0, c0+w.length];
+    for(const [a,b] of [before, after]) if(a>=0&&b>=0&&a<N&&b<N && grid[a][b]!==null) return -1;
+    return cross; };
+  const put = (o, r0, c0, dir) => { for(let i=0;i<o.w.length;i++) grid[r0+(dir?i:0)][c0+(dir?0:i)] = o.w[i]; placed.push(Object.assign({r:r0, c:c0, dir}, o)); };
+  const ws = words.slice().sort((a,b) => b.w.length-a.w.length);
+  if(!ws.length) return null;
+  put(ws[0], 7, Math.floor((N-ws[0].w.length)/2), 0);
+  for(const o of ws.slice(1)){ if(placed.length>=10) break; let best = null;
+    for(const p of placed) for(let i=0;i<p.w.length;i++) for(let j=0;j<o.w.length;j++){ if(p.w[i]!==o.w[j]) continue;
+      const dir = p.dir ? 0 : 1, r0 = p.r + (p.dir?i:0) - (dir?j:0), c0 = p.c + (p.dir?0:i) - (dir?0:j), f = fits(o.w, r0, c0, dir);
+      if(f>0 && (!best || f>best.f)) best = {r0, c0, dir, f}; }
+    if(best) put(o, best.r0, best.c0, best.dir); }
+  let minR = N, minC = N, maxR = 0, maxC = 0; placed.forEach(p => { minR = Math.min(minR, p.r); minC = Math.min(minC, p.c); maxR = Math.max(maxR, p.r + (p.dir?p.w.length-1:0)); maxC = Math.max(maxC, p.c + (p.dir?0:p.w.length-1)); });
+  placed.forEach(p => { p.r -= minR; p.c -= minC; });
+  const starts = {}; let n = 0; placed.slice().sort((a,b) => a.r-b.r || a.c-b.c).forEach(p => { const k = p.r+","+p.c; if(!starts[k]) starts[k] = ++n; p.n = starts[k]; });
+  return {rows:maxR-minR+1, cols:maxC-minC+1, words:placed.map(p => ({w:p.w, clue:p.clue, r:p.r, c:p.c, dir:p.dir, n:p.n}))};
+}
+function cwState(){ const wk = weekStart(todayKey()); if(!S.cw || S.cw.wk!==wk || !S.cw.p){ S.cw = {wk, p:cwBuild(cwWords()), a:{}, done:false}; save(); } return S.cw; }
+function renderCrossword(){
+  const st = cwState(), p = st.p;
+  if(!p) return `<div class="wrap">${pageHead("🧩 Crucigrama semanal")}<div class="panel"><p>Todavía no hay palabras suficientes. Haz algunos ejercicios de vocabulario y vuelve.</p></div></div>`;
+  const cell = {}; p.words.forEach(w => { for(let i=0;i<w.w.length;i++){ const r = w.r+(w.dir?i:0), c = w.c+(w.dir?0:i); cell[r+","+c] = w.w[i]; } });
+  const num = {}; p.words.forEach(w => { num[w.r+","+w.c] = w.n; });
+  let g = `<div class="cw-wrap"><table class="cw">`;
+  for(let r=0;r<p.rows;r++){ g += "<tr>"; for(let c=0;c<p.cols;c++){ const k = r+","+c;
+    if(!cell[k]) g += `<td class="cw-x"></td>`;
+    else { const v = st.a[k]||"", cls = st.checked ? (v===cell[k]?"cw-ok":v?"cw-bad":"") : ""; g += `<td class="${cls}">${num[k]?`<small>${num[k]}</small>`:""}<input data-cw="${k}" maxlength="1" value="${esc(v.toUpperCase())}" autocomplete="off" autocapitalize="characters"></td>`; } }
+    g += "</tr>"; }
+  g += `</table></div>`;
+  const list = dir => p.words.filter(w => w.dir===dir).sort((a,b)=>a.n-b.n).map(w => `<li><b>${w.n}.</b> ${esc(w.clue)} <span class="muted">(${w.w.length})</span></li>`).join("");
+  return `<div class="wrap">${pageHead("🧩 Crucigrama semanal")}<div class="panel"><p class="small muted">Con palabras que has practicado esta semana y de tu nivel. Cada lunes, uno nuevo.</p>${g}
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="cwcheck">Comprobar</button><button class="btn ghost" data-act="cwreveal">Ver soluciones</button></div>${st.done?`<p class="sec">🎉 ¡Crucigrama completado!</p>`:""}</div>
+    <div class="panel sec"><h3>Horizontales</h3><ul class="cw-clues">${list(0)}</ul><h3 class="sec">Verticales</h3><ul class="cw-clues">${list(1)}</ul></div></div>`;
+}
+
+/* ---------- escape room semanal ---------- */
+function escOpenCount(){ if(!S.escStart){ S.escStart = todayKey(); save(); } return Math.min(ESCAPES.length, 1 + Math.floor(dayDiff(S.escStart, todayKey())/7)); }
+var es = null;
+function renderEscapes(){
+  const n = escOpenCount(), done = S.esc || {};
+  return `<div class="wrap">${pageHead("🔐 Escape room")}<div class="panel"><p>Estás encerrada en una sala. Lee las pistas en inglés y resuelve los acertijos para salir. Cada semana se abre una sala nueva.</p>${n<ESCAPES.length?`<p class="small muted sec">Próxima sala: ${new Date(addDays(S.escStart, n*7)+"T12:00:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})}.</p>`:""}</div>
+    <div class="panel sec stack">${ESCAPES.map((e,i) => i<n ? `<button class="list-row" data-act="esopen" data-id="${e.id}"><span class="ic">${done[e.id]?"🔓":"🔐"}</span><span style="flex:1;text-align:left"><b>${esc(e.t)}</b><br><span class="small muted">${esc(e.es)} · ${LEVELS[e.lvl-1].code}${done[e.id]?` · resuelta en ${done[e.id].tries} intentos`:""}</span></span></button>` : `<div class="list-row" style="opacity:.55"><span class="ic">🔒</span><span style="flex:1;text-align:left"><b>Sala ${i+1}</b><br><span class="small muted">Se abre dentro de ${i-n+1} ${i-n+1===1?"semana":"semanas"}</span></span></div>`).join("")}</div></div>`;
+}
+function renderEscape(){
+  const e = ESCAPES.find(x => x.id===es.id);
+  if(es.i>=e.p.length) return `<div class="wrap">${pageHead("🔓 "+esc(e.t), "escapes")}<div class="panel center"><div style="font-size:3rem">🔓</div><h2>¡Has escapado!</h2><p class="muted" style="margin:6px 0 12px">Lo has conseguido con ${es.tries} ${es.tries===1?"intento":"intentos"}.${es.xp?` +${es.xp} XP.`:""}</p><button class="btn" data-act="xback" data-to="escapes">Volver a las salas</button></div></div>`;
+  const p = e.p[es.i];
+  return `<div class="wrap">${pageHead("🔐 "+esc(e.t), "escapes")}<p class="small muted">${esc(e.es)} · ${LEVELS[e.lvl-1].code} · acertijo ${es.i+1} de ${e.p.length}</p>
+    ${es.i===0?`<div class="panel sec"><p lang="en"><i>${esc(e.intro)}</i></p></div>`:""}
+    <div class="panel sec esc-clue"><p lang="en" style="font-size:1.05rem">📜 ${esc(p[0])}</p> ${spk(p[0])}</div>
+    <div class="panel sec"><p><b>${esc(p[1])}</b></p><div class="row sec" style="gap:8px"><input id="esin" class="inp" autocomplete="off" autocapitalize="none" lang="en" style="flex:1"><button class="btn" data-act="estry">Comprobar</button></div>
+    ${es.wrong?`<p class="sec bad-txt">❌ No es eso. Vuelve a leer la pista.</p>`:""}${es.wrong>=2?`<p class="small muted">💡 ${esc(p[3])}</p>`:""}</div></div>`;
+}
+
+/* ---------- debate de un minuto ---------- */
+var dv = null;
+function debatePick(){ const pool = DEBATES.filter(d => Math.abs(d[0]-S.level)<=1), r = rng(Date.now()); return pool[Math.floor(r()*pool.length)] || DEBATES[0]; }
+function renderDebate(){
+  if(!dv) dv = {topic:debatePick(), side:null, running:false, text:"", interim:"", sec:60, done:false};
+  const d = dv.topic, mic = SRC && !micBlocked;
+  let h = `<div class="wrap">${pageHead("⏱️ Debate de un minuto")}<div class="panel"><p class="small muted">Tema · ${LEVELS[Math.max(0,d[0]-1)].code}</p><h2 lang="en" style="margin-top:4px">${esc(d[1])}</h2><p class="small muted">${esc(d[2])}</p>`;
+  if(!dv.running && !dv.done){
+    h += `<p class="sec">¿Defiendes que sí o que no? Tendrás un minuto para argumentar ${mic?"hablando":"por escrito"}. Intenta usar conectores: <i>because, however, on the other hand, for example…</i></p>
+      <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn ${dv.side==="for"?"":"ghost"}" data-act="dbside" data-s="for">👍 A favor</button><button class="btn ${dv.side==="against"?"":"ghost"}" data-act="dbside" data-s="against">👎 En contra</button></div>
+      <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="dbstart" ${dv.side?"":"disabled"}>▶ Empezar</button><button class="link small" data-act="dbnew">Otro tema</button></div>`;
+  } else if(dv.running){
+    h += `<p class="sec" style="font-size:2rem;text-align:center"><b>${dv.sec}</b> s</p>${mic ? `<p class="small muted center">🎙️ Te escucho… habla sin parar.</p><p class="small" lang="en" style="min-height:3em">${esc(dv.text)} <span class="muted">${esc(dv.interim)}</span></p>` : `<textarea id="dbtxt" class="inp" rows="6" lang="en" style="width:100%">${esc(dv.text)}</textarea>`}<button class="btn ghost sec" data-act="dbstop">Terminar ya</button>`;
+  } else {
+    const t = " "+dv.text.toLowerCase()+" ", words = (dv.text.match(/[A-Za-z']+/g)||[]).length, used = CONNECTORS.filter(c => t.includes(" "+c+" ") || t.includes(" "+c+",")), sug = CONNECTORS.filter(c => !used.includes(c)).slice(0,5);
+    h += `<div class="kpis sec"><div class="kpi"><b>${words}</b><span>palabras</span></div><div class="kpi"><b>${used.length}</b><span>conectores</span></div><div class="kpi"><b>${Math.round(words*60/Math.max(10,60-dv.sec))}</b><span>palabras/min</span></div></div>
+      ${used.length?`<p class="small sec">✅ Has usado: <b>${used.map(esc).join(", ")}</b></p>`:""}<p class="small sec">💡 Prueba la próxima vez: <i>${sug.map(esc).join(", ")}</i></p>
+      <details class="sec"><summary class="small">Lo que has dicho</summary><p class="small" lang="en" style="margin-top:6px">${esc(dv.text||"(nada)")}</p></details>${dv.xp?`<p class="small sec">+${dv.xp} XP</p>`:""}
+      <div class="row sec" style="gap:10px"><button class="btn" data-act="dbnew">Otro tema</button></div>`;
+  }
+  return h + `</div></div>`;
+}
+function dbListen(){
+  Mic.start({long:true, onResult:(fin, interim) => { dv.text = (dv.base+" "+fin).trim(); dv.interim = interim;
+      if(view==="debate"){ const p = app.querySelector(".wrap .panel p.small[lang=en]"); if(p) p.innerHTML = `${esc(dv.text)} <span class="muted">${esc(interim)}</span>`; } },
+    onError:()=>{}, onEnd:() => { if(dv && dv.running && dv.sec>2){ dv.base = dv.text; setTimeout(() => { if(dv && dv.running) dbListen(); }, 150); } }});
+}
+function dbFinish(){
+  if(!dv || !dv.running) return; dv.running = false; clearInterval(dv.tid); try{ Mic.stop(); }catch(e){}
+  const ta = document.getElementById("dbtxt"); if(ta) dv.text = ta.value;
+  if(dv.interim && !dv.text.endsWith(dv.interim)) dv.text = (dv.text+" "+dv.interim).trim();
+  dv.done = true; const words = (dv.text.match(/[A-Za-z']+/g)||[]).length; dv.xp = Math.min(15, Math.round(words/6)); if(dv.xp) addXP(dv.xp);
+  S.debateCount = (S.debateCount||0) + 1; save(); checkMedals(); gameStepDone("debate", words>=20); render();
+}
+
+/* ---------- mis anécdotas ---------- */
+var an = null;
+function anState(id){ S.anec = S.anec || {}; return S.anec[id] = S.anec[id] || {text:"", practiced:0, best:0}; }
+function renderAnecdotes(){
+  return `<div class="wrap">${pageHead("📝 Mis anécdotas")}<div class="panel"><p>Prepara cinco historias personales en inglés para tenerlas listas en cualquier conversación: con amigos, en un viaje o en una entrevista. Escríbelas, revísalas y practica contarlas sin mirar.</p></div>
+    <div class="panel sec stack">${ANECDOTES.map(a => { const s = anState(a.id), wc = (s.text.match(/[A-Za-z']+/g)||[]).length;
+      return `<button class="list-row" data-act="anopen" data-id="${a.id}"><span class="ic">${s.best>=70?"🌟":wc?"✍️":"⬜"}</span><span style="flex:1;text-align:left"><b>${esc(a.t)}</b><br><span class="small muted">${wc ? `${wc} palabras · practicada ${s.practiced} ${s.practiced===1?"vez":"veces"}${s.best?` · mejor: ${s.best} %`:""}` : "Sin escribir"}</span></span></button>`; }).join("")}</div></div>`;
+}
+function renderAnecdote(){
+  const a = ANECDOTES.find(x => x.id===an.id), s = anState(a.id), txt = an.draft!=null ? an.draft : s.text, wc = (txt.match(/[A-Za-z']+/g)||[]).length, mic = SRC && !micBlocked;
+  let h = `<div class="wrap">${pageHead("📝 "+esc(a.t), "anecdotes")}`;
+  if(an.mode==="tell"){
+    h += `<div class="panel"><p lang="en"><b>${esc(a.q)}</b> ${spk(a.q)}</p><p class="small muted sec">Cuéntala sin mirar el texto. Luego te diré qué parte has contado.</p>
+      ${an.listening ? `<p class="small" lang="en" style="min-height:3em">${esc(an.heard||"")} <span class="muted">${esc(an.interim||"")}</span></p><button class="btn full" data-act="anstop">■ He terminado</button>` : (an.result ? "" : (mic ? `<button class="btn full sec" data-act="antell">🎙️ Empezar a contar</button>` : `<textarea id="antell" class="inp" rows="6" lang="en" style="width:100%" placeholder="Escríbela de memoria…"></textarea><button class="btn sec" data-act="antyped">Comprobar</button>`))}`;
+    if(an.result) h += `<div class="sec"><h2>${an.result.cov} % de tu historia</h2><p class="small muted">Has contado ${an.result.hit} de las ${an.result.tot} palabras importantes.</p>${an.result.miss.length?`<p class="small sec">Te has dejado: <i>${an.result.miss.slice(0,12).map(esc).join(", ")}</i></p>`:""}<details class="sec"><summary class="small">Ver mi texto</summary><p class="small" lang="en" style="white-space:pre-wrap;margin-top:6px">${esc(s.text)}</p></details><div class="row sec" style="gap:10px"><button class="btn" data-act="anmode" data-m="tell">Otra vez</button><button class="btn ghost" data-act="anmode" data-m="edit">Editar el texto</button></div></div>`;
+    return h + `</div></div>`;
+  }
+  h += `<div class="panel"><p lang="en"><b>${esc(a.q)}</b> ${spk(a.q)}</p><p class="small muted sec">💡 ${esc(a.tips)}</p>
+    <textarea id="antext" class="inp" rows="9" lang="en" style="width:100%;margin-top:10px" placeholder="Write your story…">${esc(txt)}</textarea><p class="small muted" id="anwc">${wc} palabras · lo ideal: entre 80 y 150</p>
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="ansave">Guardar y revisar</button>${AI===true?`<button class="btn ghost" data-act="anai" ${an.busy?"disabled":""}>✨ Mejorar con IA</button>`:""}${s.text.trim()?`<button class="btn ghost" data-act="anmode" data-m="tell">🗣️ Practicar sin mirar</button>`:""}</div>`;
+  if(an.tips) h += `<div class="sec">${an.tips.length?`<p><b>Revisa esto:</b></p><ul class="small" style="padding-left:18px">${an.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:`<p class="small">✅ No he encontrado errores típicos.</p>`}</div>`;
+  if(an.ai) h += `<div class="sec panel"><p><b>Versión mejorada</b></p><p lang="en" style="white-space:pre-wrap">${esc(an.ai.improved||"")}</p>${(an.ai.notes||[]).length?`<ul class="small" style="padding-left:18px">${an.ai.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}<button class="btn sm sec" data-act="anuseai">Usar esta versión</button></div>`;
+  return h + `</div></div>`;
+}
+var AN_STOP = new Set("the a an and or but so to of in on at for with my your his her our their i you he she it we they was were is are am be been have has had do did that this then very really just".split(" "));
+function anCoverage(text, heard){
+  const key = [...new Set((text.toLowerCase().match(/[a-z']+/g)||[]).filter(w => w.length>3 && !AN_STOP.has(w)))];
+  const h = " "+(heard||"").toLowerCase().replace(/[^a-z' ]/g," ")+" ", hit = key.filter(w => h.includes(" "+w+" ") || h.includes(" "+w.replace(/(s|ed|ing)$/,"")));
+  return {tot:key.length, hit:hit.length, cov: key.length ? Math.round(100*hit.length/key.length) : 0, miss:key.filter(w => !hit.includes(w))};
+}
+function anFinish(heard){
+  const s = anState(an.id); an.listening = false; an.result = anCoverage(s.text, heard); s.practiced++; s.best = Math.max(s.best, an.result.cov);
+  if(an.result.cov>=50) addXP(10); save(); checkMedals(); gameStepDone("anecdote", an.result.cov>=40); render();
+}
+
+/* ---------- llamada sin texto ---------- */
+var cl = null;
+function renderCallList(){
+  const list = SCENARIOS.slice().sort((a,b) => Math.abs(a.l-S.level)-Math.abs(b.l-S.level) || a.l-b.l);
+  return `<div class="wrap">${pageHead("📞 Llamada sin texto")}<div class="panel"><p>Como una llamada de verdad: solo oyes a la otra persona, sin texto. Responde hablando. Si te atascas, puedes pedir una pista.</p>${!(SRC && !micBlocked)?`<p class="small muted sec">Sin micrófono podrás responder escribiendo.</p>`:""}</div>
+    <div class="panel sec stack">${list.map(sc => `<button class="list-row" data-act="clopen" data-id="${sc.id}"><span class="ic">${sc.icon}</span><span style="flex:1;text-align:left"><b>${esc(sc.title)}</b><br><span class="small muted">${LEVELS[sc.l-1].code}${(S.calls||{})[sc.id]?` · mejor: ${(S.calls||{})[sc.id]} de ${sc.turns.length}`:""}</span></span></button>`).join("")}</div></div>`;
+}
+function renderCall(){
+  const sc = SCENARIOS.find(x => x.id===cl.id), mic = SRC && !micBlocked, mm = Math.floor(cl.sec/60), ss = String(cl.sec%60).padStart(2,"0");
+  if(cl.i>=sc.turns.length){
+    return `<div class="wrap">${pageHead("📞 "+esc(sc.title), "calls")}<div class="panel"><h2>Llamada terminada</h2><p class="muted" style="margin:6px 0 12px">Has respondido bien a la primera ${cl.first} de ${sc.turns.length} veces. Duración: ${mm}:${ss}.${cl.xp?` +${cl.xp} XP.`:""}</p>
+      <h3>Transcripción</h3><div class="stack sec">${sc.turns.map((t,i) => `<div class="call-tr"><p lang="en">📞 ${esc(t.b)} ${spk(t.b)}</p><p class="small">🙋 ${esc((cl.log[i]||{}).said||"—")} ${(cl.log[i]||{}).ok?"✅":"❌"}</p><p class="small muted">Modelo: <span lang="en">${esc(t.m)}</span></p></div>`).join("")}</div>
+      <div class="row sec" style="gap:10px"><button class="btn" data-act="clopen" data-id="${sc.id}">Llamar otra vez</button><button class="btn ghost" data-act="xback" data-to="calls">Otras llamadas</button></div></div></div>`;
+  }
+  const t = sc.turns[cl.i];
+  return `<div class="wrap call-screen"><div class="call-top"><div class="call-av">${sc.icon}</div><p class="small">${esc(sc.title)}</p><p class="call-time">${mm}:${ss}</p></div>
+    <div class="panel sec center"><p class="small muted">Parte ${cl.i+1} de ${sc.turns.length}</p>${cl.state==="retry"?`<p class="sec bad-txt">«Sorry, could you say that again?»</p>`:""}${cl.state==="ok"?`<p class="sec">✅</p>`:""}
+      ${cl.hint?`<p class="small sec">💡 ${esc(t.t)}</p>`:""}${cl.showModel?`<p class="small sec">Podrías decir: <b lang="en">${esc(t.m)}</b></p>`:""}
+      ${cl.listening?`<p class="sec">🎙️ Te escucho…</p>`:""}</div>
+    ${mic ? `<button class="btn full sec" data-act="clmic" ${cl.listening?"":""}>${cl.listening?"■ Ya he terminado":"🎙️ Responder"}</button>` : `<div class="row sec" style="gap:8px"><input id="clin" class="inp" lang="en" style="flex:1" placeholder="Tu respuesta en inglés"><button class="btn" data-act="cltyped">Enviar</button></div>`}
+    <div class="row sec" style="gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn sm ghost" data-act="clrep">🔁 Repetir</button><button class="btn sm ghost" data-act="clslow">🐢 Más despacio</button><button class="btn sm ghost" data-act="clhint">💡 Pista</button><button class="btn sm call-hang" data-act="clhang">📞 Colgar</button></div></div>`;
+}
+function clSay(slow){ const sc = SCENARIOS.find(x => x.id===cl.id), t = sc.turns[cl.i]; if(!t) return; try{ speechSynthesis.cancel(); }catch(e){}
+  const keepRate = S.settings.rate; if(slow) S.settings.rate = Math.max(0.6, (keepRate||1)*0.75); speakAs(t.b, "narrator"); S.settings.rate = keepRate; }
+function clJudge(said){
+  const sc = SCENARIOS.find(x => x.id===cl.id), t = sc.turns[cl.i], cands = Array.isArray(said) ? said : [said];
+  const ok = cands.some(c => t.k.every(g => hasKeyword(c, g)));
+  cl.tries++;
+  if(ok || cl.tries>=3){ cl.log[cl.i] = {said:cands[0], ok}; if(ok && cl.tries===1) cl.first++; cl.state = ok ? "ok" : null; if(!ok) cl.showModel = true;
+    setTimeout(() => { cl.i++; cl.tries = 0; cl.hint = false; cl.showModel = false; cl.state = null;
+      if(cl.i>=sc.turns.length){ clearInterval(cl.tid); cl.xp = 5*cl.first; if(cl.xp) addXP(cl.xp); S.calls = S.calls || {}; S.calls[sc.id] = Math.max(S.calls[sc.id]||0, cl.first); save(); checkMedals(); gameStepDone("call", cl.first>=Math.ceil(sc.turns.length/2)); render(); }
+      else { render(); setTimeout(() => clSay(false), 300); } }, ok ? 700 : 2200);
+  } else { cl.state = "retry"; if(cl.tries>=2) cl.showModel = true; speakAs("Sorry, could you say that again?", "narrator"); }
+  render();
+}
+
+/* ---------- registro ---------- */
+Object.assign(EXTRA_VIEWS, {wordle:renderWordle, crossword:renderCrossword, escapes:renderEscapes, escape:renderEscape, debate:renderDebate, anecdotes:renderAnecdotes, anecdote:renderAnecdote, calls:renderCallList, call:renderCall});
+Object.assign(ACT, {
+  wdtry: () => { const i = document.getElementById("wdin"); if(!i) return; const g = i.value.trim().toLowerCase(), st = wordleState(), a = wordleAnswer();
+    if(!/^[a-z]{5}$/.test(g)) return toast("Escribe una palabra de 5 letras.");
+    if(!wordleDict().has(g)) return toast("Esa palabra no está en el diccionario de la app.");
+    st.g.push(g); const won = g===a;
+    if(won || st.g.length>=6){ st.done = true; st.won = won; S.wordleStats = S.wordleStats || {streak:0, wins:0};
+      if(won){ S.wordleStats.wins++; S.wordleStats.streak++; addXP(10 + 2*(6-st.g.length)); } else S.wordleStats.streak = 0; checkMedals(); gameStepDone("wordle", won); }
+    save(); render(); setTimeout(() => { const j = document.getElementById("wdin"); if(j) j.focus(); }, 30); },
+  cwcheck: () => { const st = cwState(); document.querySelectorAll("[data-cw]").forEach(inp => { st.a[inp.dataset.cw] = inp.value.toLowerCase(); }); st.checked = true;
+    const all = st.p.words.every(w => [...w.w].every((ch,i) => st.a[(w.r+(w.dir?i:0))+","+(w.c+(w.dir?0:i))]===ch));
+    if(all && !st.done){ st.done = true; addXP(20); toast("🎉 ¡Crucigrama completado! +20 XP"); } if(all) gameStepDone("crossword", true); save(); checkMedals(); render(); },
+  cwreveal: () => { if(!confirm("¿Ver todas las soluciones?")) return; const st = cwState(); st.p.words.forEach(w => [...w.w].forEach((ch,i) => { st.a[(w.r+(w.dir?i:0))+","+(w.c+(w.dir?0:i))] = ch; })); st.checked = true; gameStepDone("crossword", false); save(); render(); },
+  esopen: b => { es = {id:b.dataset.id, i:0, tries:0, wrong:0, xp:0}; view = "escape"; render(); scrollTo(0,0); },
+  estry: () => { const e = ESCAPES.find(x => x.id===es.id), p = e.p[es.i], v = norm((document.getElementById("esin")||{}).value||""); if(!v) return; es.tries++;
+    if(p[2].some(a => norm(a)===v)){ es.i++; es.wrong = 0; if(es.i>=e.p.length){ S.esc = S.esc || {}; if(!S.esc[e.id]){ es.xp = 20; addXP(20); } S.esc[e.id] = {tries:es.tries, d:todayKey()}; save(); checkMedals(); gameStepDone("escape", true); } }
+    else es.wrong++; render(); setTimeout(() => { const j = document.getElementById("esin"); if(j) j.focus(); }, 30); },
+  dbside: b => { dv.side = b.dataset.s; render(); },
+  dbnew: () => { dv = {topic:debatePick(), side:null, running:false, text:"", interim:"", sec:60, done:false}; render(); },
+  dbstart: () => { dv.running = true; dv.sec = 60; dv.text = ""; dv.interim = ""; render();
+    dv.tid = setInterval(() => { dv.sec--; if(dv.sec<=0) return dbFinish(); const el = app.querySelector(".wrap .panel p[style*='2rem'] b"); if(el) el.textContent = dv.sec; }, 1000);
+    if(SRC && !micBlocked){ dv.base = ""; dbListen(); } },
+  dbstop: () => dbFinish(),
+  anopen: b => { an = {id:b.dataset.id, mode:"edit", draft:null, tips:null, ai:null}; view = "anecdote"; render(); scrollTo(0,0); },
+  ansave: () => { const t = (document.getElementById("antext")||{}).value || ""; const s = anState(an.id); s.text = t; an.draft = null; an.tips = journalCheck(t); save(); toast("📝 Anécdota guardada"); if((t.match(/[A-Za-z']+/g)||[]).length>=40) gameStepDone("anecdote", true); render(); },
+  anai: async () => { const t = (document.getElementById("antext")||{}).value || ""; if(!t.trim()) return; an.draft = t; an.busy = true; render();
+    try{ an.ai = await aiJSON(`You are an English teacher helping a Spanish-speaking learner (CEFR ${LEVELS[S.level-1].code}) prepare a personal anecdote to tell in conversation. Improve it so it sounds natural and spoken, keeping their ideas and roughly their level. Reply only with JSON: {"improved":"the improved story in English","notes":["up to 4 short notes in Spanish about the main changes"]}.\n\nStory:\n${t}`, "default"); }catch(e){ toast("No se ha podido mejorar ahora."); }
+    an.busy = false; render(); },
+  anuseai: () => { if(!an.ai) return; anState(an.id).text = an.ai.improved; an.draft = null; an.ai = null; save(); render(); },
+  anmode: b => { an.mode = b.dataset.m; an.result = null; an.heard = ""; an.interim = ""; render(); scrollTo(0,0); },
+  antell: () => { an.listening = true; an.heard = ""; render(); Mic.start({long:true, onResult:(fin, interim) => { an.heard = fin; an.interim = interim; if(view==="anecdote"){ const p = app.querySelector(".wrap .panel p.small[lang=en]"); if(p) p.innerHTML = `${esc(fin)} <span class="muted">${esc(interim)}</span>`; } }, onError:()=>{}, onEnd:() => { if(an.listening) anFinish((an.heard+" "+(an.interim||"")).trim()); }}); },
+  anstop: () => { try{ Mic.stop(); }catch(e){} setTimeout(() => { if(an.listening) anFinish((an.heard+" "+(an.interim||"")).trim()); }, 600); },
+  antyped: () => anFinish((document.getElementById("antell")||{}).value || ""),
+  clopen: b => { clearInterval(cl && cl.tid); cl = {id:b.dataset.id, i:0, tries:0, first:0, log:[], sec:0, hint:false, showModel:false, state:null};
+    cl.tid = setInterval(() => { cl.sec++; const el = app.querySelector(".call-time"); if(el) el.textContent = `${Math.floor(cl.sec/60)}:${String(cl.sec%60).padStart(2,"0")}`; }, 1000);
+    view = "call"; render(); scrollTo(0,0); setTimeout(() => clSay(false), 500); },
+  clrep: () => clSay(false), clslow: () => clSay(true),
+  clhint: () => { cl.hint = true; render(); },
+  clmic: () => { if(cl.listening){ Mic.stop(); return; } cl.listening = true; render();
+    Mic.start({long:false, onResult: alts => { cl.alts = alts; }, onError:()=>{}, onEnd:() => { cl.listening = false; if(cl.alts && cl.alts.length){ const a = cl.alts; cl.alts = null; clJudge(a); } else render(); }}); },
+  cltyped: () => { const i = document.getElementById("clin"); if(i && i.value.trim()){ const v = i.value; i.value = ""; clJudge(v); } },
+  clhang: () => { clearInterval(cl.tid); try{ speechSynthesis.cancel(); Mic.abort(); }catch(e){} view = "calls"; render(); }
+});
+app.addEventListener("input", e => { const t = e.target; if(!t) return;
+  if(t.dataset && t.dataset.cw){ t.value = t.value.slice(-1).toUpperCase(); const st = cwState(); st.a[t.dataset.cw] = t.value.toLowerCase(); st.checked = false; save();
+    const all = [...document.querySelectorAll("[data-cw]")], i = all.indexOf(t); if(t.value && all[i+1]) all[i+1].focus(); }
+  if(t.id==="antext"){ an.draft = t.value; const n = (t.value.match(/[A-Za-z']+/g)||[]).length, el = document.getElementById("anwc"); if(el) el.textContent = `${n} palabras · lo ideal: entre 80 y 150`; } });
+app.addEventListener("keydown", e => { if(e.key!=="Enter") return; const id = e.target && e.target.id;
+  if(id==="wdin"){ e.preventDefault(); ACT.wdtry(); } else if(id==="esin"){ e.preventDefault(); ACT.estry(); } else if(id==="clin"){ e.preventDefault(); ACT.cltyped(); } });
+(function(){ const old = EXTRA_GAME; EXTRA_GAME = function(id){
+  const v = {wordle:"wordle", crossword:"crossword", escape:"escapes", debate:"debate", anecdotes:"anecdotes", calls:"calls"};
+  if(v[id]){ if(id==="debate") dv = null; view = v[id]; render(); scrollTo(0,0); return true; }
+  if(id==="twister"){ startPractice("twister", 6, {kind:"game"}); return true; }
+  if(id==="proverb"){ startPractice("proverb", 8, {kind:"game"}); return true; }
+  if(id==="culture"){ startPractice("culture", 8, {kind:"game"}); return true; }
+  return old(id); }; })();
+GAMES.splice(6, 0,
+  {id:"wordle", icon:"🟩", bg:"#E2F7E1", t:"Adivina la palabra", d:"Una palabra inglesa de cinco letras al día. Tienes seis intentos."},
+  {id:"crossword", icon:"🧩", bg:"#EAF2FF", t:"Crucigrama semanal", d:"Con las palabras que has practicado esta semana. Nuevo cada lunes."},
+  {id:"escape", icon:"🔐", bg:"#F3E8FF", t:"Escape room", d:"Lee las pistas en inglés y resuelve los acertijos para salir. Una sala nueva cada semana."},
+  {id:"culture", icon:"🌍", bg:"#FFF3D6", t:"Choque cultural", d:`${CULTURE.length} datos curiosos sobre costumbres de países de habla inglesa.`},
+  {id:"proverb", icon:"🔁", bg:"#E6FAF5", t:"Refranes cruzados", d:"Refranes españoles y su equivalente en inglés."},
+  {id:"twister", icon:"👅", bg:"#FFE9E3", t:"Trabalenguas", d:"Dilos en voz alta y la app te puntúa la pronunciación."},
+  {id:"debate", icon:"⏱️", bg:"#FFE8D6", t:"Debate de un minuto", d:"Un tema al azar: defiéndelo o rebátelo durante un minuto."},
+  {id:"anecdotes", icon:"📝", bg:"#EDE7F6", t:"Mis anécdotas", d:"Prepara cinco historias personales y practica contarlas sin mirar."},
+  {id:"calls", icon:"📞", bg:"#E0F7FA", t:"Llamada sin texto", d:"Como una llamada real: solo oyes a la otra persona y respondes hablando."});
+MEDALS.push(["wordle7","🟩","Palabra a palabra","Acierta 7 palabras del día", s=>((S.wordleStats||{}).wins||0)>=7],
+  ["escape3","🔓","Escapista","Escapa de 3 salas", s=>Object.keys(S.esc||{}).length>=3],
+  ["culture30","🌍","Viajera cultural","Acierta 30 preguntas de choque cultural", s=>((S.stats.culture||{}).c||0)>=30],
+  ["debate5","⏱️","Oradora","Haz 5 debates de un minuto", s=>(S.debateCount||0)>=5],
+  ["anec5","📝","Buena conversadora","Practica tus 5 anécdotas sin mirar", s=>ANECDOTES.every(a => ((S.anec||{})[a.id]||{}).practiced>0)],
+  ["calls5","📞","Al teléfono","Completa 5 llamadas sin texto", s=>Object.keys(S.calls||{}).length>=5]);
+
+
+/* ---------- el juego del día como un paso del reto ---------- */
+function makeGameEx(it, r){ const g = it.d; return {it, type:"game", gid:g.gid, big:`${g.i} ${g.n}`, sol:"Juego completado", title:"Juego del día", titleH:titleHTML("Juego del día","Game of the day")}; }
+function renderGameStep(ex){
+  const st = sess.st, n = sess.exs.length, g = DAILY_GAMES.find(x => x.gid===ex.gid), doneToday = S.gameDone && S.gameDone.date===todayKey() && S.gameDone.gid===ex.gid;
+  if(!st.checked && doneToday){ st.checked = true; st.result = {ok: S.gameDone.ok}; st.answer = S.gameDone.ok ? "completado" : "no completado"; }
+  const segs = sess.exs.map((_,i) => { const rr = sess.res[i]; return `<i class="${rr ? (rr.skip?"":(rr.ok?"done":"miss")) : (i===sess.i?"cur":"")}"></i>`; }).join("");
+  return `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="quit" aria-label="Salir">✕</button><div class="segs">${segs}</div>${canGoBack() ? `<button class="icon-btn" data-act="sessback" aria-label="Ver preguntas anteriores">↩︎</button>` : ""}</div>
+    <div class="wrap"><div class="tag-row"><span>🎲 Juego del día</span></div>
+    <div class="panel sec center game-step"><div style="font-size:3rem">${g.i}</div><h2>${esc(g.n)}</h2><p class="muted" style="margin:6px 0 4px">${esc(g.d)}</p><p class="small muted">Unos ${Math.round(g.sec/60)} minutos</p>
+      ${st.checked ? `<p class="sec" style="font-size:1.1rem">${st.result && st.result.ok ? "✅ ¡Juego completado!" : "Hecho, aunque esta vez no ha salido del todo."}</p><button class="btn full sec" data-act="gscont">Continuar el reto ▸</button>`
+        : `<button class="btn full sec" data-act="gsplay">🎲 Jugar ahora</button><button class="link small sec" data-act="gsskip">Saltar este juego</button>`}</div></div></div>`;
+}
+function gsOpen(gid){
+  const L = S.level;
+  if(gid==="wordle") return EXTRA_GAME("wordle");
+  if(gid==="debate") return EXTRA_GAME("debate");
+  if(gid==="journal") return EXTRA_GAME("journal");
+  if(gid==="crossword") return EXTRA_GAME("crossword");
+  if(gid==="reading"){ const done = S.readDone || {}, pool = READINGS.filter(x => !(x.id in done)).sort((a,b) => Math.abs(a.lvl-L)-Math.abs(b.lvl-L) || interestScore(b.tags)-interestScore(a.tags)); const x = pool[0] || READINGS.find(x => x.lvl===L) || READINGS[0]; return ACT.rdopen({dataset:{id:x.id}}); }
+  if(gid==="call"){ const pool = SCENARIOS.filter(s => Math.abs(s.l-L)<=1), s = pool[hashStr("call"+todayKey()) % pool.length] || SCENARIOS[0]; return ACT.clopen({dataset:{id:s.id}}); }
+  if(gid==="anecdote"){ const a = ANECDOTES.slice().sort((x,y) => (anState(x.id).practiced - anState(y.id).practiced))[0]; ACT.anopen({dataset:{id:a.id}}); if(anState(a.id).text.trim()){ an.mode = "tell"; render(); } return; }
+  if(gid==="series"){ const c = nextChapter(); if(c) return serStart(c.n); return EXTRA_GAME("series"); }
+  if(gid==="mystery"){ const st = mystState(), pend = MYSTERIES.filter(m => !st.solved.includes(m.id)).sort((a,b) => Math.abs(a.lvl-L)-Math.abs(b.lvl-L)); return ACT.myplay({dataset:{id:(pend[0]||MYSTERIES[0]).id}}); }
+  if(gid==="escape"){ escOpenCount(); const n = escOpenCount(), e = ESCAPES.slice(0,n).find(x => !(S.esc||{})[x.id]) || ESCAPES[0]; return ACT.esopen({dataset:{id:e.id}}); }
+}
+/* lo llama cada juego al terminar */
+function gameStepDone(gid, ok){
+  if(!S.gameStep || S.gameStep.gid!==gid || S.gameStep.date!==todayKey()) return;
+  S.gameStep = null; S.gameDone = {gid, ok:!!ok, date:todayKey()}; save();
+  if(sess && sess.kind==="daily" && cur() && cur().type==="game" && cur().gid===gid){ sess.st.checked = true; sess.st.result = {ok:!!ok}; sess.st.answer = ok ? "completado" : "no completado"; }
+  setTimeout(() => { toast("🎲 ¡Juego del día hecho! Vuelve al reto para seguir."); gsBar(); }, 400);
+}
+function gsBar(){
+  const old = document.getElementById("gsbar"); if(old) old.remove();
+  const active = S.gameStep && S.gameStep.date===todayKey(), done = S.gameDone && S.gameDone.date===todayKey() && !(S.daily && S.daily.done);
+  if(view==="session" || view==="summary" || !(active || done) || !(S.daily && S.daily.ids.some(id => id.startsWith("game:")))) return;
+  const b = document.createElement("button"); b.id = "gsbar"; b.className = "gs-bar";
+  b.innerHTML = active ? "🎲 Estás en el juego del reto · Volver al reto ▸" : "✅ Juego hecho · Volver al reto ▸";
+  b.addEventListener("click", () => { b.remove(); if(sess && sess.kind==="daily"){ view = "session"; render(); scrollTo(0,0); } else startDaily(); });
+  document.body.appendChild(b);
+}
+(function(){ const _r = render; render = function(){ const out = _r.apply(this, arguments); try{ gsBar(); }catch(e){} return out; }; })();
+Object.assign(ACT, {
+  gsplay: () => { const ex = cur(); if(!ex || ex.type!=="game") return; S.gameStep = {gid:ex.gid, date:todayKey()}; save(); try{ speechSynthesis.cancel(); }catch(e){} gsOpen(ex.gid); scrollTo(0,0); },
+  gsskip: () => { S.gameStep = null; save(); doContinue(true); },
+  gscont: () => { S.gameStep = null; save(); doContinue(); }
+});
+(function(){ const _chk = ACT.check; ACT.check = function(){ const ex = sess && cur(); if(ex && ex.type==="game") return; return _chk.apply(this, arguments); }; })();
 
 </script>
 </body>
