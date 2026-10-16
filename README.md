@@ -1,125 +1,266 @@
-# Día a día
+# Lift · Inglés para hablar con soltura
 
-Tu calendario personal: gastos, ingresos, viajes, sitios, cuentas, el tiempo y los eventos de Teruel. Funciona en el móvil sin depender de Claude:
+**Lift** es una aplicación web para aprender inglés pensada para hispanohablantes. Combina un reto diario de unos 15 minutos con lecturas, conversaciones con personajes, juegos, pronunciación y simulacros de examen. Funciona en el navegador del móvil o del ordenador, se puede instalar como app y casi todo funciona sin conexión.
 
-- **El tiempo** se actualiza solo cada vez que abres la app (Open-Meteo, gratis y sin clave).
-- **Los eventos de Teruel** los busca GitHub cada mañana con Gemini y la app los descarga sola.
-- **Gemini** ubica los sitios en el mapa y resume tus viajes.
-- **Tus datos** se guardan en tu móvil. Con «Guardar copia» los llevas a otro móvil.
+🔗 **Abrir la app:** https://sandra-cruzado-a.github.io/Lift/
 
 ---
 
-## 1. Ponerla en marcha (solo una vez)
+## Índice
 
-Lo más cómodo es hacerlo desde un ordenador.
+- [Cómo está organizada](#cómo-está-organizada)
+- [El reto diario](#el-reto-diario)
+- [Niveles, puntos y progreso](#niveles-puntos-y-progreso)
+- [Contenido](#contenido)
+- [Instalación y publicación](#instalación-y-publicación)
+- [Servicio de Cloudflare (opcional)](#servicio-de-cloudflare-opcional)
+- [Cómo actualizar la app](#cómo-actualizar-la-app)
+- [Detalles técnicos](#detalles-técnicos)
+- [Privacidad](#privacidad)
+- [Créditos y licencias](#créditos-y-licencias)
 
-1. **Crea una cuenta** en [github.com](https://github.com) si no tienes.
-2. **Crea un repositorio nuevo**: botón «New», nombre `dia-a-dia`, marca **Public** y no añadas nada más. Pulsa «Create repository».
-3. **Sube los archivos**: descomprime el zip y, en la página del repositorio, pulsa «uploading an existing file». Arrastra **todo el contenido de la carpeta**, incluida la carpeta `.github` (en Mac, pulsa Cmd + Mayús + . para ver las carpetas ocultas). Abajo, pulsa «Commit changes».
-4. **Activa la web**: Settings → Pages → en «Source» elige «Deploy from a branch», rama `main` y carpeta `/ (root)` → Save. En uno o dos minutos la app estará en `https://TU-USUARIO.github.io/dia-a-dia/`.
-5. **Clave de Gemini para los eventos**: crea una gratis en [aistudio.google.com/apikey](https://aistudio.google.com/apikey). En GitHub: Settings → Secrets and variables → Actions → «New repository secret». Nombre: `GEMINI_API_KEY`. Valor: tu clave.
-6. **Primera búsqueda de eventos**: pestaña Actions → «Eventos de Teruel» → «Run workflow». A partir de ahí se repite sola cada mañana.
-
-## 2. Instalarla en el móvil
-
-**Como app de Android (APK).** Cada vez que subes cambios, GitHub fabrica el APK solo (tarda unos 10 minutos; lo ves en la pestaña Actions, «Crear APK»). Cuando termine:
-
-1. Abre en el móvil `https://github.com/TU-USUARIO/dia-a-dia/releases/latest`.
-2. Toca `dia-a-dia.apk` para descargarlo.
-3. Ábrelo. Android te pedirá permiso para instalar apps de esta fuente: acéptalo e instala.
-
-**Como app web.** Abre `https://TU-USUARIO.github.io/dia-a-dia/` en Chrome → menú ⋮ → «Añadir a pantalla de inicio». Funciona igual, pero sin widget.
-
-## 3. Primeros pasos en la app
-
-- **Gemini**: toca la rueda ⚙ junto al año → pega tu clave de Gemini → «Probar» → «Guardar». La clave solo se guarda en tu móvil.
-- **Pasar tus datos desde la versión de Claude**: en la app de Claude, pestaña Resumen → «Guardar copia». En la app nueva: ⚙ → «Importar copia» y elige ese archivo.
-
-## 4. Copias de seguridad y cambio de móvil
-
-- ⚙ → «Guardar copia» crea un archivo `.zip` con todos tus apuntes y fotos. Guárdalo fuera del móvil (Drive, correo…).
-- En el móvil nuevo: instala la app, ⚙ → «Importar copia» y elige el archivo.
-- Los vídeos de los viajes no van en la copia (pesan mucho): se vuelven a crear con un toque.
-- Si desinstalas la app, se borran sus datos. Haz una copia antes.
-
-## 5. El widget
-
-Solo en la versión APK. Mantén pulsado un hueco del escritorio → Widgets → «Día a día» → arrástralo.
-Muestra la fecha, el tiempo (o el del destino si estás de viaje), lo que tienes hoy y mañana, y lo gastado hoy.
-
-- **Se actualiza solo:** el tiempo se pone al día cada media hora aunque no abras la app, y el día cambia solo a medianoche. Tus apuntes se pasan al widget cada vez que abres la app.
-- **Fondo:** en ⚙ → Widget eliges transparente, semitransparente o negro.
-- Si el tiempo deja de actualizarse, ve a Ajustes del móvil → Aplicaciones → Día a día → Batería y elige «Sin restricciones».
-
-**Cómo hacer más widgets.** El widget está en `android/`:
-
-- `java/HoyWidget.java`: lee los textos y los pinta.
-- `java/WeatherRefresh.java`: actualiza el tiempo en segundo plano.
-- `res/layout/widget_hoy.xml`: el diseño (colores, tamaños, cuántas líneas).
-- `res/xml/widget_hoy_info.xml`: tamaño inicial y cada cuánto se refresca.
-- En `index.html`, la función `updateWidget()` prepara los textos de los próximos 7 días.
-
-Para un widget nuevo (por ejemplo, «Cuentas» con tu patrimonio) se copian esos tres archivos con otro nombre, se añade su `<receiver>` en `android/patch_manifest.py` y se prepara su texto en `updateWidget()`.
-
-## 6. Pestaña «Más»
-
-- **Cuentas** y **Recibos** (suscripciones y pagos fijos: cuánto pagas al mes y al año).
-- **Coche:** repostajes, consumo (L/100 km), coste por km y las **gasolineras más baratas** de la provincia, que GitHub descarga cada hora del Ministerio (tarea «Gasolineras»).
-- **Precios:** escanea un ticket con la cámara; Gemini apunta el gasto y guarda el precio de cada producto en cada tienda.
-- **Personas y regalos:** fichas con cumpleaños, gustos, tallas e ideas de regalo (también con IA). «Yo» es tu lista de deseos, que puedes compartir.
-- **Caducidades:** DNI, pasaporte, ITV, seguros… con aviso antes de que caduquen. No guardes números de documentos.
-- **Ocio:** pelis, series y libros vistos con tu nota, pendientes y recomendaciones de Gemini.
-- **Maletas:** una lista por viaje, que puedes rellenar tú o pedir a Gemini.
-
-- **Pregúntale a tu app:** arriba en «Más». Escribe cualquier pregunta sobre tus datos y Gemini responde.
-
-**Otras novedades:** foto en la ficha de cada persona; «Para ti» en la vista Teruel (eventos elegidos según tus gustos, con aviso la víspera); viajes al extranjero con la moneda del destino y cambio a euros automático; sitios pendientes en Sitios y en el mapa; e informe anual en PDF y Excel desde Resumen → Año.
-
-**Avisos:** en ⚙ → Avisos los activas y eliges de qué quieres que te avise (eventos, tareas, recibos, caducidades, cumpleaños, viajes y el resumen del domingo).
-
+---
 
 ## Cómo está organizada
 
-Abajo hay cinco botones: **Hoy** (tu resumen del día), **Agenda** (calendario, tareas, eventos fijos, grupos y caducidades), **＋** (apuntar cualquier cosa, también por voz), **Dinero** (resumen, cuentas, recibos, precios y coche) y **Lugares** (mapa, sitios y viajes). Personas, Ocio, Partituras y Ajustes están al final de Hoy.
+La app tiene cinco pestañas:
 
-## Novedades: voz, correo, compartir y más
+| Pestaña | Qué hay |
+|---|---|
+| **Hoy** | Progreso, informe semanal, reto diario, «Para hoy» (capítulo de la serie, misterio del día, sala y una sugerencia) y refuerzo |
+| **Aprender** | Gramática, vocabulario, lectura y escucha, pronunciación y exámenes |
+| **Hablar** | Llamadas, debates, anécdotas, diario, sala, cápsula del tiempo, entrevista de trabajo y conversaciones guiadas |
+| **Jugar** | La serie *Flat 4B*, misterios, escape room y juegos de palabras |
+| **Yo** | Resumen del progreso, logros y ajustes |
 
-- **Apunta día:** un segundo icono en el móvil. «Ok Google, abre Apunta día» y dicta: gastos, eventos, tareas, recordatorios («recuérdame mañana a las 9…»), sitios con su gasto y su nota, canciones para Spotify, partituras o «borra lo último». También desde el panel de ajustes rápidos y el botón 🎙 de los widgets.
-- **Widgets:** Hoy, Calendario (el mes con los días marcados) y Tareas.
-- **Por revisar:** lo que llega del correo, de las capturas de Trade Republic y de lo que compartes con la app.
-- **Eventos fijos:** lo que se repite cada semana; solo aparece al entrar en el día.
-- **Partituras:** búsqueda en IMSLP de obras para piano solo, con la mejor edición descargable.
-- **Correo:** el script `correo/Codigo.gs` va en script.google.com (ver las instrucciones dentro del archivo).
+### Aprender
 
-## 7. Actualizar la app
+- **Gramática:**
+  - **Conjugador:** tiempos verbales en contexto.
+  - **¿Cuál es la pregunta?:** formular la pregunta a partir de la respuesta.
+  - **Constructor de frases:** ordenar las palabras de una frase.
+  - **Cazador de errores:** 106 fallos típicos de hispanohablantes.
+  - **Mapa de errores:** los fallos más repetidos, con 36 minilecciones.
+- **Vocabulario:**
+  - **Flashcards** de las palabras más frecuentes.
+  - **Test por temas.**
+  - **Vocabulario de tus intereses:** 10 temas, 150 palabras.
+  - **Expresiones y slang.**
+  - **Memory de phrasal verbs.**
+  - **Mis frases:** las que el alumno guarda.
+- **Leer y escuchar:**
+  - **15 lecturas graduadas** de A1 a C1.
+  - **Dictado.**
+  - **Escenas de películas:** 71 escenas y 14 diálogos.
+  - **Canciones de la radio:** enlace a LyricsTraining.
+- **Pronunciación:**
+  - **Pronunciación:** pares mínimos, transcripción fonética y consejos.
+  - **22 trabalenguas.**
+  - **Modo sombra:** ver una escena y repetir la frase.
+- **Exámenes:** cuatro simulacros con la estructura de Cambridge (A2 Key, B1 Preliminary, B2 First y C1 Advanced). Cada uno tiene comprensión lectora, uso del inglés, comprensión auditiva, expresión escrita y expresión oral.
 
-**No hace falta reinstalar el APK.** La app del móvil se carga desde tu web de GitHub Pages: cuando cambias `index.html` en GitHub, la próxima vez que abras la app con internet ya tendrás la versión nueva (puede tardar unos minutos en llegar). Sin conexión, abre la última versión que descargó.
+### Hablar
 
-Solo hace falta instalar un APK nuevo si cambia la parte de Android (el widget, los permisos o el icono). En ese caso GitHub lo fabrica solo y lo publica en Releases; instálalo encima del anterior y tus datos se mantienen.
+- **Conversaciones guiadas:** 25 situaciones reales (cafetería, hotel, farmacia, mecánico, veterinario, reuniones de trabajo…).
+  - Cada una tiene su propio **personaje**: un bot ilustrado con nombre, profesión, aspecto y voz propios, que mueve la boca al hablar.
+  - La conversación es **entera en inglés**.
+- **Llamada sin texto:** las mismas situaciones como una llamada de teléfono. Se ve al personaje y se le oye, con subtítulos opcionales.
+- **Debate de un minuto:** 28 temas. La app cuenta palabras, ritmo y conectores.
+- **Mis anécdotas:** cinco historias personales para preparar y contar sin mirar. La app mide qué parte de la historia se ha contado.
+- **Diario en inglés:** una pregunta al día y una revisión de errores típicos.
+- **Entrevista de trabajo:** con preguntas preparadas para una oferta concreta.
+- **Sala con tu grupo:** chat, tarjetas de palabras, cadena de palabras e «historia entre dos», con notificaciones en el móvil.
+- **Cápsula del tiempo:** cada dos meses se graban tres respuestas. Cada respuesta se puede repetir antes de guardarla, y luego se comparan con las anteriores.
 
-La primera vez que abras la app necesita internet para descargarse.
+### Jugar
 
-## 8. Si algo falla
+- ***Flat 4B*:** serie original de 16 capítulos en dos temporadas, de A2 a C1. Sale un capítulo nuevo cada día.
+- **Misterios:** 42 casos para resolver con preguntas de sí o no.
+- **Escape room:** 8 salas con acertijos en inglés. Se abre una nueva cada semana.
+- **Adivina la palabra:** una palabra de cinco letras al día.
+- **Crucigrama semanal:** con las palabras practicadas esa semana.
+- **Refranes cruzados:** 32 refranes españoles con su equivalente en inglés.
+- **Contrarreloj:** acertar todo lo posible en 60 segundos.
+- **Choque cultural:** 63 datos curiosos sobre costumbres de países de habla inglesa.
 
-- **El APK o los eventos no se crean**: pestaña Actions → abre la ejecución en rojo → copia el error y pásaselo a Claude.
-- **No salen eventos**: revisa que el secreto `GEMINI_API_KEY` existe y lanza «Eventos de Teruel» a mano.
-- **No salen gasolineras**: lanza «Gasolineras» a mano en la pestaña Actions y mira si da error.
-- **Gemini da error en la app**: ⚙ → «Probar». Si el modelo deja de existir, cambia `gemini-flash-latest` por el que recomiende Google.
+### Yo
 
-## Qué hay en cada archivo
+- **Resumen:** nivel y requisitos para subir, liga semanal, informes semanales, racha, acierto por temas y mapa de errores.
+- **Logros:**
+  - Un viaje por cinco ciudades, una por nivel, con 20 postales.
+  - Medallas.
+  - La cápsula del tiempo.
+  - Curiosidades.
+- **Ajustes:**
+  - Intereses.
+  - Avisos.
+  - Voz, acento e idioma.
+  - Tiempo para responder hablando.
+  - Tema claro u oscuro.
+  - Prueba de nivel.
+  - Copia de seguridad.
+
+---
+
+## El reto diario
+
+- **Dura siempre lo mismo:** unos **15 minutos**. No tiene un número fijo de preguntas: cada ejercicio tiene un tiempo estimado y el reto se ajusta a ese presupuesto, así que los días con tareas largas tienen menos preguntas y al revés.
+- **Incluye dos actividades** de dos pestañas distintas (Aprender, Hablar o Jugar), que van rotando. Dentro de cada pestaña sale la actividad que hace más tiempo que no aparecía, para practicar todas las habilidades.
+- **El resto son ejercicios variados** de unos 20 temas: gramática, vocabulario, preguntas, dictado, pronunciación, conversación, errores típicos, cultura, refranes, trabalenguas, modo sombra, vocabulario de los intereses del alumno y sus frases guardadas.
+- **Los fallos vuelven en repasos escalonados** en los retos siguientes.
+- **Se puede volver atrás** para revisar preguntas ya respondidas, sin cambiar la respuesta.
+- **Si se interrumpe,** el reto se guarda y se continúa donde se dejó.
+
+---
+
+## Niveles, puntos y progreso
+
+**Niveles:** A1 · A2 · B1 · B2 · C1. El nivel inicial se decide con una prueba de nivel o empezando desde A1.
+
+**Puntos (XP):**
+- Solo suman los aciertos. Un fallo o un ejercicio saltado no da puntos.
+- Los aciertos valen según la dificultad: los ejercicios de un nivel superior valen un 30 % más, y los de niveles inferiores, la mitad o la cuarta parte.
+- El bonus del reto diario, de hasta 60 XP, solo se consigue acertando al menos el 60 %.
+
+**Para subir de nivel** hacen falta cuatro cosas:
+1. Los puntos del nivel.
+2. 40 ejercicios del nivel actual o superiores.
+3. Un dominio de al menos el **75 %** en esos ejercicios.
+4. Haber trabajado al menos 4 temas distintos.
+
+Con esto se abre el **examen de nivel**:
+- **Cómo es:** 16 preguntas, 10 de ellas del nivel siguiente y todas de respuesta abierta.
+- **Para aprobar:** acertar el 80 % en total y el 70 % de las del nivel siguiente.
+- **Si se suspende:** se puede repetir a los 3 días.
+
+**Bajada automática:** si en los últimos 40 ejercicios de su nivel el alumno acierta menos de la mitad, la app le baja un nivel, como mucho una vez por semana.
+
+**Ligas semanales** (individuales): Bronce, Plata (150 XP), Oro (400 XP) y Diamante (800 XP).
+
+---
+
+## Contenido
+
+Todo el contenido es **original** o de **tradición popular** (refranes y trabalenguas):
+
+| Contenido | Cantidad |
+|---|---|
+| Conversaciones guiadas con personaje | 25 |
+| Capítulos de *Flat 4B* | 16 |
+| Misterios | 42 |
+| Lecturas graduadas | 15 |
+| Simulacros de examen | 4 |
+| Salas de escape | 8 |
+| Errores típicos de hispanohablantes | 106 |
+| Minilecciones | 36 |
+| Datos de choque cultural | 63 |
+| Refranes | 32 |
+| Trabalenguas | 22 |
+| Temas de debate | 28 |
+| Propuestas para el diario | 30 |
+| Vocabulario de intereses | 150 palabras en 10 temas |
+| Vocabulario general | Las 2000 palabras más frecuentes, además de vocabulario por situaciones |
+
+---
+
+## Instalación y publicación
+
+La app es un sitio estático alojado en **GitHub Pages**.
+
+### Archivos del repositorio
 
 | Archivo | Para qué sirve |
 |---|---|
-| `index.html` | La app entera |
-| `eventos.json` | Los eventos de Teruel (lo actualiza GitHub cada mañana) |
-| `scripts/eventos.mjs` | El buscador de eventos con Gemini |
-| `scripts/gasolineras.mjs`, `.github/workflows/gasolineras.yml` | Descarga los precios de las gasolineras cada hora |
-| `.github/workflows/eventos.yml` | Lanza la búsqueda cada mañana |
-| `.github/workflows/apk.yml` | Fabrica el APK |
-| `android/` | Widget, permisos y firma del APK |
-| `capacitor/` | Configuración para convertir la web en app de Android |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Para instalarla como app web y que abra sin conexión |
-| `offline.html` | Pantalla que sale si abres la app por primera vez sin internet |
-| `vendor/` | Librerías del mapa y de las copias |
+| `index.html` | Toda la aplicación: interfaz, contenido y lógica, en un único archivo |
+| `sw.js` | Service worker: funcionamiento sin conexión, actualizaciones y notificaciones |
+| `avisos.json` | Dirección del servicio de Cloudflare (opcional) |
+| `README.md` | Este documento |
 
-El repositorio es público, pero **solo contiene el código y los eventos de Teruel**. Tus apuntes, fotos y claves se quedan en tu móvil.
+### Publicar por primera vez
+
+1. Crea un repositorio público en GitHub.
+2. Sube `index.html` y `sw.js` a la raíz con **Add file → Upload files**. No cambies sus nombres.
+3. En **Settings → Pages**, elige la rama `main` y la carpeta raíz (`/`).
+4. Espera a que en **Actions** aparezca el círculo verde y abre la dirección de GitHub Pages.
+5. En el móvil, usa **«Añadir a pantalla de inicio»** para instalarla como app.
+
+Se recomienda **Chrome**, sobre todo en Android: el reconocimiento de voz depende del navegador.
+
+---
+
+## Servicio de Cloudflare (opcional)
+
+Sin este servicio la app funciona igual. Con él se activan:
+
+- los **avisos** del reto diario a las horas elegidas;
+- la **sala** (chat y juegos cooperativos) y sus notificaciones;
+- las **copias de seguridad** en la nube, que se recuperan con un código.
+
+### Configuración
+
+1. En Cloudflare, crea un **Worker** y pega el contenido de `worker.js`.
+2. Crea un espacio **KV** y vincúlalo al Worker con el nombre de variable **`KV`**.
+3. Añade un disparador programado (**Cron Trigger**): `*/5 * * * *`.
+4. Pulsa **Deploy** y copia la dirección del Worker.
+5. Crea en el repositorio un archivo `avisos.json` con este contenido exacto:
+
+```json
+{"url": "https://tu-worker.tu-subdominio.workers.dev"}
+```
+
+Las claves para las notificaciones (VAPID) se generan solas la primera vez y se guardan en el KV.
+
+### Lo que guarda el servicio
+
+| Prefijo en KV | Contenido | Caducidad |
+|---|---|---|
+| `sub:` | Suscripción a los avisos | Hasta darse de baja |
+| `room:` | Mensajes y miembros de cada sala | 6 meses sin uso |
+| `nt:` | Aviso pendiente de una persona | 1 día |
+| `bk:` / `bkr:` | Copias de seguridad y grabaciones de la cápsula | 2 años |
+
+---
+
+## Cómo actualizar la app
+
+1. Sube a GitHub los nuevos `index.html` y `sw.js` con **Add file → Upload files**. Sustituyen a los anteriores.
+2. Espera a que en **Actions** aparezca el círculo verde.
+3. Cierra la app y vuelve a abrirla dos veces para que cargue la versión nueva.
+
+`avisos.json` **no se toca** al actualizar. `worker.js` solo hay que volver a desplegarlo cuando cambia.
+
+---
+
+## Detalles técnicos
+
+- **Un único archivo** HTML con CSS y JavaScript, sin dependencias externas ni proceso de compilación.
+- **Funcionamiento sin conexión** gracias al service worker. La versión actual está indicada en `sw.js` (`lift-5.2.0`).
+- **Datos del alumno:**
+  - En `localStorage` (clave `lift-english-v2`).
+  - Las grabaciones de la cápsula, en **IndexedDB** (`lift-capsule`).
+- **Voz:** **Web Speech API**, con síntesis de voz para las voces de los personajes y reconocimiento de voz para responder hablando.
+- **Grabación:** **MediaRecorder** para la cápsula del tiempo.
+- **Notificaciones:** **Web Push** con claves VAPID.
+- **Escenas de películas:** vídeos oficiales incrustados desde YouTube (`youtube-nocookie.com`), con los tiempos sacados de los subtítulos oficiales. Necesitan conexión.
+- **Dos versiones:**
+  - **GitHub Pages:** incluye avisos, sala, copias de seguridad, escenas y modo sombra.
+  - **Claude:** en lugar de eso, permite corrección y conversación libre con inteligencia artificial.
+
+---
+
+## Privacidad
+
+- Todo el progreso se guarda **en el propio dispositivo**.
+- Si se usa el servicio de Cloudflare, los mensajes de la sala y las copias de seguridad se guardan **en la cuenta de Cloudflare de quien publica la app**, no en servicios de terceros.
+- La copia de seguridad se recupera con un **código personal** (formato `ABCD-EFGH-JKLM`). Quien tenga el código puede recuperar la copia, así que conviene guardarlo en un lugar seguro.
+- La app no usa publicidad ni analítica.
+
+---
+
+## Créditos y licencias
+
+- **Escenas de películas:** *Tears of Steel* (2012) y *Sintel* (2010), © Blender Foundation, licencia **CC BY 3.0**. Los subtítulos también son los oficiales.
+- **Pronunciación:** transcripciones basadas en el **CMU Pronouncing Dictionary** (Carnegie Mellon University), con licencia de tipo BSD.
+- **Canciones de la radio:** enlace externo a **LyricsTraining**. Lift no tiene relación con ese servicio ni guarda letras ni audio.
+- **Simulacros de examen:** contenido original con la estructura de los exámenes de Cambridge. **No son exámenes oficiales.** *A2 Key*, *B1 Preliminary*, *B2 First* y *C1 Advanced* son marcas de Cambridge University Press & Assessment.
+- **El resto del contenido** es original: textos, conversaciones, personajes, serie, misterios, salas de escape, ejercicios y explicaciones.
