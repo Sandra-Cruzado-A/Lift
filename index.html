@@ -394,6 +394,7 @@ a.btn.full{display:flex}
 .av.talking{animation:avbob .45s infinite alternate} @keyframes avbob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 .call-top .av{display:block;margin:0 auto} .cc-line{font-size:1.06rem;font-style:italic}
 .av-list svg,.gi.av-list svg{display:block} .gi.av-list{background:transparent !important}
+.hidden-text{color:var(--muted);font-size:1.15rem} .skip-card{border:2px solid #f2c037}
 </style>
 </head>
 <body>
@@ -5842,12 +5843,12 @@ function micBlock(st, long){
   if(long){
     h += `<div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">${SRC && !micBlocked ? `<button class="btn sm ${st.listening?"":"ghost"}" data-act="dictate" ${st.checked?"disabled":""}>${st.listening?"⏹ Parar de dictar":"🎙️ Dictar con la voz"}</button>`:""}<span class="small muted" id="wc">${wordCount(st.answer)} palabras</span></div>`;
   } else if(!st.typing){
-    h += `<button class="mic ${st.listening?"on":""}" data-act="mic" ${st.checked?"disabled":""}><span class="dot">🎙️</span>${st.listening?"Te escucho. Tómate tu tiempo y toca cuando termines":(st.heard?"Toca para repetir":"Toca y habla")}</button>`;
+    h += `<button class="mic ${st.listening?"on":""}" data-act="mic" ${st.checked?"disabled":""}><span class="dot">🎙️</span>${st.listening?"Te escucho. Toca para parar":(st.heard?"Toca para repetir":"Toca y habla")}</button>`;
     if(st.heard) h += `<div class="heard"><span class="muted small">${tr("Hemos oído","We heard")}</span><br><b>${esc(st.heard[0])}</b></div>`;
-    if(!st.checked) h += `<button class="link" data-act="typeInstead">Prefiero escribirlo</button>`;
+    if(!st.checked) h += `<button class="link" data-act="skip">⏭️ Saltar esta pregunta (no cuenta para el resultado)</button>`;
   } else {
     h += inputHTML(false,"Escribe tu respuesta en inglés",st);
-    if(SRC && !st.checked && !micBlocked) h += `<button class="link" data-act="useMic">Usar el micrófono</button>`;
+
   }
   if(st.micErr) h += `<p class="note">${esc(st.micErr)}</p>`;
   return h;
@@ -5885,7 +5886,7 @@ function renderSession(){
       body += `<div class="row" style="gap:10px;margin-bottom:14px;flex-wrap:wrap"><button class="btn" data-act="play">🔊 Escuchar</button><button class="btn ghost" data-act="playslow">Más despacio</button></div>` + inputHTML(false,"Escribe la frase en inglés",st);
       break;
     case "speak":
-      if(ex.mode==="rep") body += `<div class="big" lang="en">${esc(ex.big)}</div>${ex.ipa?`<p class="ipa big-ipa">${esc(ex.ipa)}</p>`:""}${ex.meaning?`<p class="sub">«${esc(ex.meaning)}»</p>`:""}<div class="row" style="gap:10px;margin:4px 0 12px;flex-wrap:wrap"><button class="btn sm" data-act="play">🔊 ${tr("Escuchar","Listen")}</button><button class="btn sm ghost" data-act="playslow">🐢 ${tr("Más despacio","Slower")}</button></div>`;
+      if(ex.mode==="rep") body += ((st.showText || st.checked) ? `<div class="big" lang="en">${esc(ex.big)}</div>${ex.ipa?`<p class="ipa big-ipa">${esc(ex.ipa)}</p>`:""}${ex.meaning?`<p class="sub">«${esc(ex.meaning)}»</p>`:""}` : `<div class="big hidden-text">🎧 ${tr("Escucha y repite","Listen and repeat")}</div><button class="link small" style="margin:-4px 0 8px" data-act="showtext">👁️ ${tr("Mostrar la frase","Show the sentence")}</button>`) + `<div class="row" style="gap:10px;margin:4px 0 12px;flex-wrap:wrap"><button class="btn sm" data-act="play">🔊 ${tr("Escuchar","Listen")}</button><button class="btn sm ghost" data-act="playslow">🐢 ${tr("Más despacio","Slower")}</button></div>`;
       else body += ex.mode==="say" ? `<div class="big">«${esc(ex.big)}»</div>` : `<div class="big">${esc(ex.big)}${spk(ex.big)}</div>${ex.hint?`<p class="sub">${fbI("hint")}: ${esc(ex.hint)}</p>`:""}`;
       body += micBlock(st,false); break;
     case "reply":
@@ -6696,7 +6697,7 @@ function renderProgress(){
     <label class="row between"><span>Incluir de vez en cuando mi oferta de trabajo en los retos</span><select data-set="offer">${opt("on","Sí",se.offer||"on")}${opt("off","No",se.offer||"on")}</select></label>
     <label class="row between"><span>Idioma de los títulos de los ejercicios</span><select data-set="instr">${opt("auto","Según mi nivel",se.instr||"auto")}${opt("es","Siempre en español",se.instr||"auto")}${opt("en","Siempre en inglés",se.instr||"auto")}</select></label>
     <label class="row between"><span>Idioma de las explicaciones, pistas y correcciones</span><select data-set="lang">${opt("es","Siempre en español",se.lang||"es")}${opt("auto","Según mi nivel",se.lang||"es")}${opt("en","Siempre en inglés",se.lang||"es")}</select></label>
-    <label class="row between"><span>Tiempo para responder hablando</span><select data-set="micTime">${opt("normal","Normal",se.micTime||"more")}${opt("more","Más tiempo",se.micTime||"more")}${opt("most","Mucho más tiempo",se.micTime||"more")}</select></label>
+
     <label class="row between"><span>Acento de la voz</span><select data-set="accent">${opt("en-GB","Británico",se.accent)}${opt("en-US","Americano",se.accent)}</select></label>
     <label class="row between"><span>Tema</span><select data-set="theme">${opt("auto","Automático",se.theme)}${opt("light","Claro",se.theme)}${opt("dark","Oscuro",se.theme)}</select></label>
     <label><span>Velocidad de la voz</span><input type="range" min="0.6" max="1.1" step="0.05" value="${se.rate}" data-set="rate"></label>
@@ -7507,6 +7508,7 @@ function renderHome(){
     <p class="muted" style="margin:6px 0 14px">Dominas tu nivel. El examen tiene 16 preguntas, 10 de ellas de nivel ${next.code}, sin opciones para elegir. Para aprobar: 80 % de aciertos en total y 70 % en las de ${next.code}.</p>
     <button class="btn full" data-act="checkride">Hacer el examen</button></div>`;
   if(typeof reportHomeCard==="function") h += reportHomeCard();
+  if(typeof skipHomeCard==="function") h += skipHomeCard();
   /* 2. Reto de hoy */
   const topics = uniq(d.ids.map(id=>ITEM[id] && ITEM[id].topic).filter(Boolean));
   if(!d.done){
@@ -7840,7 +7842,7 @@ function renderReport(){
   let h = `<div class="wrap">${pageHead("📊 Informe semanal", "progress")}<div class="panel"><p class="small muted">Semana del ${fmt(r.wk)} al ${fmt(addDays(r.wk,6))}</p>
     <div class="kpis" style="margin-top:12px"><div class="kpi"><b>${r.days}</b><span>días practicados</span></div><div class="kpi"><b>${r.ex}</b><span>ejercicios</span></div><div class="kpi"><b>${r.acc} %</b><span>aciertos</span></div></div>
     <p class="sec">${r.league[2]} <b>Liga ${r.league[1]}</b> con ${r.xp} XP${r.prevXP||r.prevAcc!=null ? ` · ${dXP>=0?"▲":"▼"} ${Math.abs(dXP)} XP respecto a la semana anterior` : ""}.</p>
-    ${r.prevAcc!=null ? `<p class="small">Aciertos: ${r.prevAcc} % → <b>${r.acc} %</b> ${r.acc>r.prevAcc?"📈":r.acc<r.prevAcc?"📉":""}</p>` : ""}</div>`;
+    ${r.prevAcc!=null ? `<p class="small">Aciertos: ${r.prevAcc} % → <b>${r.acc} %</b> ${r.acc>r.prevAcc?"📈":r.acc<r.prevAcc?"📉":""}</p>` : ""}${typeof skipStats==="function" && skipStats(r.wk).n ? `<p class="small">Preguntas saltadas: <b>${skipStats(r.wk).n}</b>${skipStats(r.wk).rate>=0.15?" ⚠️ demasiadas":""}</p>` : ""}</div>`;
   if(r.best) h += `<div class="panel sec"><p>💪 <b>Lo mejor:</b> ${esc(r.best.n)} (${r.best.acc} %)</p>${r.worst?`<p class="sec">🎯 <b>A mejorar:</b> ${esc(r.worst.n)} (${r.worst.acc} %)</p>`:""}</div>`;
   if(r.medals.length) h += `<div class="panel sec"><p><b>Medallas de la semana:</b> ${r.medals.map(m => `${m[1]} ${esc(m[2])}`).join(" · ")}</p></div>`;
   if(recs.length) h += `<div class="panel sec"><h3>Para esta semana</h3><ul class="small" style="padding-left:18px;margin-top:6px">${recs.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
@@ -8557,11 +8559,11 @@ renderChat = function(){
         <textarea id="chatheard" class="inp" rows="2" autocapitalize="sentences" autocomplete="off" spellcheck="false" lang="en">${esc(c.pending.text)}</textarea>
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm ghost" data-act="chatretry">🎙️ Say it again</button><button class="btn sm ghost" data-act="chatmore">➕ Keep talking</button></div>
         <button class="btn full" style="margin-top:10px" data-act="chatconfirm">Send</button></div>`;
-      else bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening ? "I'm listening. Take your time and tap when you finish" : "Tap and speak"}</button>`;
+      else bar += `<button class="mic ${c.listening?"on":""}" data-act="chatmic"><span class="dot">🎙️</span>${c.listening ? "I'm listening. Tap to stop" : "Tap and speak"}</button>`;
     }
     if(c.micErr) bar += `<p class="note">${esc(c.micErr)}</p>`;
     bar += `<div class="row" style="gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px">`;
-    if(SRC && !micBlocked) bar += `<button class="link" data-act="chattoggle">${c.typing ? "🎙️ Speak" : "⌨️ Type"}</button>`;
+    if(SRC && !micBlocked && guided) bar += `<button class="link" data-act="chatskip">⏭️ Skip this turn</button>`;
     if(guided) bar += `<button class="link" data-act="chatpeek">💡 Show me an example</button>`;
     else if(c.userTurns>=3) bar += `<button class="link" data-act="chatend">Finish and see my score</button>`;
     bar += `</div>`;
@@ -8579,7 +8581,7 @@ renderCall = function(){
   const sc = SCENARIOS.find(x => x.id===cl.id), ch = charOf(sc), mic = SRC && !micBlocked, mm = Math.floor(cl.sec/60), ss = String(cl.sec%60).padStart(2,"0"), title = CAST[sc.id] ? CAST[sc.id].t : sc.title;
   if(cl.i>=sc.turns.length){
     return `<div class="wrap">${pageHead("📞 "+esc(title), "calls")}<div class="panel"><div class="char-head" style="margin:0 0 10px">${avatarSVG(ch, 64)}<div><b>${esc(ch.n)}</b><div class="small muted">${esc(ch.r)}</div></div></div><h2>Call finished</h2><p class="muted" style="margin:6px 0 12px">You answered correctly first time ${cl.first} of ${sc.turns.length} times. Call length: ${mm}:${ss}.${cl.xp?` +${cl.xp} XP.`:""}</p>
-      <h3>Transcript</h3><div class="stack sec">${sc.turns.map((t,i) => `<div class="call-tr"><p lang="en"><b>${esc(ch.n)}:</b> ${esc(t.b)} ${spk(t.b)}</p><p class="small"><b>You:</b> ${esc((cl.log[i]||{}).said||"—")} ${(cl.log[i]||{}).ok?"✅":"❌"}</p><p class="small muted">Model answer: <span lang="en">${esc(t.m)}</span></p></div>`).join("")}</div>
+      <h3>Transcript</h3><div class="stack sec">${sc.turns.map((t,i) => `<div class="call-tr"><p lang="en"><b>${esc(ch.n)}:</b> ${esc(t.b)} ${spk(t.b)}</p><p class="small"><b>You:</b> ${esc((cl.log[i]||{}).said||"—")} ${(cl.log[i]||{}).skip?"⏭️":(cl.log[i]||{}).ok?"✅":"❌"}</p><p class="small muted">Model answer: <span lang="en">${esc(t.m)}</span></p></div>`).join("")}</div>
       <div class="row sec" style="gap:10px"><button class="btn" data-act="clopen" data-id="${sc.id}">Call again</button><button class="btn ghost" data-act="xback" data-to="calls">Other calls</button></div></div></div>`;
   }
   const t = sc.turns[cl.i];
@@ -8590,7 +8592,7 @@ renderCall = function(){
       ${cl.hint ? `<p class="small sec">💡 ${esc(t.tE || t.t)}</p>` : ""}${cl.showModel ? `<p class="small sec">You could say: <b lang="en">${esc(t.m)}</b></p>` : ""}
       ${cl.listening ? `<p class="sec">🎙️ I'm listening…</p>` : ""}</div>
     ${mic ? `<button class="btn full sec" data-act="clmic">${cl.listening ? "■ I've finished" : "🎙️ Answer"}</button>` : `<div class="row sec" style="gap:8px"><input id="clin" class="inp" lang="en" style="flex:1" placeholder="Your answer in English"><button class="btn" data-act="cltyped">Send</button></div>`}
-    <div class="row sec" style="gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn sm ghost" data-act="clrep">🔁 Repeat</button><button class="btn sm ghost" data-act="clslow">🐢 Slower</button><button class="btn sm ghost" data-act="clcc">${cl.cc ? "🙈 Hide subtitles" : "💬 Subtitles"}</button><button class="btn sm ghost" data-act="clhint">💡 Hint</button><button class="btn sm call-hang" data-act="clhang">📞 Hang up</button></div></div>`;
+    <div class="row sec" style="gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn sm ghost" data-act="clrep">🔁 Repeat</button><button class="btn sm ghost" data-act="clslow">🐢 Slower</button><button class="btn sm ghost" data-act="clcc">${cl.cc ? "🙈 Hide subtitles" : "💬 Subtitles"}</button><button class="btn sm ghost" data-act="clhint">💡 Hint</button><button class="btn sm ghost" data-act="clskip">⏭️ Skip</button><button class="btn sm call-hang" data-act="clhang">📞 Hang up</button></div></div>`;
 };
 ACT.clcc = () => { cl.cc = !cl.cc; render(); };
 /* listas: cada conversación con su personaje */
@@ -8600,6 +8602,86 @@ renderCallList = function(){
     <div class="panel sec stack">${list.map(sc => { const ch = charOf(sc); return `<button class="list-row" data-act="clopen" data-id="${sc.id}"><span class="ic av-list">${avatarSVG(ch, 44)}</span><span style="flex:1;text-align:left"><b>${esc(ch.n)} · ${esc(ch.r)}</b><br><span class="small muted">${esc(sc.title)} · ${LEVELS[sc.l-1].code}${(S.calls||{})[sc.id]?` · mejor: ${(S.calls||{})[sc.id]} de ${sc.turns.length}`:""}</span></span></button>`; }).join("")}</div></div>`;
 };
 Object.assign(EXTRA_VIEWS, {calls:renderCallList, call:renderCall});
+
+
+/* ================= MICRÓFONO COMO ANTES, FRASE OCULTA, SALTAR PREGUNTAS Y «MÁS DESPACIO» DE VERDAD ================= */
+/* micrófono: el navegador decide cuándo has terminado de hablar (como funcionaba antes) */
+Object.assign(Mic, {
+  rec:null, sess:null,
+  start(o){
+    if(!SRC){ o.onError("unsupported"); return false; }
+    this.abort();
+    let r; try{ r = new SRC(); }catch(e){ o.onError("start"); return false; }
+    r.lang = S.settings.accent; r.continuous = !!o.long; r.interimResults = !!o.long; r.maxAlternatives = o.long ? 1 : 5;
+    let fin = "";
+    r.onresult = ev => {
+      if(o.long){ let interim = ""; for(let i=ev.resultIndex;i<ev.results.length;i++){ const res = ev.results[i]; if(res.isFinal) fin += (fin ? " " : "") + String(res[0].transcript||"").trim(); else interim += res[0].transcript; } o.onResult(fin, interim); }
+      else { const res = ev.results[ev.results.length-1], alts = []; for(let k=0;k<res.length;k++) alts.push(String(res[k].transcript||"").trim()); if(alts.filter(Boolean).length) o.onResult(alts.filter(Boolean)); }
+    };
+    r.onerror = ev => { if(ev.error==="aborted") return; if(ev.error==="not-allowed" || ev.error==="service-not-allowed") micBlocked = true; o.onError(ev.error); };
+    r.onend = () => { if(this.rec===r){ this.rec = null; if(o.onEnd) o.onEnd(); } };
+    this.rec = r;
+    try{ r.start(); }catch(e){ this.rec = null; o.onError("start"); return false; }
+    return true;
+  },
+  stop(){ if(this.rec){ try{ this.rec.stop(); }catch(e){} } },
+  abort(){ if(this.rec){ const r = this.rec; this.rec = null; try{ r.abort(); }catch(e){} } }
+});
+Object.defineProperty(Mic, "on", {get(){ return !!this.rec; }, configurable:true});
+
+/* «más despacio»: lento de verdad y por trozos, con pausas entre grupos de palabras */
+function slowChunks(t){
+  const words = clean(String(t)).replace(/…/g,"...").split(/\s+/).filter(Boolean), out = []; let cur = [];
+  words.forEach(w => { cur.push(w); if(cur.length>=3 || /[,.;:!?]$/.test(w)){ out.push(cur.join(" ")); cur = []; } });
+  if(cur.length) out.push(cur.join(" "));
+  return out;
+}
+function speakSlow(text, voice, pitch, onstart, onend){
+  try{ speechSynthesis.cancel(); const parts = slowChunks(text), single = parts.length===1 && !/\s/.test(parts[0]);
+    parts.forEach((p,i) => { const u = new SpeechSynthesisUtterance(p); if(voice) u.voice = voice; u.lang = (voice && voice.lang) || S.settings.accent; u.rate = single ? 0.5 : 0.62; if(pitch) u.pitch = pitch;
+      if(i===0 && onstart) u.onstart = onstart; if(i===parts.length-1 && onend){ u.onend = onend; u.onerror = onend; } speechSynthesis.speak(u); });
+  }catch(e){ if(onend) onend(); }
+}
+function defVoice(){ return VOICES.find(v => v.lang===S.settings.accent) || VOICES.find(v => v.lang && v.lang.replace("_","-").startsWith(S.settings.accent)) || VOICES.find(v => v.lang && v.lang.startsWith("en")); }
+(function(){ const _sp = speak; speak = function(text, rate){ if(rate && rate<0.9) return speakSlow(text, defVoice()); return _sp.apply(this, arguments); }; })();
+(function(){ const _sc = speakChar; speakChar = function(ch, text, rate, onend){
+  if(rate && rate<0.9){ setTalking(true); return speakSlow(text, charVoice(ch), ch.p, () => setTalking(true), () => { setTalking(false); if(onend) onend(); }); }
+  return _sc.apply(this, arguments); }; })();
+ACT.playslow = () => speak(cur().text, 0.6);
+
+/* «escucha y repite»: la frase solo se muestra si el alumno la pide */
+ACT.showtext = () => { if(sess && sess.st){ sess.st.showText = true; render(); } };
+
+/* saltar en vez de escribir, y aviso si se salta demasiado en la semana */
+function skipBump(){ const wk = weekStart(todayKey()); S.skipLog = S.skipLog || {}; S.skipLog[wk] = (S.skipLog[wk]||0) + 1; const ks = Object.keys(S.skipLog).sort(); if(ks.length>12) delete S.skipLog[ks[0]]; save(); }
+function skipStats(wk){ wk = wk || weekStart(todayKey()); const n = (S.skipLog||{})[wk] || 0, ans = ((S.wlog||{})[wk]||{}).ex || 0; return {n, ans, rate: n+ans ? n/(n+ans) : 0}; }
+function skipTooMany(){ const s = skipStats(); return s.n>=10 && s.rate>=0.15; }
+function skipHomeCard(){
+  if(!skipTooMany() || S.skipWarnSeen===todayKey()) return "";
+  const s = skipStats();
+  return `<div class="panel sec skip-card"><h3>⚠️ Esta semana has saltado ${s.n} preguntas</h3><p class="muted small" style="margin:6px 0 10px">Es el ${Math.round(s.rate*100)} % de lo que has hecho. Intenta responder aunque no estés seguro: equivocarse también enseña, y los fallos vuelven en los repasos para que los domines.</p><button class="btn sm ghost" data-act="skipok">Entendido</button></div>`;
+}
+ACT.skipok = () => { S.skipWarnSeen = todayKey(); save(); render(); };
+(function(){ const _dc = doContinue; doContinue = function(skip){
+  const ex = sess && cur(), wasChecked = sess && sess.st && sess.st.checked;
+  if(skip && ex && !wasChecked && !(sess.back!=null)) skipBump();
+  const before = skipTooMany(), out = _dc.apply(this, arguments);
+  if(!before && skipTooMany() && S.skipWarnWeek!==weekStart(todayKey())){ S.skipWarnWeek = weekStart(todayKey()); save(); setTimeout(() => toast("⚠️ Esta semana estás saltando muchas preguntas. ¡Inténtalo aunque no estés seguro!"), 800); }
+  return out; }; })();
+ACT.chatskip = () => {
+  const c = chat, sc = c.sc; if(!c || c.done || c.mode!=="guided") return;
+  Mic.abort(); c.listening = false; c.pending = null; skipBump();
+  c.log.push({who:"note", ok:false, html:"⏭️ Skipped. This turn doesn't count."}); c.tries = 0; c.peek = false; c.i++;
+  if(c.i>=sc.turns.length){ c.done = true; save(); } else { const nb = sc.turns[c.i].b; c.log.push({who:"bot", text:nb}); setTimeout(() => speak(nb), 250); }
+  render(); if(typeof scrollChat==="function") scrollChat();
+};
+ACT.clskip = () => {
+  const sc = SCENARIOS.find(x => x.id===cl.id); if(!sc || cl.i>=sc.turns.length) return;
+  try{ Mic.abort(); }catch(e){} cl.listening = false; skipBump();
+  cl.log[cl.i] = {said:"(skipped)", ok:false, skip:true}; cl.i++; cl.tries = 0; cl.hint = false; cl.showModel = false; cl.state = null;
+  if(cl.i>=sc.turns.length){ clearInterval(cl.tid); cl.xp = 5*cl.first; if(cl.xp) addXP(cl.xp); S.calls = S.calls || {}; S.calls[sc.id] = Math.max(S.calls[sc.id]||0, cl.first); save(); checkMedals(); gameStepDone("call", cl.first>=Math.ceil(sc.turns.length/2)); render(); }
+  else { render(); setTimeout(() => clSay(false), 300); }
+};
 
 </script>
 </body>
