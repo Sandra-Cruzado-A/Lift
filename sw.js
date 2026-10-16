@@ -1,31 +1,66 @@
-// Guarda la app en el móvil para que abra sin conexión y recibe los cambios en cuanto hay internet.
-const CACHE = 'dia-a-dia-v6';
-const SHELL = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'offline.html', 'vendor/d3.min.js', 'vendor/topojson-client.min.js', 'vendor/jszip.min.js', 'vendor/leaflet.js', 'vendor/googlemutant.js', 'vendor/leaflet.css', 'vendor/xlsx.mini.min.js', 'vendor/jspdf.umd.min.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/logo.svg'];
+/* Lift: funcionamiento sin conexión. Cambia VERSION cada vez que subas cambios. */
+const VERSION = "lift-5.2.0";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
-  self.skipWaiting();
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
-
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
+self.addEventListener("activate", e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener('fetch', e => {
+self.addEventListener("fetch", e => {
   const req = e.request;
+  if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== location.origin) return;
-  // La app y su configuración: primero lo último de internet; si no hay conexión, lo guardado.
-  if (req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/') || url.pathname.endsWith('config.js')) {
-    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+  // La página: primero la red (para recibir actualizaciones) y, sin conexión, la copia guardada.
+  if (req.mode === "navigate") {
+    e.respondWith(fetch(req).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); }
       return res;
-    }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));
+    }).catch(() => caches.match("./index.html").then(r => r || caches.match("./"))));
     return;
   }
-  e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => {
-    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-    return res;
-  })));
+  // Iconos y tipografía: copia guardada al instante y se refresca en segundo plano.
+  const same = url.origin === self.location.origin;
+  if (same && url.pathname.endsWith("/avisos.json")) return; // la configuración de avisos siempre se lee de la red
+  const font = url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
+  if (!same && !font) return;
+  e.respondWith(caches.match(req).then(hit => {
+    const net = fetch(req).then(res => {
+      if (res && (res.ok || res.type === "opaque")) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => hit);
+    return hit || net;
+  }));
+});
+
+/* ---------- Avisos del reto diario ---------- */
+self.addEventListener("push", e => {
+  e.waitUntil((async () => {
+    let st = {};
+    try { const c = await caches.open("lift-state"); const r = await c.match("./state.json"); if (r) st = await r.json(); } catch (err) {}
+    const now = new Date();
+    const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    if (st.url && st.id) {
+      try {
+        const r = await fetch(st.url + "/notif?id=" + encodeURIComponent(st.id), { cache: "no-store" });
+        const j = await r.json();
+        if (j && j.title) { await self.registration.showNotification(j.title, { body: j.body || "", icon: "./icon-192.png", tag: "lift-chat", renotify: true, data: { url: "./#room", go: "room" } }); return; }
+      } catch (err) {}
+    }
+    const streak = st.streak || 0;
+    let title, body;
+    if (st.lastDaily === today) { title = "Reto de hoy completado ✓"; body = "¡Bien hecho! Mañana tendrás un reto nuevo."; }
+    else if (now.getHours() < 15) { title = "Tu reto de hoy te espera"; body = streak > 0 ? `Unos 15 minutos de inglés y sumas el día ${streak + 1} de tu racha 🔥` : "Unos 15 minutos de inglés para empezar bien el día 💬"; }
+    else { title = "Aún estás a tiempo"; body = streak > 0 ? `Haz el reto de hoy para no perder tu racha de ${streak} ${streak === 1 ? "día" : "días"} 🔥` : "Haz el reto de hoy antes de dormir: solo unos 15 minutos 💬"; }
+    await self.registration.showNotification(title, { body, icon: "./icon-192.png", tag: "lift-daily", renotify: true, data: { url: "./" } });
+  })());
+});
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const d = e.notification.data || {};
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ("focus" in c) { if (d.go) c.postMessage({ go: d.go }); return c.focus(); } }
+    return self.clients.openWindow(d.url || "./");
+  }));
 });
