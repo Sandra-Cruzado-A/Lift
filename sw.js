@@ -1,5 +1,5 @@
 /* Lift: funcionamiento sin conexión. Cambia VERSION cada vez que subas cambios. */
-const VERSION = "lift-5.3.0";
+const VERSION = "lift-5.4.0";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon.png"];
 
 self.addEventListener("install", e => {
@@ -28,39 +28,3 @@ self.addEventListener("fetch", e => {
   e.respondWith(caches.match(req).then(hit => {
     const net = fetch(req).then(res => {
       if (res && (res.ok || res.type === "opaque")) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
-      return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
-});
-
-/* ---------- Avisos del reto diario ---------- */
-self.addEventListener("push", e => {
-  e.waitUntil((async () => {
-    let st = {};
-    try { const c = await caches.open("lift-state"); const r = await c.match("./state.json"); if (r) st = await r.json(); } catch (err) {}
-    const now = new Date();
-    const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-    if (st.url && st.id) {
-      try {
-        const r = await fetch(st.url + "/notif?id=" + encodeURIComponent(st.id), { cache: "no-store" });
-        const j = await r.json();
-        if (j && j.title) { await self.registration.showNotification(j.title, { body: j.body || "", icon: "./icon-192.png", tag: "lift-chat", renotify: true, data: { url: "./#room", go: "room" } }); return; }
-      } catch (err) {}
-    }
-    const streak = st.streak || 0;
-    let title, body;
-    if (st.lastDaily === today) { title = "Reto de hoy completado ✓"; body = "¡Bien hecho! Mañana tendrás un reto nuevo."; }
-    else if (now.getHours() < 15) { title = "Tu reto de hoy te espera"; body = streak > 0 ? `Unos 15 minutos de inglés y sumas el día ${streak + 1} de tu racha 🔥` : "Unos 15 minutos de inglés para empezar bien el día 💬"; }
-    else { title = "Aún estás a tiempo"; body = streak > 0 ? `Haz el reto de hoy para no perder tu racha de ${streak} ${streak === 1 ? "día" : "días"} 🔥` : "Haz el reto de hoy antes de dormir: solo unos 15 minutos 💬"; }
-    await self.registration.showNotification(title, { body, icon: "./icon-192.png", tag: "lift-daily", renotify: true, data: { url: "./" } });
-  })());
-});
-self.addEventListener("notificationclick", e => {
-  e.notification.close();
-  const d = e.notification.data || {};
-  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
-    for (const c of list) { if ("focus" in c) { if (d.go) c.postMessage({ go: d.go }); return c.focus(); } }
-    return self.clients.openWindow(d.url || "./");
-  }));
-});
