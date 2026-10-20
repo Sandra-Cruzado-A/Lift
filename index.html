@@ -395,7 +395,20 @@ a.btn.full{display:flex}
 .call-top .av{display:block;margin:0 auto} .cc-line{font-size:1.06rem;font-style:italic}
 .av-list svg,.gi.av-list svg{display:block} .gi.av-list{background:transparent !important}
 .hidden-text{color:var(--muted);font-size:1.15rem} .skip-card{border:2px solid #f2c037}
+.corr{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)} .corr-t{line-height:1.75;margin:6px 0}
+ins.fix{text-decoration:none;border-radius:4px;padding:0 3px;color:#1d2433} ins.c0{background:#ffe0b2} ins.c1{background:#ffcdd2} ins.c2{background:#cfe8ff} ins.c3{background:#e6e6e6} ins.c4{background:#e1f5d6}
+s.diff-del{color:var(--bad);opacity:.85} .corr-g{margin-top:8px} .corr-g ul{padding-left:18px;margin-top:4px;display:grid;gap:3px} .qa-row{margin:12px 0} .fixnote{font-size:.9rem}
 </style>
+<script>
+/* si algo impide arrancar la app, mostrar un aviso en vez de una pantalla en blanco */
+(function(){ var errs = []; window.addEventListener("error", function(e){ errs.push(String((e && (e.message || (e.error && e.error.message))) || "error")); });
+  setTimeout(function(){ var a = document.getElementById("app"); if(!a || a.innerHTML.replace(/\s/g,"").length) return;
+    a.innerHTML = '<div style="padding:28px 22px;font-family:system-ui,sans-serif;line-height:1.5"><h2>Lift no ha podido arrancar</h2><p>Prueba a volver a cargar. Si sigue igual, pulsa «Reparar»: borra la copia guardada de la app (no tu progreso) y la descarga de nuevo.</p><p><button id="lr1" style="padding:10px 16px;margin-right:8px">Volver a cargar</button><button id="lr2" style="padding:10px 16px">Reparar</button></p><p style="font-size:12px;color:#888">' + (errs[0] ? String(errs[0]).replace(/</g,"&lt;") : "") + '</p></div>';
+    document.getElementById("lr1").onclick = function(){ location.reload(); };
+    document.getElementById("lr2").onclick = function(){ var p = (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) ? navigator.serviceWorker.getRegistrations() : Promise.resolve([]);
+      p.then(function(rs){ for(var i=0;i<rs.length;i++) rs[i].unregister(); return window.caches ? caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }) : null; }).then(function(){ location.reload(); }); };
+  }, 4000); })();
+</script>
 </head>
 <body>
 <main id="app" aria-live="polite"></main>
@@ -5703,8 +5716,8 @@ var DAILY_GAMES = [
  {gid:"reading", tab:"learn", n:"Lectura graduada", i:"📖", sec:240, w:1.2, d:"Un texto corto de tu nivel con tres preguntas de comprensión."},
  {gid:"call", tab:"talk", n:"Llamada sin texto", i:"📞", sec:240, w:1, d:"Una llamada de teléfono: solo oyes a la otra persona y respondes."},
  {gid:"debate", tab:"talk", n:"Debate de un minuto", i:"⏱️", sec:150, w:1, d:"Defiende o rebate un tema durante un minuto."},
- {gid:"anecdote", tab:"talk", n:"Mis anécdotas", i:"📝", sec:200, w:0.8, d:"Escribe o cuenta sin mirar una de tus historias personales."},
- {gid:"journal", tab:"talk", n:"Diario en inglés", i:"📓", sec:240, w:0.9, d:"Escribe unas frases sobre la pregunta del día."},
+ {gid:"anecdote", tab:"talk", n:"Mis anécdotas", i:"📝", sec:150, w:0.8, d:"Escribe o cuenta sin mirar una de tus historias personales."},
+ {gid:"journal", tab:"talk", n:"Diario en inglés", i:"📓", sec:150, w:0.9, d:"Escribe unas frases sobre la pregunta del día."},
  {gid:"series", tab:"play", n:"Flat 4B", i:"📺", sec:300, w:1, d:"El siguiente capítulo de la serie, con su decisión y sus preguntas."},
  {gid:"mystery", tab:"play", n:"Misterio del día", i:"🕵️", sec:300, w:0.9, d:"Haz preguntas de sí o no hasta resolver el caso."},
  {gid:"escape", tab:"play", n:"Escape room", i:"🔐", sec:360, w:0.7, d:"Resuelve los acertijos en inglés para salir de la sala."},
@@ -5718,7 +5731,7 @@ TOPICS.game = {name:"Actividad del día", icon:"🎲"};
 DAILY_GAMES.forEach(g => addItem("game","g",1,g,g.gid));
 /* tiempo estimado de cada ejercicio, en segundos */
 function itemKey(it){ const t = it.topic, k = it.kind; return t==="write" ? "write:"+k : t==="interview" ? "interview:"+((k==="q"||k==="o") ? "long" : "short") : t; }
-var SEC_DEF = {"write:c":300, "write:t":120, "interview:long":240, "interview:short":25, ask:75, listen:75, mine:60, verbs:40, ivocab:30, vocab:20, conn:25, phrasal:25, expr:25, order:45, speak:40, conv:45, pron:35, scene:45, shadow:45, spanglish:30, culture:30, proverb:25, twister:40, tech:35};
+var SEC_DEF = {"write:c":180, "write:t":120, "interview:long":150, "interview:short":25, ask:75, listen:75, mine:60, verbs:40, ivocab:30, vocab:20, conn:25, phrasal:25, expr:25, order:45, speak:40, conv:45, pron:35, scene:45, shadow:45, spanglish:30, culture:30, proverb:25, twister:40, tech:35};
 /* tiempo estimado de cada ejercicio: el real de tu alumno cuando ya hay datos; si no, un valor por defecto realista */
 function itemSec(it){
   if(!it) return 30; if(it.topic==="game") return it.d.sec;
@@ -5951,17 +5964,17 @@ function fbHTML(ex, st){
   if(ex.type==="open"){
     h = `<div class="fb neutral" role="status"><h3>${r.ai?(ok?fb("goodAns"):fb("canImprove")):fb("compare")}</h3>`;
     if(!r.ai){ h += `<p class="small">${r.words} ${fbI("words")}${r.used.length?`. ${fb("used")}: ${r.used.map(esc).join(", ")}`:". "+fb("tryPhrases")}.</p>`;
-      h += `<p><i>${esc(ex.sol)}</i> ${spk(ex.sol)}</p>`; }
+      h += correctionHTML(userText(ex,st)); }
   } else if(ex.type==="compose"){
     h = `<div class="fb ${ok?"ok":"bad"}" role="status"><h3>${r.ai?(ok?fb("goodText"):fb("checkFix")):ok?fb("allPoints"):fb("missPoint")}</h3>
       <p class="small">${r.words} ${fbI("words")} (${fbI("aim").toLowerCase()} ${ex.min}).</p>
-      <details${ok?"":" open"}><summary>${fb("model")}</summary><p style="white-space:pre-line;margin-top:6px"><i>${esc(ex.sol)}</i></p></details>`;
+      ${correctionHTML(userText(ex,st))}`;
   } else {
     const head = r.ai ? fb("valid") : ok ? (r.typo ? fb("typo") : fb("correct")) : fb("wrong");
     const sol = (["input","speak"].includes(ex.type)) && r.best && ex.mode!=="ans" ? r.best : ex.sol;
     h = `<div class="fb ${ok?"ok":"bad"}" role="status"><h3>${head}</h3>`;
-    if(ex.type==="reply") h += `<p>${ok?fb("other"):fb("oneWay")}: <b>${esc(ex.sol)}</b> ${spk(ex.sol)}</p>`;
-    else if(!ok || r.typo) h += `<p>${ok?fb("form"):fb("solution")}: <b>${esc(sol)}</b> ${spk(ex.type==="mcq"||ex.mode==="ans"?ex.full:sol)}</p>`;
+    if(ex.type==="reply") h += `<p>${ok?fb("other"):fb("oneWay")}: <b>${esc(ex.sol)}</b> ${spk(ex.sol)}</p>` + corrIfAny(yourAnswer(ex,st,false), {oral: !st.typing});
+    else if(!ok || r.typo) h += `<p>${ok?fb("form"):fb("solution")}: <b>${(["input","speak"].includes(ex.type) && ex.mode!=="ans" && yourAnswer(ex,st,false)) ? diffHTML(yourAnswer(ex,st,false), sol) : esc(sol)}</b> ${spk(ex.type==="mcq"||ex.mode==="ans"?ex.full:sol)}</p>`;
     else if(ex.full) h += `<p><b>${esc(ex.sol)}</b> ${spk(ex.full)}</p>`;
     if(ex.meaning) h += `<p class="small">${fb("means")}: «${esc(ex.meaning)}»</p>`;
     if(ex.example) h += `<p><i>${esc(ex.example)}</i></p>`;
@@ -6397,7 +6410,7 @@ function renderInterview(){
     const f = iv.fb;
     bar = `<div class="fb neutral" role="status">`;
     if(f && f.ai) bar += `<h3>Claude: ${esc(f.score)}/10</h3><p>👍 ${esc(f.good||"")}</p><p>🎯 ${esc(f.improve||"")}</p>${(f.errors||[]).length?`<ul class="errs">${f.errors.map(e=>`<li>${esc(e)}</li>`).join("")}</ul>`:""}${f.better?`<p class="small muted" style="margin-top:8px">Versión mejorada de tu respuesta</p><p><i>${esc(f.better)}</i> ${spk(f.better)}</p>`:""}
-      <details style="margin-top:8px"><summary>Ver respuesta modelo</summary><p style="margin-top:6px"><i>${esc(q.m)}</i> ${spk(q.m)}</p></details>`;
+      ${correctionHTML(iv.answer, {oral: !/[.!?,]/.test(iv.answer)})}`;
     else { const used = phrasesUsed(iv.answer, q.p);
       bar += `<h3>Compárate con una respuesta modelo</h3>${f&&f.err?`<p class="small">${esc(f.err)}</p>`:""}<p class="small">${wordCount(iv.answer)} palabras${used.length?`. Has usado: ${used.map(esc).join(", ")}`:". No has usado ninguna frase útil"}.</p><p><i>${esc(q.m)}</i> ${spk(q.m)}</p>`; }
     bar += `</div>`;
@@ -6437,15 +6450,15 @@ function ivNext(ok){
 function openWriter(id){ const w = WRITING.find(x=>x.id===id); if(!w) return; Mic.abort(); wr = {w, text:"", res:null, ai:null, busy:false, listening:false, micErr:null, recorded:false, rewarded:false}; view = "writer"; render(); scrollTo(0,0); }
 function renderWriter(){
   const w = wr.w, r = wr.res;
-  let h = `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="tab" data-v="talk" aria-label="Volver">←</button><div class="grow"><b>${w.icon} ${esc(trI(w.title,w.titleE))}</b><div class="small muted">Nivel ${LEVELS[w.l-1].code}, unas ${w.min} palabras</div></div></div><div class="sess-body">`;
+  let h = `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="tab" data-v="talk" aria-label="Volver">←</button><div class="grow"><b>${w.icon} ${esc(trI(w.title,w.titleE))}</b><div class="small muted">Nivel ${LEVELS[w.l-1].code}, máximo ${WRITE_MAX} palabras</div></div></div><div class="sess-body">`;
   h += `<p style="margin-bottom:10px">${esc(trI(w.task,w.taskE))}</p>${w.from?`<div class="chat mini"><div class="msg bot"><span>${esc(w.from)}</span>${spk(w.from)}</div></div>`:""}
     <ul class="checks">${w.c.map(([label,,labelE],i)=>{ label = trI(label,labelE); const ok = r ? r.hits[i].ok : null; return `<li class="${ok===true?"ok":ok===false?"bad":""}">${ok===true?"✓":ok===false?"✗":"○"} ${esc(label)}</li>`; }).join("")}</ul>
     <textarea id="wrin" class="inp" rows="8" placeholder="Escribe aquí en inglés" autocapitalize="sentences" spellcheck="false">${esc(wr.text)}</textarea>
     <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap">${SRC && !micBlocked ? `<button class="btn sm ${wr.listening?"":"ghost"}" data-act="wrdictate">${wr.listening?"⏹ Parar de dictar":"🎙️ Dictar con la voz"}</button>`:""}<span class="small muted" id="wc">${wordCount(wr.text)} palabras</span></div>
     ${wr.micErr?`<p class="note">${esc(wr.micErr)}</p>`:""}`;
   if(r){
-    h += `<div class="fb ${r.ok?"ok":"bad"}" style="margin-top:14px"><h3>${r.ok?"¡Has cubierto todos los puntos!":"Revisa los puntos marcados con ✗"}</h3><p class="small">${r.words} palabras (unas ${w.min} recomendadas).</p>
-      <details${r.ok?"":" open"}><summary>Ver un ejemplo</summary><p style="white-space:pre-line;margin-top:6px"><i>${esc(w.m)}</i></p></details>`;
+    h += `<div class="fb ${r.ok?"ok":"bad"}" style="margin-top:14px"><h3>${r.ok?"¡Has cubierto todos los puntos!":"Revisa los puntos marcados con ✗"}</h3><p class="small">${r.words} palabras (máximo ${WRITE_MAX}).</p>
+      ${correctionHTML(wr.text)}`;
     if(wr.ai){ const j = wr.ai;
       h += j.err ? `<p class="ai-out">${esc(j.err)}</p>` : `<div class="ai-out"><p><b>Claude: ${esc(j.score)}/10.</b> ${esc(j.comment||"")}</p>${(j.errors||[]).length?`<ul class="errs">${j.errors.map(e=>`<li>${esc(e)}</li>`).join("")}</ul>`:""}${j.corrected?`<p class="small muted" style="margin-top:8px">Versión corregida</p><p style="white-space:pre-line"><i>${esc(j.corrected)}</i> ${spk(j.corrected)}</p>`:""}</div>`; }
     if(AI && !wr.ai) h += `<button class="link" data-act="wrai" ${wr.busy?"disabled":""}>${wr.busy?"Claude está corrigiendo…":"Corregir mi texto con Claude"}</button>`;
@@ -7784,7 +7797,7 @@ function renderExam(){
     const r = xm.result, pass = r.pct>=60;
     h += `<div class="panel"><h2>${pass?"✅ Aprobado":"Todavía no"}: ${r.pct} %</h2><p class="muted small" style="margin:6px 0 12px">Para aprobar hace falta un 60 %.</p>
       <div class="stack">${EX_PARTS.map(p => `<div class="row between small"><span>${EX_NAMES[p]}</span><b>${r.s[p]} / ${r.max[p]}</b></div>`).join("")}</div>
-      <p class="note">La expresión escrita se puntúa por longitud y por los elementos pedidos; la oral, con tu autoevaluación.</p>
+      ${xm.writing ? `<h3 class="sec">Tu texto escrito</h3>${correctionHTML(xm.writing)}` : ""}<p class="note">La expresión escrita se puntúa por longitud y por los elementos pedidos; la oral, con tu autoevaluación.</p>
       <button class="btn sec" data-act="xback" data-to="exams">Volver a los simulacros</button></div>`;
     return h + `</div>`;
   }
@@ -7886,7 +7899,7 @@ function interestsHTML(){
 Object.assign(EXTRA_VIEWS, {readings:renderReadings, reading:renderReading, exams:renderExams, exam:renderExam, journal:renderJournal, report:renderReport, interests:renderInterests});
 Object.assign(ACT, {
   rdopen: b => { const x = READINGS.find(r => r.id===b.dataset.id), rr = rng(hashStr(x.id+todayKey())); rd = {id:x.id, ans:{}, order:x.q.map(() => shuffle([0,1,2], rr)), xp:0}; view = "reading"; render(); scrollTo(0,0); },
-  rdlisten: () => { const x = READINGS.find(r => r.id===rd.id); speechSynthesis.cancel(); x.text.split(/(?<=[.!?])\s+/).forEach(s => speakAs(s, "narrator")); },
+  rdlisten: () => { const x = READINGS.find(r => r.id===rd.id); speechSynthesis.cancel(); x.text.replace(/([.!?])\s+/g,"$1\u0001").split("\u0001").forEach(s => speakAs(s, "narrator")); },
   rdstop: () => { try{ speechSynthesis.cancel(); }catch(e){} },
   rdans: b => { const x = READINGS.find(r => r.id===rd.id), qi = +b.dataset.q; if(rd.ans[qi]!=null) return; rd.ans[qi] = +b.dataset.i; const ok = rd.ans[qi]===x.q[qi][2]; record("reading", ok);
     if(Object.keys(rd.ans).length===x.q.length){ const n = x.q.filter((q,i) => rd.ans[i]===q[2]).length; S.readDone = S.readDone || {}; const first = S.readDone[x.id]==null; S.readDone[x.id] = Math.max(S.readDone[x.id]||0, n); if(first){ rd.xp = Math.round(8*n*diffFactor({lvl:x.lvl})); addXP(rd.xp); } save(); checkMedals(); gameStepDone("reading", n>=2); }
@@ -8110,7 +8123,7 @@ function renderDebate(){
     const t = " "+dv.text.toLowerCase()+" ", words = (dv.text.match(/[A-Za-z']+/g)||[]).length, used = CONNECTORS.filter(c => t.includes(" "+c+" ") || t.includes(" "+c+",")), sug = CONNECTORS.filter(c => !used.includes(c)).slice(0,5);
     h += `<div class="kpis sec"><div class="kpi"><b>${words}</b><span>palabras</span></div><div class="kpi"><b>${used.length}</b><span>conectores</span></div><div class="kpi"><b>${Math.round(words*60/Math.max(10,60-dv.sec))}</b><span>palabras/min</span></div></div>
       ${used.length?`<p class="small sec">✅ Has usado: <b>${used.map(esc).join(", ")}</b></p>`:""}<p class="small sec">💡 Prueba la próxima vez: <i>${sug.map(esc).join(", ")}</i></p>
-      <details class="sec"><summary class="small">Lo que has dicho</summary><p class="small" lang="en" style="margin-top:6px">${esc(dv.text||"(nada)")}</p></details>${dv.xp?`<p class="small sec">+${dv.xp} XP</p>`:""}
+      ${dv.text ? correctionHTML(dv.text, {oral:true}) : ""}<details class="sec"><summary class="small">Lo que has dicho</summary><p class="small" lang="en" style="margin-top:6px">${esc(dv.text||"(nada)")}</p></details>${dv.xp?`<p class="small sec">+${dv.xp} XP</p>`:""}
       <div class="row sec" style="gap:10px"><button class="btn" data-act="dbnew">Otro tema</button></div>`;
   }
   return h + `</div></div>`;
@@ -8142,7 +8155,7 @@ function renderAnecdote(){
   if(an.mode==="tell"){
     h += `<div class="panel"><p lang="en"><b>${esc(a.q)}</b> ${spk(a.q)}</p><p class="small muted sec">Cuéntala sin mirar el texto. Luego te diré qué parte has contado.</p>
       ${an.listening ? `<p class="small" lang="en" style="min-height:3em">${esc(an.heard||"")} <span class="muted">${esc(an.interim||"")}</span></p><button class="btn full" data-act="anstop">■ He terminado</button>` : (an.result ? "" : (mic ? `<button class="btn full sec" data-act="antell">🎙️ Empezar a contar</button>` : `<textarea id="antell" class="inp" rows="6" lang="en" style="width:100%" placeholder="Escríbela de memoria…"></textarea><button class="btn sec" data-act="antyped">Comprobar</button>`))}`;
-    if(an.result) h += `<div class="sec"><h2>${an.result.cov} % de tu historia</h2><p class="small muted">Has contado ${an.result.hit} de las ${an.result.tot} palabras importantes.</p>${an.result.miss.length?`<p class="small sec">Te has dejado: <i>${an.result.miss.slice(0,12).map(esc).join(", ")}</i></p>`:""}<details class="sec"><summary class="small">Ver mi texto</summary><p class="small" lang="en" style="white-space:pre-wrap;margin-top:6px">${esc(s.text)}</p></details><div class="row sec" style="gap:10px"><button class="btn" data-act="anmode" data-m="tell">Otra vez</button><button class="btn ghost" data-act="anmode" data-m="edit">Editar el texto</button></div></div>`;
+    if(an.result) h += `<div class="sec"><h2>${an.result.cov} % de tu historia</h2><p class="small muted">Has contado ${an.result.hit} de las ${an.result.tot} palabras importantes.</p>${an.result.miss.length?`<p class="small sec">Te has dejado: <i>${an.result.miss.slice(0,12).map(esc).join(", ")}</i></p>`:""}${an.lastHeard ? correctionHTML(an.lastHeard, {oral:true}) : ""}<details class="sec"><summary class="small">Ver mi texto</summary><p class="small" lang="en" style="white-space:pre-wrap;margin-top:6px">${esc(s.text)}</p></details><div class="row sec" style="gap:10px"><button class="btn" data-act="anmode" data-m="tell">Otra vez</button><button class="btn ghost" data-act="anmode" data-m="edit">Editar el texto</button></div></div>`;
     return h + `</div></div>`;
   }
   h += `<div class="panel"><p lang="en"><b>${esc(a.q)}</b> ${spk(a.q)}</p><p class="small muted sec">💡 ${esc(a.tips)}</p>
@@ -8159,7 +8172,7 @@ function anCoverage(text, heard){
   return {tot:key.length, hit:hit.length, cov: key.length ? Math.round(100*hit.length/key.length) : 0, miss:key.filter(w => !hit.includes(w))};
 }
 function anFinish(heard){
-  const s = anState(an.id); an.listening = false; an.result = anCoverage(s.text, heard); s.practiced++; s.best = Math.max(s.best, an.result.cov);
+  const s = anState(an.id); an.listening = false; an.lastHeard = heard; an.result = anCoverage(s.text, heard); s.practiced++; s.best = Math.max(s.best, an.result.cov);
   if(an.result.cov>=50) addXP(10); save(); checkMedals(); gameStepDone("anecdote", an.result.cov>=40); render();
 }
 
@@ -8542,7 +8555,7 @@ renderChat = function(){
   let h = `<div class="sess"><div class="sess-top"><button class="icon-btn" data-act="chatquit" aria-label="Back">←</button><div class="grow"><b>${esc(title)}</b><div class="small muted">${guided ? `Guided conversation · ${Math.min(c.i+1, sc.turns.length)} of ${sc.turns.length}` : "Free conversation"}</div></div></div>`;
   h += `<div class="char-head">${avatarSVG(ch, 92, true)}<div><b class="char-name">${esc(ch.n)}</b><div class="small muted">${esc(ch.r)}</div><button class="link small" data-act="chatreplay">🔊 Listen again</button></div></div>`;
   h += `<div class="chat" aria-live="polite">` + c.log.map(m => m.who==="bot" ? `<div class="msg bot with-av"><span class="mini-av">${avatarSVG(ch, 30)}</span><span>${esc(m.text)}</span>${spk(m.text)}</div>`
-      : m.who==="me" ? `<div class="msg me">${esc(m.text)}</div>` : `<div class="msg note ${m.ok?"ok":"bad"}">${m.html}</div>`).join("");
+      : m.who==="me" ? `<div class="msg me">${esc(m.text)}</div>${(r => r.changes.length ? `<div class="msg note fixnote">✍️ Better: <span lang="en">${r.html}</span></div>` : "")(correctText(m.text, {oral:true}))}` : `<div class="msg note ${m.ok?"ok":"bad"}">${m.html}</div>`).join("");
   if(c.busy) h += `<div class="msg bot typing with-av"><span class="mini-av">${avatarSVG(ch, 30)}</span><span>${esc(ch.n)} is typing…</span></div>`;
   h += `<div id="chatend"></div></div>`;
   let bar = "";
@@ -8702,6 +8715,253 @@ document.addEventListener("visibilitychange", () => { if(document.visibilityStat
       S.secAvg = S.secAvg || {}; const a = S.secAvg[key] || {s:dt, n:0}; a.s = a.n ? a.s*0.7 + dt*0.3 : dt; a.n++; S.secAvg[key] = a;
     } }catch(e){}
   return _dc.apply(this, arguments); }; })();
+
+
+/* ================= CORRECTOR: el texto del alumno corregido, con sugerencias por tipo ================= */
+var FIX_CATS = [["Conjugación","Verb forms"],["Verbo mal usado","Wrong verb"],["Vocabulario más natural","Better word"],["Ortografía","Spelling"],["Preposición","Preposition"]];
+var PAST2BASE = {}, BASE2PAST = {}, BASE2PP = {};
+Object.keys(IRREG).forEach(b => { const [p, pp] = IRREG[b]; p.split("/").forEach(x => { PAST2BASE[x] = PAST2BASE[x] || b; }); BASE2PAST[b] = p.split("/")[0]; BASE2PP[b] = pp.split("/")[0]; });
+var FIX_VERBS = "work live like want need go have do study play watch read eat drink speak love think know come make take get teach help start finish walk cook use try feel look say see leave stay travel visit write listen wait pay buy enjoy hate prefer meet spend find give run swim sleep drive call open close clean wash learn talk tell ask answer bring send move change stop plan shop".split(" ");
+function verb3s(v){ if(v==="have") return "has"; if(v==="do") return "does"; if(v==="go") return "goes"; if(/(s|sh|ch|x|z|o)$/.test(v)) return v+"es"; if(/[^aeiou]y$/.test(v)) return v.slice(0,-1)+"ies"; return v+"s"; }
+function verbPast(v){ if(BASE2PAST[v]) return BASE2PAST[v]; if(/e$/.test(v)) return v+"d"; if(/[^aeiou]y$/.test(v)) return v.slice(0,-1)+"ied"; if(/^(stop|plan|shop|chat|drop|prefer)$/.test(v)) return v+v.slice(-1)+"ed"; return v+"ed"; }
+function verbIng(v){ if(/ie$/.test(v)) return v.slice(0,-2)+"ying"; if(/[^e]e$/.test(v) && !/^(be|see|agree)$/.test(v)) return v.slice(0,-1)+"ing"; if(/^(run|swim|sit|get|stop|plan|shop|put|cut|begin|forget|win|chat)$/.test(v)) return v+v.slice(-1)+"ing"; return v+"ing"; }
+function inDict(w){ return !!(PRON[w] || (typeof CORE_RANK!=="undefined" && CORE_RANK[w]!=null) || IRREG[w]); }
+function baseForm(w){
+  const lw = w.toLowerCase(); if(PAST2BASE[lw] && PAST2BASE[lw]!==lw && !IRREG[lw]) return PAST2BASE[lw];
+  if(/ied$/.test(lw) && inDict(lw.slice(0,-3)+"y")) return lw.slice(0,-3)+"y";
+  if(/ed$/.test(lw)){ for(const c of [lw.slice(0,-2), lw.slice(0,-1), lw.slice(0,-3)]) if(c.length>1 && FIX_VERBS.includes(c)) return c; }
+  if(/s$/.test(lw)){ for(const c of [lw.slice(0,-1), lw.slice(0,-2), lw.replace(/ies$/,"y")]) if(FIX_VERBS.includes(c) || IRREG[c]) return c==="ha" ? "have" : c==="doe" ? "do" : c; if(lw==="has") return "have"; if(lw==="does") return "do"; }
+  return null;
+}
+var AUX_BEFORE = /^(can|could|will|would|should|must|might|may|does|did|do|to|let|lets|let's|make|help|not|never|don't|doesn't|didn't|won't|can't)$/i;
+function prevWord(str, off){ const m = str.slice(0, off).match(/([A-Za-z']+)\s*$/); return m ? m[1] : ""; }
+function keepCase(from, to){ return /^[A-Z]/.test(from) && /^[a-z]/.test(to) ? to[0].toUpperCase()+to.slice(1) : to; }
+var PAST_MARK = /\b(yesterday|last (night|week|weekend|month|year|summer|winter|spring|autumn|time|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|ago|in (19|20)\d\d|when i was)\b/i;
+var DAYS = "monday tuesday wednesday thursday friday saturday sunday january february march april may june july august september october november december english spanish french german italian portuguese chinese japanese british american european".split(" ");
+var FIX_RULES = [
+ [/\b(i|you|we|they|he|she|it|my [a-z]+) (have|has) (\d+|[a-z]+-?[a-z]*) years( old)?\b/gi, (m,s,h,n) => { const p = s.toLowerCase(); return (p==="i" ? "I'm" : /^(you|we|they)$/.test(p) ? s+" are" : /^(he|she|it)$/.test(p) ? s+"'s" : s+" is")+" "+n+" years old"; }, 0, "La edad se dice con be: «I'm 30 years old», «she's 25»."],
+ [/\b(i|we|they|you) (live|work|study|know) ([a-zA-Z ,]{1,30}?) (since|for) (\d+|two|three|four|five|six|ten|many) (years|months|weeks|days)\b/gi, (m,s,v,mid,p,n,u) => s+" have "+({live:"lived",work:"worked",study:"studied",know:"known"})[v.toLowerCase()]+" "+mid+" for "+n+" "+u, 0, "Para algo que empezó en el pasado y sigue, se usa present perfect + for: «I've lived here for five years»."],
+ [/\bmy (mother|father|mum|mom|dad|sister|brother|friend|boss|wife|husband|son|daughter|cousin|partner|teacher|dog|cat|neighbour|grandmother|grandfather) (work|live|like|want|need|go|have|do|study|play|watch|read|eat|speak|love|think|know|come|make|take|get|teach|help|start|finish|walk|cook|use|try|feel|look|say|leave|stay|travel|visit|write|listen|enjoy|hate|prefer|drive|call|learn|talk)\b(?! ?ing)/gi, (m,s,v) => "my "+s+" "+verb3s(v.toLowerCase()), 0, "Con un sujeto en singular (my sister, my boss) el verbo en presente lleva -s."],
+ [/\b(like|love|enjoy|hate)(s|d)? very much (the|my|your|his|her|our|their|this|that|these|those|a|an) ([a-z]+(?: [a-z]+)?)(?=[.,!?]|$)/gi, (m,v,s,d,n) => v+(s||"")+" "+d+" "+n+" very much", 1, "«Very much» va al final: «I like my colleagues very much»."],
+ [/\b(the|my|your|our|their|these|those|his|her) ([a-z]+[^s]s) is\b/gi, (m,d,n) => /^(news|series|bus|business|class|glass|boss|address|process)$/i.test(n) ? m : d+" "+n+" are", 0, "Con un sujeto en plural el verbo va en plural: «the meetings are»."],
+ [/\b(i|you|we|they) has\b/gi, (m,s) => s+" have", 0, "Con I, you, we y they se usa «have», no «has»."],
+ [/\b(he|she|it) (work|live|like|want|need|go|have|do|study|play|watch|read|eat|drink|speak|love|think|know|come|make|take|get|teach|help|start|finish|walk|cook|use|try|feel|look|say|leave|stay|travel|visit|write|listen|wait|pay|buy|enjoy|hate|prefer|spend|find|give|run|sleep|drive|call|learn|talk|tell)\b(?! ?ing)/gi,
+   (m,s,v,off,str) => AUX_BEFORE.test(prevWord(str, off)) ? m : s+" "+verb3s(v.toLowerCase()), 0, "En presente, con he, she o it el verbo lleva -s (she works, he has, it goes)."],
+ [/\b(didn't|did not|doesn't|does not|don't|do not|can't|cannot|won't|will not|couldn't|shouldn't|wouldn't|mustn't|can|could|should|would|must|might|may|will) ([a-z]+)\b/gi,
+   (m,a,w) => { const b = baseForm(w); return b && b!==w.toLowerCase() && !/^(be|been|being)$/.test(w) ? a+" "+b : m; }, 0, "Después de didn't, don't, doesn't o de un verbo modal (can, will, should…), el verbo va en forma base."],
+ [/\b(can|could|must|should|will|would|might|may) to ([a-z]+)/gi, (m,a,w) => a+" "+w, 0, "Los verbos modales (can, must, should…) no llevan «to» detrás."],
+ [/\b(have|has|had|i've|you've|we've|they've|he's|she's) (went|saw|did|ate|took|wrote|spoke|broke|gave|came|ran|began|drank|chose|forgot|knew|flew|drove|rode|swam|sang|stole|grew|threw|wore|fell|hid|woke|forgave|was|were)\b/gi,
+   (m,a,w) => { const b = PAST2BASE[w.toLowerCase()]; return b && BASE2PP[b] ? a+" "+BASE2PP[b] : m; }, 0, "Con have/has/had va el participio (have gone, has seen, had eaten), no el pasado."],
+ [/\b(i am|i'm) agree\b/gi, (m) => "I agree", 0, "«Agree» ya es un verbo: «I agree», sin «am»."],
+ [/\bi have (\d+|[a-z]+-?[a-z]*) years( old)?\b/gi, (m,n) => "I'm "+n+" years old", 0, "La edad se dice con be: «I'm 30 years old»."],
+ [/\b(people|police) is\b/gi, (m,s) => s+" are", 0, "«People» y «police» van en plural: «people are»."],
+ [/\b(everybody|everyone|nobody|somebody|anybody) are\b/gi, (m,s) => s+" is", 0, "Everybody, everyone o nobody van con verbo en singular: «everybody is»."],
+ [/\b(since|during) (\d+|two|three|four|five|six|seven|eight|nine|ten|many|several) (years|months|weeks|days|hours|minutes)\b/gi, (m,a,n,u) => "for "+n+" "+u, 0, "Para la duración se usa «for» (for two years). «Since» va con el momento de inicio (since 2020)."],
+ [/\benjoy(s|ed)? to ([a-z]+)\b/gi, (m,s,v) => "enjoy"+(s||"")+" "+verbIng(v.toLowerCase()), 0, "Después de «enjoy» el verbo va en -ing: «I enjoy reading»."],
+ [/\blook(s|ing|ed)? forward to (see|meet|hear|visit|go|work|start|talk)\b/gi, (m,s,v) => "look"+(s||"")+" forward to "+verbIng(v.toLowerCase()), 0, "«Look forward to» va seguido de -ing: «I look forward to seeing you»."],
+ [/\bthank(s| you) for (help|invite|call|come|listen|wait)\b(?! ?ing)/gi, (m,s,v) => "thank"+s+" for "+verbIng(v.toLowerCase()), 0, "Después de una preposición (for) el verbo va en -ing: «thank you for helping»."],
+ [/\bmore (big|small|cheap|tall|old|young|fast|easy|hot|cold|long|short|happy|nice|busy|late|early) than\b/gi, (m,a) => { const c = a.toLowerCase(), er = {big:"bigger",hot:"hotter",easy:"easier",happy:"happier",busy:"busier",early:"earlier",nice:"nicer",late:"later"}[c] || c+"er"; return er+" than"; }, 0, "Los adjetivos cortos forman el comparativo con -er: «bigger than», «easier than»."],
+ [/\bexplain(s|ed)? me (it|this|that|the [a-z]+|your [a-z]+|my [a-z]+|what [a-z]+|how [a-z]+)/gi, (m,s,o) => "explain"+(s||"")+" "+o+" to me", 1, "Se dice «explain something to someone»: «explain the problem to me»."],
+ [/\bexplain(s|ed)? me\b/gi, (m,s) => "explain"+(s||"")+" to me", 1, "Se dice «explain something to someone»: «explain it to me»."],
+ [/\b(say|says|said) (me|him|her|us|them)\b/gi, (m,v,p) => ({say:"tell",says:"tells",said:"told"})[v.toLowerCase()]+" "+p, 1, "Con la persona detrás se usa «tell»: «tell me», «she told him»."],
+ [/\b(make|makes|made|making|do|does|did|doing) (a|some|a lot of|lots of|many|loads of) (photo|photos|picture|pictures)\b/gi, (m,v,a,o) => ({make:"take",makes:"takes",made:"took",making:"taking",do:"take",does:"takes",did:"took",doing:"taking"})[v.toLowerCase()]+" "+a+" "+o, 1, "Las fotos se «take»: «take a photo»."],
+ [/\b(do|does|did|doing) (a|many|some) (mistake|mistakes)\b/gi, (m,v,a,o) => ({do:"make",does:"makes",did:"made",doing:"making"})[v.toLowerCase()]+" "+a+" "+o, 1, "Los errores se «make»: «make a mistake»."],
+ [/\b(make|makes|made|making) a party\b/gi, (m,v) => ({make:"have",makes:"has",made:"had",making:"having"})[v.toLowerCase()]+" a party", 1, "Se dice «have a party» (o «throw a party»)."],
+ [/\b(do|does|did|make|makes|made) (a|some) (question|questions)\b/gi, (m,v,a,o) => ({do:"ask",does:"asks",did:"asked",make:"ask",makes:"asks",made:"asked"})[v.toLowerCase()]+" "+a+" "+o, 1, "Las preguntas se «ask»: «ask a question»."],
+ [/\b(lose|loses|lost|losing) the (bus|train|plane|flight|tube)\b/gi, (m,v,o) => ({lose:"miss",loses:"misses",lost:"missed",losing:"missing"})[v.toLowerCase()]+" the "+o, 1, "Perder un transporte es «miss»: «I missed the bus». «Lose» es perder algo que no encuentras."],
+ [/\bassist(s|ed)? (to|at) /gi, (m,s) => "attend"+(s||"")+" ", 1, "Falso amigo: asistir a algo es «attend». «Assist» significa ayudar."],
+ [/\b(arrive|arrives|arrived) to home\b/gi, (m,v) => ({arrive:"get",arrives:"gets",arrived:"got"})[v.toLowerCase()]+" home", 1, "Llegar a casa: «get home» (sin «to»)."],
+ [/\b(arrive|arrives|arrived) to\b/gi, (m,v) => v+" at", 1, "Se dice «arrive at» un sitio o «arrive in» una ciudad, nunca «arrive to»."],
+ [/\bdepend(s|ed)? of\b/gi, (m,s) => "depend"+(s||"")+" on", 1, "«Depend» va con «on»: «it depends on…»."],
+ [/\bmarried with\b/gi, () => "married to", 1, "Se dice «married to someone»."],
+ [/\blisten(s|ed|ing)? (music|the radio|the news|a song|songs|podcasts?)\b/gi, (m,s,o) => "listen"+(s||"")+" to "+o, 1, "«Listen» lleva «to» delante de lo que escuchas: «listen to music»."],
+ [/\bwait(s|ed|ing)? (you|me|him|her|us|them)\b/gi, (m,s,p) => "wait"+(s||"")+" for "+p, 1, "«Wait» lleva «for» delante de la persona: «wait for me»."],
+ [/\bborrow me\b/gi, () => "lend me", 1, "Dejar algo a alguien es «lend»: «Can you lend me…?». «Borrow» es pedir prestado."],
+ [/\bremember me to\b/gi, () => "remind me to", 1, "Recordar algo a otra persona es «remind»: «remind me to call»."],
+ [/\bdiscuss(es|ed)? about\b/gi, (m,s) => "discuss"+(s||""), 1, "«Discuss» no lleva «about»: «we discussed the plan»."],
+ [/\b(go|goes|went|going|come|comes|came|coming) to home\b/gi, (m,v) => v+" home", 1, "«Go home» y «come home» no llevan «to»."],
+ [/\b(i|we) (am|are|was|were) boring\b/gi, (m,s,b) => s+" "+b+" bored", 1, "«Bored» = aburrido (cómo te sientes). «Boring» = que aburre."],
+ [/\b(i|we) (am|are|was|were) (interesting|exciting|tiring) (in|about)\b/gi, (m,s,b,a,p) => s+" "+b+" "+a.replace(/ing$/,"ed")+" "+p, 1, "Para lo que sientes se usa -ed: «I'm interested in…», «I'm excited about…»."],
+ [/\bactually (i|we|she|he) (work|live|study|works|lives|studies)\b/gi, (m,s,v) => "currently "+s+" "+v, 1, "Falso amigo: «actually» significa «en realidad». «Actualmente» es «currently»."],
+ [/\b(in|at) (monday|tuesday|wednesday|thursday|friday|saturday|sunday|mondays|tuesdays|wednesdays|thursdays|fridays|saturdays|sundays)\b/gi, (m,p,d) => "on "+d, 4, "Con los días de la semana se usa «on»: «on Monday»."],
+ [/\b(on|at) (january|february|march|april|may|june|july|august|september|october|november|december|summer|winter|spring|autumn)\b/gi, (m,p,d) => "in "+d, 4, "Con meses y estaciones se usa «in»: «in May», «in summer»."],
+ [/\bin (the night|night)\b/gi, () => "at night", 4, "Se dice «at night» (pero «in the morning» y «in the afternoon»)."],
+ [/\bvery (good|bad|big|small|tired|happy|angry|hungry|cold|hot|interesting|important|beautiful|funny|scared|surprised|difficult|sad|dirty|clean)\b/gi,
+   (m,a,off,str) => !/^(is|was|are|were|am|be|been|being|feel|feels|felt|look|looks|looked|seem|seems|seemed|a|an|the|so|really|get|got|getting|i'm|it's|he's|she's|we're|they're|you're|i'm)$/i.test(prevWord(str, off)) ? m : ({good:"great",bad:"terrible",big:"huge",small:"tiny",tired:"exhausted",happy:"delighted",angry:"furious",hungry:"starving",cold:"freezing",hot:"boiling",interesting:"fascinating",important:"essential",beautiful:"stunning",funny:"hilarious",scared:"terrified",surprised:"amazed",difficult:"really tough",sad:"heartbroken",dirty:"filthy",clean:"spotless"})[a.toLowerCase()], 2, "Suena más natural un adjetivo más fuerte que «very» + adjetivo."],
+ [/\bit was very fun\b/gi, () => "it was great fun", 2, "Con «fun» se dice «great fun» o «really fun», mejor que «very fun»."],
+ [/\b(dont|doesnt|didnt|cant|wont|isnt|arent|wasnt|im|ive|youre|theyre|thats|its a)\b/gi, (m,w) => { const x = w.toLowerCase(); const r = {dont:"don't",doesnt:"doesn't",didnt:"didn't",cant:"can't",wont:"won't",isnt:"isn't",arent:"aren't",wasnt:"wasn't",im:"I'm",ive:"I've",youre:"you're",theyre:"they're",thats:"that's","its a":"it's a"}[x]; return r || m; }, 3, "Faltaba el apóstrofo: don't, I'm, it's…"],
+ [/(^|[\s(])i(?=[\s,.!?'’]|$)/g, (m,p) => p+"I", 3, "El pronombre «I» siempre va en mayúscula."],
+ [new RegExp("\\b("+DAYS.join("|")+")\\b","g"), (m) => m[0].toUpperCase()+m.slice(1), 3, "En inglés, los días, los meses, los idiomas y las nacionalidades van con mayúscula."],
+ [/\ba ([aeio][a-z]+)\b/gi, (m,w) => /^(one|once|euro|use|uni)/i.test(w) ? m : (m[0]==="A" ? "An " : "an ")+w, 3, "Delante de sonido vocálico se usa «an»: «an apple», «an hour»."],
+ [/\ban ([bcdfgjklmnpqrstvwxyz][a-z]+)\b/gi, (m,w) => /^(hour|honest|honour|heir)/i.test(w) ? m : (m[0]==="A" ? "A " : "a ")+w, 3, "Delante de sonido consonántico se usa «a»: «a car», «a university»."]
+];
+/* pasado: si la frase habla del pasado (yesterday, last week, ago…), el verbo en pasado */
+function fixPastSentence(sent, changes, force){
+  if(!force && !PAST_MARK.test(sent)) return sent;
+  return sent.replace(new RegExp("\\b(I|you|we|they|he|she|we all|(?:a|an|the|my|our|his|her|their) [a-z]+) ("+FIX_VERBS.join("|")+")\\b(?! ?ing)","gi"), (m,s,v,off,str) => {
+    const p = prevWord(str, off); if(AUX_BEFORE.test(p) || /^(used|will|going)$/i.test(p)) return m;
+    const to = s+" "+verbPast(v.toLowerCase()); changes.push({cat:0, from:m, to, why:"La frase habla del pasado (yesterday, last…, ago), así que el verbo va en pasado: «went», «visited»…"}); return s+" \u0001"+0+verbPast(v.toLowerCase())+"\u0002";
+  });
+}
+function correctText(text, o){
+  o = o || {}; let t = String(text||"").replace(/\s+/g," ").trim(); const changes = [];
+  if(!t) return {orig:"", fixed:"", html:"", changes};
+  let inPast = !!o.pastAll;
+  t = t.split(/([.!?]+\s+)/).map(p => { if(/[.!?]\s+$/.test(p)) return p;
+    if(PAST_MARK.test(p)) inPast = true; else if(/\b(now|today|nowadays|usually|always|every (day|week|morning)|currently|at the moment)\b/i.test(p) && !o.pastAll) inPast = false;
+    return fixPastSentence(p, changes, inPast); }).join("");
+  FIX_RULES.forEach(([re, rep, cat, why]) => {
+    if(o.oral && cat===3) return;
+    t = t.replace(re, function(){ const args = [...arguments], m = args[0], off = args[args.length-2], str = args[args.length-1];
+      if(/[\u0001\u0002]/.test(m)) return m;
+      let to = typeof rep==="function" ? rep.apply(null, args) : rep; if(to==null || to===m) return m;
+      to = keepCase(m, to); const lead = (to.match(/^[\s(]*/)||[""])[0];
+      changes.push({cat, from:m.trim(), to:to.trim(), why}); return lead + "\u0001" + cat + to.slice(lead.length) + "\u0002"; });
+  });
+  /* mayúscula al empezar frase y punto final (no en lo que se dice en voz alta) */
+  if(!o.oral) t = t.replace(/(^|[.!?]\s+)([a-z])/g, (m,p,c) => { changes.push({cat:3, from:c, to:c.toUpperCase(), why:"Las frases empiezan con mayúscula."}); return p + "\u00013" + c.toUpperCase() + "\u0002"; });
+  if(!o.oral && !/[.!?]["”)]?$/.test(t.replace(/\u0002$/,""))){ t += "\u00013.\u0002"; changes.push({cat:3, from:"", to:".", why:"Al final de la frase va un punto."}); }
+  const plain = t.replace(/\u0001\d/g,"").replace(/\u0002/g,"");
+  const html = esc(t).replace(/\u0001(\d)/g, (m,c) => `<ins class="fix c${c}">`).replace(/\u0002/g, "</ins>");
+  const seen = new Set(), uniq = changes.filter(c => { const k = c.cat+"|"+c.from.toLowerCase()+"|"+c.to.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+  return {orig:String(text||"").trim(), fixed:plain, html, changes:uniq};
+}
+/* bloque visual: tu texto corregido + sugerencias agrupadas */
+function correctionHTML(text, opts){
+  opts = opts || {}; const res = correctText(text, {oral:opts.oral, pastAll:opts.pastAll}), en = opts.en;
+  if(!res.orig) return "";
+  const head = en ? (res.changes.length ? "✍️ Here's how you could say it:" : "✅ No common mistakes found. Well done!") : (res.changes.length ? (opts.oral ? "🗣️ Así lo podrías haber dicho:" : "✍️ Así quedaría tu texto:") : "✅ No he encontrado errores típicos. ¡Bien!");
+  let h = `<div class="corr"><p class="corr-h"><b>${head}</b></p>`;
+  if(res.changes.length){
+    h += `<p class="corr-t" lang="en">${res.html} ${spk(res.fixed)}</p>`;
+    if(!en){ const groups = [0,1,4,2,3].map(c => res.changes.filter(x => x.cat===c)).map((list,c) => list.length ? `<div class="corr-g"><p class="small"><b>${FIX_CATS[[0,1,4,2,3][c]][0]}</b></p><ul class="small">${list.map(x => `<li>${x.from?`<s>${esc(x.from)}</s> → `:""}<b>${esc(x.to)}</b>. ${esc(x.why)}</li>`).join("")}</ul></div>` : "").join("");
+      h += groups; }
+  }
+  return h + `</div>`;
+}
+/* corrección con IA (versión de Claude): mismo formato, tu texto corregido y los cambios por tipo */
+function aiCorrectionHTML(j){
+  if(!j || !j.corrected) return "";
+  const cats = {"conjugación":0,"conjugacion":0,"verbo":1,"vocabulario":2,"ortografía":3,"ortografia":3};
+  const list = (j.changes||[]).map(c => ({cat: cats[String(c.type||"").toLowerCase()]!=null ? cats[String(c.type||"").toLowerCase()] : 2, from:c.from||"", to:c.to||"", why:c.why||""}));
+  return `<div class="corr"><p class="corr-h"><b>✨ Así quedaría tu texto (Claude):</b></p><p class="corr-t" lang="en">${esc(j.corrected)} ${spk(j.corrected)}</p>${[0,1,2,3].map(c => { const l = list.filter(x => x.cat===c); return l.length ? `<div class="corr-g"><p class="small"><b>${FIX_CATS[c][0]}</b></p><ul class="small">${l.map(x => `<li>${x.from?`<s>${esc(x.from)}</s> → `:""}<b>${esc(x.to)}</b>. ${esc(x.why)}</li>`).join("")}</ul></div>` : ""; }).join("")}</div>`;
+}
+var AI_FIX_PROMPT = (lvl, text) => `You are an English teacher for a Spanish-speaking learner at CEFR level ${lvl}. Correct the learner's own text below. Do NOT write a new model text: keep their ideas and words, and fix only what is wrong or could clearly sound more natural. Reply only with JSON: {"corrected":"their text, corrected","changes":[{"type":"conjugación|verbo|vocabulario|ortografía","from":"original words","to":"corrected words","why":"explicación muy breve en español"}]}. Use at most 8 changes.\n\nText:\n${text}`;
+/* diferencias palabra a palabra entre lo que ha escrito o dicho y la respuesta correcta */
+function diffHTML(mine, target){
+  const A = String(mine||"").trim().split(/\s+/).filter(Boolean), B = String(target||"").trim().split(/\s+/).filter(Boolean);
+  if(!A.length) return esc(target);
+  const n = w => norm(w), L = Array.from({length:A.length+1}, () => Array(B.length+1).fill(0));
+  for(let i=A.length-1;i>=0;i--) for(let j=B.length-1;j>=0;j--) L[i][j] = n(A[i])===n(B[j]) ? L[i+1][j+1]+1 : Math.max(L[i+1][j], L[i][j+1]);
+  let i = 0, j = 0; const out = [];
+  while(i<A.length && j<B.length){ if(n(A[i])===n(B[j])){ out.push(esc(B[j])); i++; j++; } else if(L[i+1][j]>=L[i][j+1]){ out.push(`<s class="diff-del">${esc(A[i])}</s>`); i++; } else { out.push(`<ins class="fix c0">${esc(B[j])}</ins>`); j++; } }
+  while(i<A.length){ out.push(`<s class="diff-del">${esc(A[i])}</s>`); i++; } while(j<B.length){ out.push(`<ins class="fix c0">${esc(B[j])}</ins>`); j++; }
+  return out.join(" ");
+}
+function wc50(t){ return (String(t||"").match(/[A-Za-z']+/g)||[]).length; }
+var WRITE_MAX = 50;
+
+function corrIfAny(t, o){ const r = correctText(t, {oral: o && o.oral}); return r.changes.length ? correctionHTML(t, o) : ""; }
+
+/* ================= DIARIO Y ANÉCDOTAS: preguntas cortas que se juntan en un texto breve ================= */
+var JOURNAL_SETS = [
+ [1,"Your day","Tu día",["What time did you get up today?","What did you have for breakfast?","What are you going to do tonight?"]],
+ [1,"Your home","Tu casa",["Where do you live?","How many rooms are there in your home?","What is your favourite room?"]],
+ [1,"Food","Comida",["What is your favourite food?","Who cooks at home?","What did you eat for dinner yesterday?"]],
+ [1,"Friends","Amigos",["Who is your best friend?","Where did you meet?","What do you like doing together?"]],
+ [2,"Your weekend","Tu fin de semana",["Where did you go last weekend?","Who were you with?","What did you do there?","Did you enjoy it?"]],
+ [2,"Work or studies","Trabajo o estudios",["What do you do?","What do you like about it?","What is the most difficult part?"]],
+ [2,"Free time","Tiempo libre",["What do you usually do in your free time?","How often do you do it?","When did you start?"]],
+ [3,"A recent trip","Un viaje reciente",["Where did you go on your last trip?","How did you get there?","What was the best moment?","Would you go back?"]],
+ [3,"Plans","Planes",["What are your plans for next weekend?","Who are you going to see?","What are you looking forward to?"]],
+ [3,"A problem","Un problema",["What problem did you have this week?","What did you do to solve it?","What have you learnt from it?"]],
+ [3,"Habits","Hábitos",["What healthy habit do you have?","What habit would you like to change?","What are you going to do about it?"]],
+ [4,"A decision","Una decisión",["What important decision have you made recently?","What were the options?","Do you think it was the right choice?"]],
+ [4,"Technology","Tecnología",["How has technology changed your daily routine?","What couldn't you live without?","What would you like to use less?"]],
+ [4,"If you could…","Si pudieras…",["If you could live anywhere, where would it be?","What would you miss about home?","What would you do differently there?"]],
+ [5,"Lessons","Lecciones",["What would you have done differently last year?","Why?","What has it taught you?"]],
+ [5,"Opinions","Opiniones",["What is something you have changed your mind about?","What made you change your mind?","What do you think now?"]],
+ [5,"Success","El éxito",["What does success mean to you?","Who do you consider successful?","What would make you feel successful next year?"]]
+];
+var ANECDOTE_QS = {
+ work:["What do you do?","What does a normal day look like?","What's the most interesting part of your job?","Can you remember a surprising moment at work?"],
+ trip:["Where did you go?","Who were you with?","What happened that you'll never forget?","How did you feel?"],
+ funny:["Where were you?","What were you doing?","What happened suddenly?","How did it end?"],
+ challenge:["What was the difficult situation?","What did you decide to do?","How did it end?","What did you learn?"],
+ person:["Who is the person?","How do you know them?","What's something you did together?","Why are they important to you?"]
+};
+function qsPast(qs){ return qs.filter(q => /\b(did|was|were|went|last|ago|yesterday|happened)\b/i.test(q)).length >= qs.length/2; }
+function joinAnswers(ans){
+  return ans.map(a => String(a||"").trim()).filter(Boolean).map(a => { a = a[0].toUpperCase()+a.slice(1); return /[.!?]$/.test(a) ? a : a+"."; }).join(" ");
+}
+function todaySet(){ const pool = JOURNAL_SETS.filter(s => Math.abs(s[0]-S.level)<=0 ), all = pool.length ? pool : JOURNAL_SETS.filter(s => s[0]<=S.level+1); return all[hashStr("diario"+todayKey()) % all.length]; }
+var qa = {answers:[], listening:null, result:null, ai:null, busy:false};
+function qaInputs(qs, prefix){
+  const mic = SRC && !micBlocked;
+  return qs.map((q,i) => `<div class="qa-row"><p lang="en"><b>${esc(q)}</b> ${spk(q)}</p><div class="row" style="gap:8px"><input class="inp qa-in" data-qa="${i}" lang="en" autocapitalize="sentences" placeholder="Una frase corta…" value="${esc(qa.answers[i]||"")}" style="flex:1">${mic?`<button class="icon-btn" data-act="qamic" data-i="${i}" aria-label="Dictar">${qa.listening===i?"⏺️":"🎙️"}</button>`:""}</div></div>`).join("");
+}
+function qaTotal(){ return wc50(qa.answers.join(" ")); }
+renderJournal = function(){
+  const set = todaySet(), entries = (S.journal||[]).slice().reverse(), today = (S.journal||[]).find(j => j.d===todayKey());
+  if(!qa.set || qa.set!==set[1]){ qa = {set:set[1], answers: today && today.answers ? today.answers.slice() : [], listening:null, result:null, ai:null}; }
+  const total = qaTotal();
+  let h = `<div class="wrap">${pageHead("📓 Diario en inglés")}<div class="panel"><p class="small muted">Hoy · ${esc(set[2])} · ${LEVELS[S.level-1].code}</p><h2 lang="en" style="margin-top:4px">${esc(set[1])}</h2>
+    <p class="small muted" style="margin:6px 0 12px">Contesta cada pregunta con una frase corta, como en una conversación. Luego juntamos tus respuestas en un texto (máximo ${WRITE_MAX} palabras).</p>
+    ${qaInputs(set[3])}
+    <p class="small ${total>WRITE_MAX?"bad-txt":"muted"}" id="qawc">${total} de ${WRITE_MAX} palabras como máximo</p>
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="jqa">Juntar y revisar</button>${AI===true && qa.result ? `<button class="btn ghost" data-act="jqaai" ${qa.busy?"disabled":""}>✨ Corregir con IA</button>` : ""}${qa.result && S.room && typeof roomURL==="function" && roomURL() ? `<button class="btn ghost" data-act="jshare2">💬 Enviar a la sala</button>` : ""}</div>`;
+  if(qa.result) h += `<div class="sec"><p class="small muted">Tu texto:</p><p lang="en">${esc(qa.result)}</p>${correctionHTML(qa.result, {pastAll: qsPast(set[3])})}${qa.ai ? aiCorrectionHTML(qa.ai) : ""}</div>`;
+  h += `</div>`;
+  if(entries.length) h += `<div class="panel sec"><h3>Tus entradas (${entries.length})</h3><div class="stack" style="margin-top:8px">${entries.slice(0,20).map(j => `<details><summary class="small"><b>${esc(new Date(j.d+"T12:00:00").toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"}))}</b> · ${esc(j.p)}</summary><p class="small" lang="en" style="margin-top:6px">${esc(j.fixed || j.text)}</p></details>`).join("")}</div></div>`;
+  return h + `</div>`;
+};
+EXTRA_VIEWS.journal = renderJournal;
+var AN_OLD_RENDER = renderAnecdote;
+renderAnecdote = function(){
+  const a = ANECDOTES.find(x => x.id===an.id), s = anState(a.id), qs = ANECDOTE_QS[a.id] || [a.q];
+  if(an.mode==="tell") return AN_OLD_RENDER();
+  if(!an.qaInit){ an.qaInit = true; qa = {set:"anec-"+a.id, answers:(s.answers||[]).slice(), listening:null, result:s.text||null, ai:null}; }
+  const total = qaTotal();
+  let h = `<div class="wrap">${pageHead("📝 "+esc(a.t), "anecdotes")}<div class="panel"><p class="small muted">${esc(a.tips)}</p>
+    <p class="small muted" style="margin:6px 0 12px">Contesta cada pregunta con una frase corta. Juntamos las respuestas en tu historia (máximo ${WRITE_MAX} palabras) y luego practicas contarla.</p>
+    ${qaInputs(qs)}
+    <p class="small ${total>WRITE_MAX?"bad-txt":"muted"}" id="qawc">${total} de ${WRITE_MAX} palabras como máximo</p>
+    <div class="row sec" style="gap:10px;flex-wrap:wrap"><button class="btn" data-act="aqa">Juntar y revisar</button>${AI===true && qa.result ? `<button class="btn ghost" data-act="aqaai" ${qa.busy?"disabled":""}>✨ Corregir con IA</button>` : ""}${s.text ? `<button class="btn ghost" data-act="anmode" data-m="tell">🗣️ Practicar sin mirar</button>` : ""}</div>`;
+  if(qa.result) h += `<div class="sec"><p class="small muted">Tu historia:</p><p lang="en">${esc(qa.result)}</p>${correctionHTML(qa.result, {pastAll: qsPast(qs)})}${qa.ai ? aiCorrectionHTML(qa.ai) : ""}</div>`;
+  return h + `</div></div>`;
+};
+EXTRA_VIEWS.anecdote = renderAnecdote;
+function qaCollect(){ document.querySelectorAll(".qa-in").forEach(i => { qa.answers[+i.dataset.qa] = i.value; }); }
+Object.assign(ACT, {
+  qamic: b => { const i = +b.dataset.i; if(qa.listening===i){ Mic.stop(); return; } qaCollect(); qa.listening = i; render();
+    Mic.start({long:false, onResult: alts => { qa.answers[i] = alts[0]; }, onError:()=>{}, onEnd:() => { qa.listening = null; render(); }}); },
+  jqa: () => { qaCollect(); const t = joinAnswers(qa.answers), n = wc50(t), set = todaySet();
+    if(n<3) return toast("Contesta al menos una pregunta."); if(n>WRITE_MAX) return toast(`Máximo ${WRITE_MAX} palabras: acorta alguna respuesta.`);
+    qa.result = t; qa.ai = null; const res = correctText(t, {pastAll: qsPast(set[3])});
+    S.journal = S.journal || []; const ex = S.journal.find(j => j.d===todayKey()), entry = {d:todayKey(), p:set[1], text:t, fixed:res.fixed, answers:qa.answers.slice()};
+    if(ex) Object.assign(ex, entry); else { S.journal.push(entry); addXP(10); }
+    save(); checkMedals(); if(typeof gameStepDone==="function") gameStepDone("journal", qa.answers.filter(x => String(x||"").trim()).length>=2); render(); },
+  jqaai: async () => { qa.busy = true; render(); try{ qa.ai = await aiJSON(AI_FIX_PROMPT(LEVELS[S.level-1].code, qa.result), "default"); }catch(e){ toast("No se ha podido corregir ahora."); } qa.busy = false; render(); },
+  jshare2: () => { if(!qa.result) return; roomCall("/room/send", {code:S.room.code, id:roomUser(), name:S.myName||"Yo", type:"text", text:"📓 "+qa.result}).then(() => toast("💬 Enviado a la sala")).catch(() => toast("No se ha podido enviar.")); },
+  aqa: () => { qaCollect(); const t = joinAnswers(qa.answers), n = wc50(t);
+    if(n<3) return toast("Contesta al menos una pregunta."); if(n>WRITE_MAX) return toast(`Máximo ${WRITE_MAX} palabras: acorta alguna respuesta.`);
+    const s = anState(an.id), res = correctText(t, {pastAll: qsPast(ANECDOTE_QS[an.id] || [])}); qa.result = t; qa.ai = null; s.answers = qa.answers.slice(); s.original = t; s.text = res.fixed; save();
+    toast("📝 Historia guardada. Practicarás la versión corregida."); if(typeof gameStepDone==="function" && qa.answers.filter(x => String(x||"").trim()).length>=3) gameStepDone("anecdote", true); render(); },
+  aqaai: async () => { qa.busy = true; render(); try{ qa.ai = await aiJSON(AI_FIX_PROMPT(LEVELS[S.level-1].code, qa.result), "default"); if(qa.ai && qa.ai.corrected){ anState(an.id).text = qa.ai.corrected; save(); } }catch(e){ toast("No se ha podido corregir ahora."); } qa.busy = false; render(); }
+});
+(function(){ const _o = ACT.anopen; ACT.anopen = b => { _o(b); an.qaInit = false; render(); }; })();
+app.addEventListener("input", e => { const t = e.target; if(t && t.classList && t.classList.contains("qa-in")){ qa.answers[+t.dataset.qa] = t.value; const el = document.getElementById("qawc"), n = qaTotal(); if(el){ el.textContent = `${n} de ${WRITE_MAX} palabras como máximo`; el.className = "small " + (n>WRITE_MAX ? "bad-txt" : "muted"); } } });
+(function(){ const _x = EXTRA_GAME; EXTRA_GAME = function(id){ if(id==="journal"){ qa = {answers:[], listening:null, result:null, ai:null}; view = "journal"; render(); scrollTo(0,0); return true; } return _x(id); }; })();
+
+/* ================= LÍMITE DE 50 PALABRAS EN TODO LO QUE SE ESCRIBE ================= */
+WRITING.forEach(w => { w.min = Math.min(w.min||20, 30); });
+EXAMS.forEach(e => { const m = {a2:[20,35], b1:[30,50], b2:[35,50], c1:[40,50]}[e.id]; if(m){ e.writing.words = m; e.writing.task = e.writing.task.replace(/\([^)]*palabras[^)]*\)/, `(${m[0]}-${m[1]} palabras)`).replace(/unas \d+-\d+ palabras/, `${m[0]}-${m[1]} palabras`); } });
+(function(){ const _chk = ACT.check; ACT.check = function(){ const ex = sess && cur();
+  if(ex && (ex.type==="compose" || ex.type==="open")){ const t = (typeof userText==="function" ? userText(ex, sess.st) : "") || ((document.getElementById("ans")||{}).value || ""); if(wc50(t)>WRITE_MAX){ toast(`Máximo ${WRITE_MAX} palabras: acórtalo un poco.`); return; } }
+  return _chk.apply(this, arguments); }; })();
+(function(){ const _w = ACT.wrcheck; if(_w) ACT.wrcheck = function(){ const a = document.getElementById("wrin"); if(a && wc50(a.value)>WRITE_MAX){ toast(`Máximo ${WRITE_MAX} palabras: acórtalo un poco.`); return; } return _w.apply(this, arguments); }; })();
+(function(){ const _s = ACT.ivsubmit; if(_s) ACT.ivsubmit = function(){ const a = document.getElementById("ivans"); if(a && wc50(a.value)>WRITE_MAX && !iv.spoken){ toast(`Máximo ${WRITE_MAX} palabras: resume tu respuesta.`); return; } return _s.apply(this, arguments); }; })();
+(function(){ const _n = ACT.xmnext; ACT.xmnext = function(){ const t = document.getElementById("xmw"); if(t && wc50(t.value)>WRITE_MAX){ toast(`Máximo ${WRITE_MAX} palabras.`); return; } return _n.apply(this, arguments); }; })();
 
 </script>
 </body>
